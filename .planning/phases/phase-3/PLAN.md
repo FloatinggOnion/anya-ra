@@ -508,7 +508,7 @@ interface Props {
 
 **ID:** P3-T10  
 **Type:** Integration  
-**Dependencies:** P3-T07, P3-T08, P3-T09  
+**Dependencies:** P3-T03, P3-T05, P3-T07, P3-T08, P3-T09, P3-T13, P3-T15, P3-T16  
 **Estimated Effort:** 2-3 hours
 
 **Description:**
@@ -520,6 +520,7 @@ Create the main `PDFViewer` component that integrates canvas rendering, annotati
 <PDFViewer {pdfPath} {paperId}>
   <PDFCanvas />
   <AnnotationOverlay />
+  <StickyNoteLayer />
   <AnnotationToolbar /> <!-- conditional -->
 </PDFViewer>
 ```
@@ -551,6 +552,9 @@ Create the main `PDFViewer` component that integrates canvas rendering, annotati
 - [ ] Annotation appears in overlay after creation
 - [ ] Component handles PDF load errors gracefully
 - [ ] TypeScript compiles without errors
+- [ ] StickyNoteLayer renders sticky notes at correct positions
+- [ ] ViewportManager integrated: zoom/scroll handlers use RAF throttling (<16ms frame time)
+- [ ] PageCache integrated: pre-rendered pages load from cache, not re-rendered
 
 ---
 
@@ -803,6 +807,8 @@ class PageCache {
 - [ ] Benchmark: cache hit < 1ms
 - [ ] Benchmark: single page render < 20ms
 - [ ] Tests pass: `npm run test:bench -- perf.bench.ts`
+- [ ] PDFCanvas imports and uses PageCache for page rendering
+- [ ] Cache hit returns pre-rendered canvas within 1ms
 
 ---
 
@@ -859,6 +865,8 @@ class ViewportManager {
 - [ ] Benchmark: viewport update < 16ms (60fps)
 - [ ] Manual test: smooth zoom/scroll on 50+ page PDF
 - [ ] Tests pass: `npm run test:bench`
+- [ ] PDFViewer wires onScroll and onZoom events to ViewportManager
+- [ ] Frame time stays <16ms during continuous scroll on a 50-page PDF
 
 ---
 
