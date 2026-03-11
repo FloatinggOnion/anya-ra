@@ -1,3 +1,16 @@
+---
+gsd_state_version: 1.0
+milestone: v3.11
+milestone_name: milestone
+status: unknown
+last_updated: "2026-03-11T11:19:28.753Z"
+progress:
+  total_phases: 4
+  completed_phases: 0
+  total_plans: 5
+  completed_plans: 1
+---
+
 # Project State
 
 ## Project Reference
@@ -5,35 +18,30 @@
 See: .planning/PROJECT.md (updated 2026-03-11)
 
 **Core value:** Every step of the research loop — discover, read, annotate, map, write — happens in one fast, integrated application without switching tools.
-**Current focus:** Phase 1 - Foundation
+**Current focus:** Phase 2 Complete — Ready for Phase 3
 
 ## Current Position
 
-Phase: 1 of 7 (Foundation)
+Phase: 2 of 7 (Paper Management)
 Plan: 1 of 1 ✅ Complete
-Status: Phase 1 Complete — Ready for Phase 2
-Last activity: 2026-03-11 — Phase 1 execution complete
+Status: Phase 2 Complete — Ready for Phase 3
+Last activity: 2026-03-11 — Phase 2 execution complete
 
-Progress: [██░░░░░░░░] 14% (1 of 7 phases)
+Progress: [████░░░░░░] 28% (2 of 7 phases)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 35 min
-- Total execution time: 0.58 hours
+- Total plans completed: 2
+- Average duration: 27 min
+- Total execution time: 0.87 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | Phase 1 | 1 | 35 min | 35 min |
-
-**Recent Trend:**
-- Last 5 plans: None yet
-- Trend: N/A
-
-*Updated after each plan completion*
+| Phase 2 | 1 | 18 min | 18 min |
 
 ## Accumulated Context
 
@@ -49,6 +57,9 @@ Recent decisions affecting current work:
 - Plain Svelte + Vite (no SvelteKit): create-tauri-app scaffold defaulted to SvelteKit; manually converted per tech stack requirement
 - Dark-first CSS custom properties: Enables future light-mode toggle without CSS framework dependency
 - Capabilities-based permissions: Minimal permission footprint (dialog, fs, store only)
+- [Phase phase-2]: Custom virtual scroll over svelte-virtual: Svelte 5 compatibility
+- [Phase phase-2]: AtomicU64 rate limiter for arXiv: const-capable, no Mutex overhead
+- [Phase phase-2]: quick-xml event reader over serde derive: reliable Atom namespace handling
 
 ### Pending Todos
 
@@ -60,8 +71,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-11 (Phase 1 execution)
-Stopped at: Phase 1 complete — all 11 tasks done, 3 commits, SUMMARY created
+Last session: 2026-03-11 (Phase 2 execution)
+Stopped at: Phase 2 complete — 15 tasks, 3 commits, SUMMARY created
 Resume file: None
 
 ## Tech Stack Reference
