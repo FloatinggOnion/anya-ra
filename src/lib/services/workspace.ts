@@ -17,6 +17,23 @@ export async function getAppDataDir(): Promise<string> {
   return invoke<string>('get_app_data_dir')
 }
 
+export async function getRecentWorkspaces(): Promise<Workspace[]> {
+  try {
+    const list = await invoke<Workspace[] | null>('load_recent_workspaces')
+    return list ?? []
+  } catch {
+    return []
+  }
+}
+
+export async function addToRecentWorkspaces(ws: Workspace): Promise<void> {
+  try {
+    await invoke<void>('add_recent_workspace', { workspace: ws })
+  } catch {
+    // non-fatal
+  }
+}
+
 export async function createWorkspace(folderPath: string): Promise<Workspace> {
   // Handle both Unix and Windows path separators
   const parts = folderPath.replace(/\\/g, '/').split('/')
@@ -31,6 +48,7 @@ export async function createWorkspace(folderPath: string): Promise<Workspace> {
   }
 
   await saveWorkspace(workspace)
+  await addToRecentWorkspaces(workspace)
   return workspace
 }
 

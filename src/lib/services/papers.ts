@@ -100,6 +100,20 @@ export async function searchSemanticScholar(
   })
 }
 
+// ─── PDF download ─────────────────────────────────────────────────────────────
+
+export async function downloadPdfToWorkspace(
+  workspacePath: string,
+  paper: Paper,
+  pdfUrl: string
+): Promise<Paper> {
+  const destPath = `${workspacePath}/papers/${paper.id}/paper.pdf`
+  await invoke<void>('download_pdf', { url: pdfUrl, destPath })
+  const updated: Paper = { ...paper, localPdfPath: destPath, pdfDownloaded: true }
+  await invoke<void>('save_paper', { workspacePath, paper: updated })
+  return updated
+}
+
 // ─── Local PDF import ────────────────────────────────────────────────────────
 
 export async function importLocalPdf(workspacePath: string): Promise<Paper> {

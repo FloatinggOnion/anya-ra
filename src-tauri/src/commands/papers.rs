@@ -405,6 +405,48 @@ pub async fn import_local_pdf(
     Ok(paper)
 }
 
+// ─── PDF download ──────────────────────────────────────────────────────────
+
+/// Download a remote PDF URL to a local workspace path
+#[command]
+pub async fn download_pdf(url: String, dest_path: String) -> Result<(), String> {
+    use std::time::Duration;
+    use tokio::io::AsyncWriteExt;
+
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(60))
+        .user_agent("Anya/0.1.0")
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let response = client
+        .get(&url)
+        .send()
+        .await
+        .map_err(|e| format!("Download failed: {}", e))?;
+
+    if !response.status().is_success() {
+        return Err(format!("HTTP {}: could not download PDF", response.status()));
+    }
+
+    let bytes = response.bytes().await.map_err(|e| e.to_string())?;
+
+    // Ensure parent directory exists
+    let dest = std::path::Path::new(&dest_path);
+    if let Some(parent) = dest.parent() {
+        tokio::fs::create_dir_all(parent)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+
+    let mut file = tokio::fs::File::create(&dest_path)
+        .await
+        .map_err(|e| e.to_string())?;
+    file.write_all(&bytes).await.map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
 fn sanitize_filename(name: &str) -> String {
     name.chars()
         .map(|c| {

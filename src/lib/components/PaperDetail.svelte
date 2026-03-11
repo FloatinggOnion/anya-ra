@@ -1,10 +1,34 @@
 <script lang="ts">
   import { selectedPaper } from '../stores/papers'
+  import { updatePaper } from '../stores/papers'
+  import { workspace } from '../stores/workspace'
+  import { downloadPdfToWorkspace } from '../services/papers'
 
   const sourceLabel: Record<string, string> = {
     arxiv: 'arXiv',
     semantic_scholar: 'Semantic Scholar',
     local: 'Local',
+  }
+
+  let isDownloading = $state(false)
+  let downloadError = $state('')
+
+  async function handleDownload() {
+    if (!$selectedPaper || !$selectedPaper.pdfUrl || !$workspace) return
+    isDownloading = true
+    downloadError = ''
+    try {
+      const updated = await downloadPdfToWorkspace(
+        $workspace.path,
+        $selectedPaper,
+        $selectedPaper.pdfUrl
+      )
+      updatePaper(updated)
+    } catch (err) {
+      downloadError = err instanceof Error ? err.message : String(err)
+    } finally {
+      isDownloading = false
+    }
   }
 </script>
 
@@ -62,15 +86,31 @@
       {/if}
 
       <div class="actions">
-        {#if $selectedPaper.pdfUrl}
-          <a href={$selectedPaper.pdfUrl} target="_blank" rel="noreferrer" class="btn primary">
+        {#if $selectedPaper.localPdfPath}
+          <span class="btn secondary downloaded">✓ PDF Downloaded</span>
+        {:else if $selectedPaper.pdfUrl}
+          <a href={$selectedPaper.pdfUrl} target="_blank" rel="noreferrer" class="btn secondary">
             View PDF ↗
           </a>
-        {:else if !$selectedPaper.localPdfPath}
-          <!-- Paywall or no PDF: show disabled download button (Phase 3 enables download) -->
-          <button class="btn primary" disabled title="PDF download available after adding to library (Phase 3)">
-            Download PDF
+          <button
+            class="btn primary"
+            onclick={handleDownload}
+            disabled={isDownloading}
+          >
+            {#if isDownloading}
+              <span class="spinner"></span>
+              Downloading…
+            {:else}
+              ⬇ Download PDF
+            {/if}
           </button>
+        {:else if !$selectedPaper.localPdfPath}
+          <button class="btn primary" disabled title="No PDF available for this paper">
+            No PDF available
+          </button>
+        {/if}
+        {#if downloadError}
+          <p class="download-error">{downloadError}</p>
         {/if}
         {#if $selectedPaper.url}
           <a href={$selectedPaper.url} target="_blank" rel="noreferrer" class="btn secondary">
@@ -232,6 +272,41 @@
   .btn.secondary:hover {
     background: rgba(255, 255, 255, 0.04);
     color: var(--color-text, #f0f0f0);
+  }
+
+  .btn.secondary.downloaded {
+    color: #4ade80;
+    border-color: #4ade80;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  .download-error {
+    width: 100%;
+    color: var(--color-error, #ff6b6b);
+    font-size: 0.8125rem;
+    margin: 0.25rem 0 0 0;
+    padding: 0.375rem 0.75rem;
+    background: rgba(255, 107, 107, 0.1);
+    border-radius: 4px;
+    border-left: 3px solid var(--color-error, #ff6b6b);
+  }
+
+  .spinner {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin-right: 0.25rem;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   .empty {

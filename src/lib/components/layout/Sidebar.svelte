@@ -2,6 +2,10 @@
   import { workspace } from '../../stores/workspace'
   import SearchBar from '../SearchBar.svelte'
   import PaperList from '../PaperList.svelte'
+
+  function switchWorkspace() {
+    workspace.set(null)
+  }
 </script>
 
 <nav class="sidebar">
@@ -17,6 +21,11 @@
     <!-- Paper search & list -->
     <SearchBar />
     <PaperList />
+    <div class="sidebar-footer">
+      <button class="switch-btn" onclick={switchWorkspace} title="Switch workspace">
+        ⇄ Switch Workspace
+      </button>
+    </div>
   {:else}
     <div class="section">
       <p class="empty-state">No workspace open</p>
@@ -100,5 +109,32 @@
     font-style: italic;
     margin: 0;
     padding: 0.25rem 0;
+  }
+
+  .sidebar-footer {
+    flex-shrink: 0;
+    padding: 0.5rem 0.75rem;
+    border-top: 1px solid var(--color-border, #2a2a2a);
+    margin-top: auto;
+  }
+
+  .switch-btn {
+    width: 100%;
+    padding: 0.4375rem 0.75rem;
+    background: transparent;
+    border: 1px solid var(--color-border, #2a2a2a);
+    border-radius: 4px;
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+
+  .switch-btn:hover {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--color-text);
+    border-color: var(--color-accent);
   }
 </style>

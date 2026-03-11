@@ -1,9 +1,16 @@
 <script lang="ts">
+  import { onMount } from 'svelte'
   import { workspace } from '../stores/workspace'
-  import { pickFolder, createWorkspace } from '../services/workspace'
+  import { pickFolder, createWorkspace, getRecentWorkspaces, addToRecentWorkspaces } from '../services/workspace'
+  import type { Workspace } from '../types/workspace'
 
   let isSelecting = $state(false)
   let errorMessage = $state('')
+  let recentWorkspaces = $state<Workspace[]>([])
+
+  onMount(async () => {
+    recentWorkspaces = await getRecentWorkspaces()
+  })
 
   async function selectWorkspaceFolder() {
     isSelecting = true
@@ -22,6 +29,29 @@
     } finally {
       isSelecting = false
     }
+  }
+
+  async function openRecent(recent: Workspace) {
+    try {
+      const updated = { ...recent, lastOpened: new Date().toISOString() }
+      await addToRecentWorkspaces(updated)
+      workspace.set(updated)
+    } catch (error) {
+      errorMessage = error instanceof Error ? error.message : String(error)
+    }
+  }
+
+  function formatDate(iso: string): string {
+    try {
+      return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+    } catch {
+      return iso
+    }
+  }
+
+  function truncatePath(path: string, maxLen = 48): string {
+    if (path.length <= maxLen) return path
+    return '…' + path.slice(path.length - maxLen + 1)
   }
 </script>
 
@@ -44,7 +74,7 @@
         <span class="spinner"></span>
         Opening…
       {:else}
-        Open Workspace Folder
+        {#if recentWorkspaces.length > 0}Open Other Folder…{:else}Open Workspace Folder{/if}
       {/if}
     </button>
 
@@ -52,7 +82,20 @@
       <p class="error">{errorMessage}</p>
     {/if}
 
-    <p class="hint">Choose a folder where your research files will be stored.</p>
+    {#if recentWorkspaces.length > 0}
+      <div class="recents">
+        <p class="recents-label">Recent</p>
+        {#each recentWorkspaces as recent}
+          <button class="recent-item" onclick={() => openRecent(recent)}>
+            <span class="recent-name">{recent.name}</span>
+            <span class="recent-path">{truncatePath(recent.path)}</span>
+            <span class="recent-date">{formatDate(recent.lastOpened)}</span>
+          </button>
+        {/each}
+      </div>
+    {:else}
+      <p class="hint">Choose a folder where your research files will be stored.</p>
+    {/if}
   </div>
 </div>
 
@@ -168,5 +211,62 @@
     background: rgba(255, 69, 58, 0.08);
     border-radius: 6px;
     border-left: 2px solid var(--color-error);
+  }
+
+  .recents {
+    margin-top: 2rem;
+    text-align: left;
+    width: 100%;
+  }
+
+  .recents-label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-muted, #666666);
+    margin: 0 0 0.5rem 0;
+  }
+
+  .recent-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    padding: 0.625rem 0.875rem;
+    margin-bottom: 0.25rem;
+    background: var(--color-surface, #1a1a1a);
+    border: 1px solid var(--color-border, #2a2a2a);
+    border-radius: 6px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s, border-color 0.15s;
+    gap: 0.125rem;
+  }
+
+  .recent-item:hover {
+    background: var(--color-surface-2, #222222);
+    border-color: var(--color-accent, #6b9cff);
+  }
+
+  .recent-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text, #f0f0f0);
+  }
+
+  .recent-path {
+    font-size: 0.6875rem;
+    font-family: monospace;
+    color: var(--color-text-muted, #666666);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+
+  .recent-date {
+    font-size: 0.6875rem;
+    color: var(--color-text-muted, #555555);
   }
 </style>
