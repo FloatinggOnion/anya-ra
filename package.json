@@ -1,0 +1,28 @@
+{
+  "name": "anya-ra",
+  "version": "0.1.0",
+  "description": "Research Assistant desktop app",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "tauri": "tauri"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-store": "^2",
+    "@tauri-apps/plugin-dialog": "^2",
+    "@tauri-apps/plugin-fs": "^2"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^5.0.0",
+    "svelte": "^5.0.0",
+    "svelte-check": "^4.0.0",
+    "typescript": "~5.6.2",
+    "vite": "^6.0.3",
+    "@tauri-apps/cli": "^2"
+  }
+}

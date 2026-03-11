@@ -1,0 +1,28 @@
+# Dependencies
+node_modules
+
+# Build outputs
+/dist
+/build
+/.svelte-kit
+/package
+
+# Tauri build artifacts
+src-tauri/target
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# System
+.DS_Store
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+# Vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*

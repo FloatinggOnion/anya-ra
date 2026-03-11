@@ -1,0 +1,29 @@
+[package]
+name = "anya-ra"
+version = "0.1.0"
+description = "Anya-RA Research Assistant"
+authors = ["you"]
+edition = "2021"
+
+[lib]
+name = "anya_ra_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-store = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = { version = "0.4", features = ["serde"] }
+
+[profile.release]
+lto = true
+strip = true
+opt-level = "z"
+codegen-units = 1
+panic = "abort"
