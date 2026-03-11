@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-11)
 
 **Core value:** Every step of the research loop — discover, read, annotate, map, write — happens in one fast, integrated application without switching tools.
-**Current focus:** Phase 3 Complete — Ready for Phase 4 (Knowledge Graph)
+**Current focus:** Phase 4 Complete — LLM chat with Ollama/OpenAI streaming, context selection, drafts, persistence
 
 ## Current Position
 
-Phase: 3 of 7 (PDF Viewer & Annotations)
-Plan: 1 of 1 ✅ Complete
-Status: Phase 3 Complete — Ready for Phase 4
-Last activity: 2026-03-11 — Phase 3 execution complete
+Phase: 4 of 7 (LLM Integration)
+Plan: 5 of 5 ✅ Complete
+Status: Phase 4 Complete — Chat streaming, provider switching, context selection, drafts, persistence
+Last activity: 2025-06-07 — Phase 4 execution complete (all 5 plans, 3 wave commits)
 
-Progress: [█████░░░░░] 43% (3 of 7 phases)
+Progress: [██████░░░░] 57% (4 of 7 phases)
 
 ## Performance Metrics
 
@@ -61,6 +61,11 @@ Recent decisions affecting current work:
 - [Phase phase-2]: Custom virtual scroll over svelte-virtual: Svelte 5 compatibility
 - [Phase phase-2]: AtomicU64 rate limiter for arXiv: const-capable, no Mutex overhead
 - [Phase phase-2]: quick-xml event reader over serde derive: reliable Atom namespace handling
+- [Phase 04-llm]: relative imports (../types/llm) not $lib — path alias not configured in project
+- [Phase 04-llm]: registerContextGetter pattern for circular dep prevention (chat ↔ context-selection)
+- [Phase 04-llm]: tabbed MainPanel (Chat/Papers) to preserve Phase 2 PaperDetail integration
+- [Phase 04-llm]: js-tiktoken uses encodingForModel (camelCase) not encoding_for_model
+- [Phase 04-llm]: lazy import('chat-persistence') in triggerAutoSave to prevent circular module dep
 - [Phase phase-3]: pdfjs-dist@3.11 stable Vite worker pattern over v4 mjs API
 - [Phase phase-3]: SVG overlay for annotations: interactive elements, no hit-testing
 - [Phase phase-3]: Annotations stored in PDF coordinate space, canvas transform at render
