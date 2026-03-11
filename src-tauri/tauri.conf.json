@@ -38,9 +38,7 @@
   },
   "plugins": {
     "fs": {
-      "scope": {
-        "allow": ["$HOME/**", "$APPDATA/**"]
-      }
+      "requireLiteralLeadingDot": false
     }
   }
 }
