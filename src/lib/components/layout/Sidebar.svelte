@@ -29,7 +29,7 @@
     display: flex;
     flex-direction: column;
     padding: 0;
-    background: var(--color-surface, #1a1a1a);
+    background: var(--color-surface);
     height: 100%;
     overflow: hidden;
   }
@@ -37,15 +37,16 @@
   .workspace-header {
     display: flex;
     align-items: flex-start;
-    gap: 0.625rem;
-    padding: 0.625rem 0.75rem;
+    gap: 0.5rem;
+    padding: 0.75rem 0.875rem;
     flex-shrink: 0;
   }
 
   .workspace-icon {
-    font-size: 1.25rem;
+    font-size: 1.125rem;
     flex-shrink: 0;
     margin-top: 1px;
+    opacity: 0.7;
   }
 
   .workspace-info {
@@ -54,9 +55,9 @@
   }
 
   .workspace-name {
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     font-weight: 600;
-    color: var(--color-text, #f0f0f0);
+    color: var(--color-text);
     margin: 0 0 0.125rem 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -65,7 +66,7 @@
 
   .workspace-path {
     font-size: 0.6875rem;
-    color: var(--color-text-muted, #666666);
+    color: var(--color-text-muted);
     margin: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -75,27 +76,27 @@
 
   .divider {
     height: 1px;
-    background: var(--color-border, #2a2a2a);
+    background: var(--color-border);
     margin: 0 0 0.5rem 0;
   }
 
   .section {
-    padding: 0.5rem 1rem;
+    padding: 0.5rem 0.875rem;
     margin-bottom: 0.25rem;
   }
 
   .section-title {
-    font-size: 0.6875rem;
+    font-size: 0.625rem;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--color-text-muted, #666666);
+    letter-spacing: 0.1em;
+    color: var(--color-text-muted);
     margin: 0 0 0.5rem 0;
   }
 
   .empty-state {
     font-size: 0.8125rem;
-    color: var(--color-text-muted, #555555);
+    color: var(--color-text-muted);
     font-style: italic;
     margin: 0;
     padding: 0.25rem 0;

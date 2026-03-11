@@ -4,7 +4,7 @@
 
 <header class="toolbar">
   <div class="left">
-    <span class="app-name">Anya<span class="accent">-RA</span></span>
+    <span class="app-name">Anya</span>
     {#if $workspace}
       <span class="separator">›</span>
       <span class="workspace-name">{$workspace.name}</span>
@@ -22,8 +22,8 @@
     justify-content: space-between;
     height: 48px;
     padding: 0 1rem;
-    border-bottom: 1px solid var(--color-border, #2a2a2a);
-    background: var(--color-surface, #1a1a1a);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface);
     flex-shrink: 0;
     user-select: none;
   }
@@ -37,23 +37,20 @@
   .app-name {
     font-size: 0.9375rem;
     font-weight: 700;
-    color: var(--color-text, #f0f0f0);
-    letter-spacing: -0.01em;
-  }
-
-  .accent {
-    color: var(--color-accent, #6b9cff);
+    color: var(--color-text);
+    letter-spacing: -0.02em;
   }
 
   .separator {
-    color: var(--color-text-muted, #555555);
+    color: var(--color-text-muted);
     font-size: 0.875rem;
+    opacity: 0.5;
   }
 
   .workspace-name {
     font-size: 0.875rem;
     font-weight: 500;
-    color: var(--color-text-secondary, #aaaaaa);
+    color: var(--color-text-secondary);
     max-width: 300px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -67,14 +64,14 @@
   }
 
   .phase-badge {
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     font-weight: 600;
-    color: var(--color-text-muted, #666666);
-    background: var(--color-bg, #0f0f0f);
-    border: 1px solid var(--color-border, #2a2a2a);
+    color: var(--color-text-muted);
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
     border-radius: 4px;
     padding: 0.1875rem 0.5rem;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
   }
 </style>

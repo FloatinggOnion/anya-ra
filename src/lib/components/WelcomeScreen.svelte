@@ -28,7 +28,7 @@
 <div class="welcome-screen">
   <div class="content">
     <div class="logo">
-      <h1>Anya<span class="accent">-RA</span></h1>
+      <h1>Anya</h1>
     </div>
     <p class="tagline">Research Assistant</p>
     <p class="description">
@@ -63,39 +63,40 @@
     justify-content: center;
     width: 100%;
     height: 100vh;
-    background: var(--color-bg, #0f0f0f);
+    background: var(--color-bg);
   }
 
   .content {
     text-align: center;
     max-width: 480px;
-    padding: 2.5rem;
+    padding: 3rem 2.5rem;
   }
 
   .logo h1 {
-    font-size: 3.5rem;
+    font-size: 4rem;
     font-weight: 800;
-    margin: 0 0 0.25rem 0;
-    color: var(--color-text, #f0f0f0);
-    letter-spacing: -0.02em;
-  }
-
-  .accent {
-    color: var(--color-accent, #6b9cff);
+    margin: 0 0 0.5rem 0;
+    letter-spacing: -0.04em;
+    background: linear-gradient(135deg, var(--color-text) 30%, var(--color-accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    /* Subtle glow behind the text */
+    filter: drop-shadow(0 0 24px var(--color-accent-subtle));
   }
 
   .tagline {
-    font-size: 1rem;
+    font-size: 0.75rem;
     font-weight: 500;
-    letter-spacing: 0.15em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--color-text-muted, #888888);
-    margin: 0 0 1.5rem 0;
+    color: var(--color-text-muted);
+    margin: 0 0 1.75rem 0;
   }
 
   .description {
-    font-size: 1.0625rem;
-    color: var(--color-text-secondary, #aaaaaa);
+    font-size: 1rem;
+    color: var(--color-text-secondary);
     margin: 0 0 2.5rem 0;
     line-height: 1.7;
   }
@@ -104,64 +105,68 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    background: var(--color-accent, #6b9cff);
+    background: var(--color-accent);
     color: #ffffff;
     border: none;
     padding: 0.875rem 2rem;
-    font-size: 1rem;
+    font-size: 0.9375rem;
     font-weight: 600;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
-    transition: background 0.15s ease, transform 0.1s ease;
+    transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
     min-width: 220px;
     justify-content: center;
+    box-shadow: 0 0 20px var(--color-accent-subtle);
+    letter-spacing: -0.01em;
   }
 
   .primary-button:hover:not(:disabled) {
-    background: var(--color-accent-hover, #5580e8);
+    background: var(--color-accent-hover);
     transform: translateY(-1px);
+    box-shadow: 0 0 32px var(--color-accent-subtle), 0 4px 16px rgba(124, 106, 247, 0.25);
   }
 
   .primary-button:active:not(:disabled) {
     transform: translateY(0);
+    box-shadow: 0 0 12px var(--color-accent-subtle);
   }
 
   .primary-button:disabled {
-    background: var(--color-text-muted, #555555);
+    background: var(--color-surface-3);
+    color: var(--color-text-muted);
     cursor: not-allowed;
     transform: none;
+    box-shadow: none;
   }
 
   .spinner {
     display: inline-block;
     width: 14px;
     height: 14px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.25);
     border-top-color: #ffffff;
     border-radius: 50%;
     animation: spin 0.7s linear infinite;
   }
 
   @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
+    to { transform: rotate(360deg); }
   }
 
   .hint {
     margin-top: 1.25rem;
     font-size: 0.8125rem;
-    color: var(--color-text-muted, #666666);
+    color: var(--color-text-muted);
     line-height: 1.5;
   }
 
   .error {
-    color: var(--color-error, #ff6b6b);
+    color: var(--color-error);
     font-size: 0.875rem;
     margin-top: 1rem;
     padding: 0.5rem 1rem;
-    background: rgba(255, 107, 107, 0.1);
-    border-radius: 4px;
-    border-left: 3px solid var(--color-error, #ff6b6b);
+    background: rgba(255, 69, 58, 0.08);
+    border-radius: 6px;
+    border-left: 2px solid var(--color-error);
   }
 </style>

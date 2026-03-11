@@ -23,17 +23,17 @@
     width: 100%;
     height: 100vh;
     overflow: hidden;
-    background: var(--color-bg, #0f0f0f);
+    background: var(--color-bg);
   }
 
   .content-area {
     display: grid;
-    grid-template-columns: 280px 1fr;
+    grid-template-columns: 260px 1fr;
     overflow: hidden;
   }
 
   .sidebar-container {
-    border-right: 1px solid var(--color-border, #2a2a2a);
+    border-right: 1px solid var(--color-border);
     overflow: hidden;
   }
 

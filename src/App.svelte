@@ -36,67 +36,91 @@
 {/if}
 
 <style>
-  :global(*) {
-    box-sizing: border-box;
+  /* ── Design Tokens ──────────────────────────────────────────────── */
+  :global(:root) {
+    /* Backgrounds — near-black with subtle warmth */
+    --color-bg: #0a0a0b;
+    --color-surface: #111113;
+    --color-surface-2: #18181c;
+    --color-surface-3: #1f1f25;
+
+    /* Borders — very subtle */
+    --color-border: #ffffff0f;
+    --color-border-strong: #ffffff1a;
+
+    /* Text */
+    --color-text: #f2f2f7;
+    --color-text-secondary: #aeaeb2;
+    --color-text-muted: #636366;
+
+    /* Accent — electric indigo/violet */
+    --color-accent: #7c6af7;
+    --color-accent-hover: #9b8df9;
+    --color-accent-subtle: #7c6af71a;
+
+    /* Semantic */
+    --color-error: #ff453a;
+    --color-success: #30d158;
+    --color-warning: #ffd60a;
   }
 
-  :global(body) {
-    margin: 0;
-    padding: 0;
-    font-family:
-      -apple-system,
-      BlinkMacSystemFont,
-      'Segoe UI',
-      'Roboto',
-      'Oxygen',
-      'Ubuntu',
-      'Cantarell',
-      'Fira Sans',
-      'Droid Sans',
-      'Helvetica Neue',
-      sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    background: var(--color-bg, #0f0f0f);
-    color: var(--color-text, #f0f0f0);
-
-    /* CSS custom properties for theming */
-    --color-bg: #0f0f0f;
-    --color-surface: #1a1a1a;
-    --color-border: #2a2a2a;
-    --color-text: #f0f0f0;
-    --color-text-secondary: #aaaaaa;
-    --color-text-muted: #666666;
-    --color-accent: #6b9cff;
-    --color-accent-hover: #5580e8;
-    --color-error: #ff6b6b;
+  /* ── Reset & Base ───────────────────────────────────────────────── */
+  :global(*) {
+    box-sizing: border-box;
   }
 
   :global(html) {
     height: 100%;
   }
 
+  :global(body) {
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--color-text);
+    background: var(--color-bg);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    height: 100%;
+  }
+
+  /* ── Scrollbars ─────────────────────────────────────────────────── */
+  :global(::-webkit-scrollbar) { width: 6px; height: 6px; }
+  :global(::-webkit-scrollbar-track) { background: transparent; }
+  :global(::-webkit-scrollbar-thumb) {
+    background: var(--color-border-strong);
+    border-radius: 3px;
+  }
+  :global(::-webkit-scrollbar-thumb:hover) { background: var(--color-text-muted); }
+
+  /* ── Selection ──────────────────────────────────────────────────── */
+  :global(::selection) {
+    background: var(--color-accent-subtle);
+    color: var(--color-text);
+  }
+
+  /* ── Loading screen ─────────────────────────────────────────────── */
   .loading {
     display: flex;
     align-items: center;
     justify-content: center;
     width: 100vw;
     height: 100vh;
-    background: var(--color-bg, #0f0f0f);
+    background: var(--color-bg);
   }
 
   .loading-spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid rgba(107, 156, 255, 0.2);
-    border-top-color: var(--color-accent, #6b9cff);
+    width: 28px;
+    height: 28px;
+    border: 2px solid var(--color-accent-subtle);
+    border-top-color: var(--color-accent);
     border-radius: 50%;
     animation: spin 0.7s linear infinite;
   }
 
   @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
+    to { transform: rotate(360deg); }
   }
 </style>
