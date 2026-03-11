@@ -86,7 +86,7 @@
     loadError = null
 
     try {
-      const url = convertFileSrc(pdfPath)
+      const url = convertFileSrc(decodeURIComponent(pdfPath))
       const loadTask = pdfjsLib.getDocument({ url })
       const doc = await loadTask.promise
       pdf = doc as unknown as typeof pdf
