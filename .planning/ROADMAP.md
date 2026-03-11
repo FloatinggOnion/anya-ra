@@ -9,7 +9,7 @@
 | Phase | Name | Plans | Status | Progress |
 |-------|------|-------|--------|----------|
 | 1 | Foundation | 1 | ✅ Complete | 1/1 complete |
-| 2 | Paper Management | TBD | Planned | - |
+| 2 | Paper Management | 4 | Planned | 0/4 complete |
 | 3 | PDF Viewer & Annotations | 16 | Planned | 0/16 tasks |
 | 4 | Knowledge Graph | TBD | Planned | - |
 | 5 | Writing & Export | TBD | Planned | - |
@@ -27,9 +27,24 @@
 
 **Requirements:** SETUP-01, SETUP-02, SETUP-03
 
-## Phase 2: Paper Management (Planned)
+## Phase 2: Paper Management
 
-**Goal:** Users can import, browse, and search their research papers
+**Goal:** Paper discovery via arXiv and Semantic Scholar + local PDF import. Papers appear in sidebar list. Paywall papers flagged. All metadata persists in workspace folder.
+
+**Plans:** 4 plans (3 waves)
+
+Plans:
+- [ ] phase-2/02-01-PLAN.md — Paper Type System & Storage (types, Rust storage, TypeScript services)
+- [ ] phase-2/02-02-PLAN.md — arXiv API Integration (quick-xml parsing, rate limiting)
+- [ ] phase-2/02-03-PLAN.md — Semantic Scholar & Local Import (S2 API, PDF import)
+- [ ] phase-2/02-04-PLAN.md — Paper UI (virtual list, search interface, detail view)
+
+**Wave Structure:**
+- Wave 1: Plans 01, 02 (parallel - independent foundation work)
+- Wave 2: Plan 03 (depends on Plan 01 types)
+- Wave 3: Plan 04 (depends on all APIs working)
+
+**Requirements:** PAPER-01, PAPER-02, PAPER-03, PAPER-04, PAPER-05
 
 ## Phase 3: PDF Viewer & Annotations (Planned)
 
