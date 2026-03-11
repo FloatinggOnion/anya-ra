@@ -4,7 +4,7 @@ import { OllamaProvider } from '../services/llm/ollama'
 import { invoke } from '@tauri-apps/api/core'
 
 export interface ProviderState {
-  type: 'ollama' | 'openai'
+  type: 'ollama' | 'openrouter'
   provider: LLMProvider | null
   apiKey: string | null
   error: string | null
@@ -19,21 +19,15 @@ const initialState: ProviderState = {
 
 export const providerState = writable<ProviderState>(initialState)
 
-/**
- * Initialize provider on app startup.
- * Defaults to Ollama, loads saved OpenAI key from keystore.
- */
 export async function initializeProvider(): Promise<void> {
   try {
-    // Load saved OpenAI API key from keystore
     let apiKey: string | null = null
     try {
-      apiKey = await invoke<string | null>('load_api_key', { service: 'openai' })
+      apiKey = await invoke<string | null>('load_api_key', { service: 'openrouter' })
     } catch {
       // Keystore may not be available yet — ignore
     }
 
-    // Default to Ollama
     const provider = new OllamaProvider()
     const available = await provider.isAvailable()
 
@@ -44,7 +38,7 @@ export async function initializeProvider(): Promise<void> {
         type: 'ollama',
         provider: null,
         apiKey,
-        error: 'Ollama not running. Start Ollama and refresh, or switch to OpenAI.'
+        error: 'Ollama not running. Start Ollama and refresh, or switch to OpenRouter.'
       })
     }
   } catch (err) {
@@ -55,11 +49,8 @@ export async function initializeProvider(): Promise<void> {
   }
 }
 
-/**
- * Switch between Ollama and OpenAI providers.
- */
 export async function switchProvider(
-  type: 'ollama' | 'openai',
+  type: 'ollama' | 'openrouter',
   apiKey?: string
 ): Promise<void> {
   try {
@@ -68,15 +59,11 @@ export async function switchProvider(
     if (type === 'ollama') {
       provider = new OllamaProvider()
       const available = await provider.isAvailable()
-      if (!available) {
-        throw new Error('Ollama is not running. Start Ollama and try again.')
-      }
+      if (!available) throw new Error('Ollama is not running. Start Ollama and try again.')
     } else {
-      if (!apiKey?.trim()) {
-        throw new Error('OpenAI requires an API key')
-      }
-      const { OpenAIProvider } = await import('../services/llm/openai')
-      provider = new OpenAIProvider(apiKey)
+      if (!apiKey?.trim()) throw new Error('OpenRouter requires an API key')
+      const { OpenRouterProvider } = await import('../services/llm/openrouter')
+      provider = new OpenRouterProvider(apiKey)
     }
 
     providerState.update((s) => ({
@@ -94,10 +81,7 @@ export async function switchProvider(
   }
 }
 
-/**
- * Save an API key to secure keystore and update provider state.
- */
-export async function setApiKey(service: 'openai', apiKey: string): Promise<void> {
+export async function setApiKey(service: 'openrouter', apiKey: string): Promise<void> {
   try {
     await invoke('save_api_key', { service, apiKey })
     providerState.update((s) => ({ ...s, apiKey, error: null }))

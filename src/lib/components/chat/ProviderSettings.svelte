@@ -4,7 +4,7 @@
 
   let showSettings = $state(false)
   let apiKeyInput = $state('')
-  let selectedProvider = $state<'ollama' | 'openai'>('ollama')
+  let selectedProvider = $state<'ollama' | 'openrouter'>('ollama')
   let isSwitching = $state(false)
 
   $effect(() => {
@@ -13,9 +13,7 @@
   })
 
   async function handleProviderChange() {
-    if (selectedProvider === 'openai' && !apiKeyInput.trim()) {
-      return // Don't switch without API key
-    }
+    if (selectedProvider === 'openrouter' && !apiKeyInput.trim()) return
     isSwitching = true
     try {
       await switchProvider(selectedProvider, apiKeyInput.trim() || undefined)
@@ -26,17 +24,15 @@
 
   async function handleSaveKey() {
     if (!apiKeyInput.trim()) return
-    await setApiKey('openai', apiKeyInput.trim())
-    if (selectedProvider === 'openai') {
-      await handleProviderChange()
-    }
+    await setApiKey('openrouter', apiKeyInput.trim())
+    if (selectedProvider === 'openrouter') await handleProviderChange()
   }
 </script>
 
 <div class="provider-settings">
   <button class="toggle" onclick={() => (showSettings = !showSettings)}>
     <span class="provider-label">
-      {$providerState.type === 'ollama' ? '🦙 Ollama (Local)' : '🤖 OpenAI (Cloud)'}
+      {$providerState.type === 'ollama' ? '🦙 Ollama (Local)' : '🌐 OpenRouter (Cloud)'}
     </span>
     <span class="status-dot" class:available={!!$providerState.provider}></span>
     <span class="toggle-icon">{showSettings ? '▼' : '▶'}</span>
@@ -59,32 +55,32 @@
         <label class="radio-label">
           <input
             type="radio"
-            value="openai"
+            value="openrouter"
             bind:group={selectedProvider}
             onchange={handleProviderChange}
             disabled={isSwitching}
           />
-          <span>🤖 OpenAI (Cloud)</span>
-          <span class="sub-label">GPT-4 and friends</span>
+          <span>🌐 OpenRouter (Cloud)</span>
+          <span class="sub-label">100+ models — GPT, Claude, Gemini…</span>
         </label>
       </div>
 
-      {#if selectedProvider === 'openai'}
+      {#if selectedProvider === 'openrouter'}
         <div class="api-key-section">
           <label class="key-label" for="api-key-input">API Key</label>
           <input
             id="api-key-input"
             type="password"
             bind:value={apiKeyInput}
-            placeholder="sk-..."
+            placeholder="sk-or-..."
             onblur={handleSaveKey}
           />
-          <p class="hint">🔒 Stored securely in OS keychain</p>
+          <p class="hint">🔒 Stored securely in OS keychain · <a href="https://openrouter.ai/keys" target="_blank">Get a key</a></p>
         </div>
       {/if}
 
       {#if isSwitching}
-        <div class="status-message">Switching provider...</div>
+        <div class="status-message">Switching provider…</div>
       {/if}
 
       {#if $providerState.error}
@@ -117,14 +113,9 @@
     transition: background 0.15s;
   }
 
-  .toggle:hover {
-    background: var(--color-border);
-  }
+  .toggle:hover { background: var(--color-border); }
 
-  .provider-label {
-    flex: 1;
-    font-weight: 500;
-  }
+  .provider-label { flex: 1; font-weight: 500; }
 
   .status-dot {
     width: 8px;
@@ -134,14 +125,9 @@
     flex-shrink: 0;
   }
 
-  .status-dot.available {
-    background: #4ade80;
-  }
+  .status-dot.available { background: #4ade80; }
 
-  .toggle-icon {
-    font-size: 10px;
-    color: var(--color-text-muted);
-  }
+  .toggle-icon { font-size: 10px; color: var(--color-text-muted); }
 
   .settings-panel {
     margin-top: 8px;
@@ -151,11 +137,7 @@
     border-radius: 6px;
   }
 
-  .radio-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
+  .radio-group { display: flex; flex-direction: column; gap: 8px; }
 
   .radio-label {
     display: flex;
@@ -168,15 +150,9 @@
     transition: background 0.1s;
   }
 
-  .radio-label:hover {
-    background: var(--color-bg);
-  }
+  .radio-label:hover { background: var(--color-bg); }
 
-  .sub-label {
-    font-size: 11px;
-    color: var(--color-text-muted);
-    margin-left: auto;
-  }
+  .sub-label { font-size: 11px; color: var(--color-text-muted); margin-left: auto; }
 
   .api-key-section {
     margin-top: 12px;
@@ -185,11 +161,7 @@
     gap: 4px;
   }
 
-  .key-label {
-    font-size: 12px;
-    color: var(--color-text-secondary);
-    font-weight: 500;
-  }
+  .key-label { font-size: 12px; color: var(--color-text-secondary); font-weight: 500; }
 
   .api-key-section input {
     padding: 8px 10px;
@@ -202,22 +174,12 @@
     width: 100%;
   }
 
-  .api-key-section input:focus {
-    outline: none;
-    border-color: var(--color-accent);
-  }
+  .api-key-section input:focus { outline: none; border-color: var(--color-accent); }
 
-  .hint {
-    font-size: 11px;
-    color: var(--color-text-muted);
-    margin: 0;
-  }
+  .hint { font-size: 11px; color: var(--color-text-muted); margin: 0; }
+  .hint a { color: var(--color-accent); }
 
-  .status-message {
-    margin-top: 8px;
-    font-size: 12px;
-    color: var(--color-text-secondary);
-  }
+  .status-message { margin-top: 8px; font-size: 12px; color: var(--color-text-secondary); }
 
   .error-message {
     margin-top: 8px;
