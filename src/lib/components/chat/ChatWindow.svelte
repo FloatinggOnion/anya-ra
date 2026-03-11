@@ -26,7 +26,7 @@
     const message = inputValue.trim()
     inputValue = ''
 
-    await streamChat(message, provider, { model: 'qwen2:0.5b' })
+    await streamChat(message, provider, {})
 
     // Auto-scroll to bottom after streaming
     if (chatContainer) {
