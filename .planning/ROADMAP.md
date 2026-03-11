@@ -46,38 +46,25 @@ Plans:
 
 **Requirements:** PAPER-01, PAPER-02, PAPER-03, PAPER-04, PAPER-05
 
-## Phase 3: PDF Viewer & Annotations (Planned)
+## Phase 3: PDF Viewer & Annotations ✅ Complete
 
 **Goal:** Built-in PDF viewer with highlight, sticky note, and underline annotations. Annotations persist in JSON sidecar files. 60fps rendering.
 
-**Plans:** 16 tasks in 5 milestones
+**Plans:** 16 tasks in 5 milestones — 1/1 complete
 
 Plans:
-- [ ] P3-T01 — Install dependencies & configure PDF.js worker
-- [ ] P3-T02 — Create annotation type definitions
-- [ ] P3-T03 — Create annotation Svelte store
-- [ ] P3-T04 — Scaffold test files (Wave 0)
-- [ ] P3-T05 — Create coordinate transform utilities
-- [ ] P3-T06 — Implement text selection handler
-- [ ] P3-T07 — Create annotation toolbar component
-- [ ] P3-T08 — Create SVG annotation overlay component
-- [ ] P3-T09 — Create PDF canvas component
-- [ ] P3-T10 — Integrate PDF viewer with overlay
-- [ ] P3-T11 — Implement Tauri annotation commands (Rust)
-- [ ] P3-T12 — Create annotation service layer (Frontend)
-- [ ] P3-T13 — Implement sticky note component
-- [ ] P3-T14 — Add page navigation controls
-- [ ] P3-T15 — Implement page cache with LRU eviction
-- [ ] P3-T16 — Implement zoom/scroll RAF throttling
+- [x] PLAN.md — PDF Viewing & Annotations (16 tasks, 5 milestones) ✅
+
+**Commits:** 7c1aa6f, 544097f, 88b1844, 18065e5, 8d90d2e
 
 **Requirements:** PDF-01, PDF-02, PDF-03, PDF-04, PDF-05, PDF-06
 
 **Tech Stack:**
-- `pdfjs-dist` v3.11+ (Canvas-based rendering)
-- SVG overlay for annotations
-- JSON sidecar files for persistence
-- Lazy rendering with LRU cache
-- RAF throttling for 60fps
+- `pdfjs-dist` v3.11.174 (Canvas-based rendering, Vite ?url worker)
+- SVG overlay for annotations (highlight + underline)
+- JSON sidecar files `{pdf}.annotations.json` + sha2 hash
+- LRU PageCache (10 pages), ±2 prefetch
+- RAF-throttled ViewportManager for 60fps
 
 ## Phase 4: LLM Integration (Planned)
 

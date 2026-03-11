@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v3.11
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-11T11:19:28.753Z"
+last_updated: "2026-03-11T11:57:50.028Z"
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 5
-  completed_plans: 1
+  completed_plans: 7
 ---
 
 # Project State
@@ -18,23 +18,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-11)
 
 **Core value:** Every step of the research loop — discover, read, annotate, map, write — happens in one fast, integrated application without switching tools.
-**Current focus:** Phase 2 Complete — Ready for Phase 3
+**Current focus:** Phase 3 Complete — Ready for Phase 4 (Knowledge Graph)
 
 ## Current Position
 
-Phase: 2 of 7 (Paper Management)
+Phase: 3 of 7 (PDF Viewer & Annotations)
 Plan: 1 of 1 ✅ Complete
-Status: Phase 2 Complete — Ready for Phase 3
-Last activity: 2026-03-11 — Phase 2 execution complete
+Status: Phase 3 Complete — Ready for Phase 4
+Last activity: 2026-03-11 — Phase 3 execution complete
 
-Progress: [████░░░░░░] 28% (2 of 7 phases)
+Progress: [█████░░░░░] 43% (3 of 7 phases)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
+- Total plans completed: 3
 - Average duration: 27 min
-- Total execution time: 0.87 hours
+- Total execution time: 1.36 hours
 
 **By Phase:**
 
@@ -42,6 +42,7 @@ Progress: [████░░░░░░] 28% (2 of 7 phases)
 |-------|-------|-------|----------|
 | Phase 1 | 1 | 35 min | 35 min |
 | Phase 2 | 1 | 18 min | 18 min |
+| Phase 3 | 1 | 29 min | 29 min |
 
 ## Accumulated Context
 
@@ -60,6 +61,10 @@ Recent decisions affecting current work:
 - [Phase phase-2]: Custom virtual scroll over svelte-virtual: Svelte 5 compatibility
 - [Phase phase-2]: AtomicU64 rate limiter for arXiv: const-capable, no Mutex overhead
 - [Phase phase-2]: quick-xml event reader over serde derive: reliable Atom namespace handling
+- [Phase phase-3]: pdfjs-dist@3.11 stable Vite worker pattern over v4 mjs API
+- [Phase phase-3]: SVG overlay for annotations: interactive elements, no hit-testing
+- [Phase phase-3]: Annotations stored in PDF coordinate space, canvas transform at render
+- [Phase phase-3]: JSON sidecar {pdf}.annotations.json co-located with PDF file
 
 ### Pending Todos
 
