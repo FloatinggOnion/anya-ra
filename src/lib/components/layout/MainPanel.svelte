@@ -1,10 +1,31 @@
 <script lang="ts">
   import PaperDetail from '../PaperDetail.svelte'
   import ChatWindow from '../chat/ChatWindow.svelte'
+  import PDFViewer from '../pdf/PDFViewer.svelte'
   import { selectedPaper } from '../../stores/papers'
+  import { workspace } from '../../stores/workspace'
+  import { join } from '@tauri-apps/api/path'
 
-  // Tab navigation: 'chat' or 'papers'
-  let activeTab = $state<'chat' | 'papers'>('chat')
+  // Tab navigation: 'chat', 'papers', or 'pdf'
+  let activeTab = $state<'chat' | 'papers' | 'pdf'>('chat')
+
+  // Computed absolute PDF path for the selected paper
+  let resolvedPdfPath = $state<string | null>(null)
+
+  $effect(() => {
+    const paper = $selectedPaper
+    const ws = $workspace
+    if (paper?.localPdfPath && ws?.path) {
+      // Build absolute path from workspace + relative PDF path
+      join(ws.path, paper.localPdfPath).then((p) => {
+        resolvedPdfPath = p
+        if (activeTab !== 'pdf') activeTab = 'pdf'
+      })
+    } else {
+      resolvedPdfPath = null
+      if (activeTab === 'pdf') activeTab = 'papers'
+    }
+  })
 </script>
 
 <div class="main-panel">
@@ -23,6 +44,15 @@
     >
       📄 Papers
     </button>
+    {#if resolvedPdfPath && $selectedPaper}
+      <button
+        class="tab-btn"
+        class:active={activeTab === 'pdf'}
+        onclick={() => (activeTab = 'pdf')}
+      >
+        📖 PDF
+      </button>
+    {/if}
   </div>
 
   <div class="tab-content">
@@ -38,6 +68,11 @@
           <p>Search for papers or import a PDF to get started.</p>
         </div>
       {/if}
+    {:else if activeTab === 'pdf' && resolvedPdfPath && $selectedPaper}
+      <PDFViewer
+        pdfPath={resolvedPdfPath}
+        paperId={$selectedPaper.id}
+      />
     {/if}
   </div>
 </div>
