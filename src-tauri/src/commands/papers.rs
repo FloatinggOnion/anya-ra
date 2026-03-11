@@ -289,6 +289,47 @@ fn extract_year_from_date(date_str: &str) -> i32 {
         .unwrap_or(2000)
 }
 
+// ─── Semantic Scholar search ───────────────────────────────────────────────
+
+/// Search Semantic Scholar via Rust (browser fetch() blocks custom User-Agent)
+#[command]
+pub async fn search_semantic_scholar(
+    query: String,
+    max_results: u32,
+) -> Result<String, String> {
+    use std::time::Duration;
+
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(15))
+        .user_agent("Anya/0.1.0 (research assistant)")
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let response = client
+        .get("https://api.semanticscholar.org/graph/v1/paper/search")
+        .query(&[
+            ("query", query.as_str()),
+            ("limit", &max_results.to_string()),
+            (
+                "fields",
+                "title,authors,year,abstract,url,openAccessPdf,isOpenAccess,externalIds",
+            ),
+        ])
+        .send()
+        .await
+        .map_err(|e| format!("Network error: {}", e))?;
+
+    let status = response.status();
+    if !status.is_success() {
+        if status.as_u16() == 429 {
+            return Err("Rate limit exceeded. Please wait a moment.".to_string());
+        }
+        return Err(format!("Semantic Scholar API error: {}", status.as_u16()));
+    }
+
+    response.text().await.map_err(|e| e.to_string())
+}
+
 // ─── Local PDF import ──────────────────────────────────────────────────────
 
 /// Import local PDF: copy to workspace and create metadata

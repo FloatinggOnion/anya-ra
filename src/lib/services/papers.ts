@@ -35,43 +35,19 @@ export async function searchArxiv(
 
 // ─── Semantic Scholar search ─────────────────────────────────────────────────
 
-// Rate limiting state (1 req/sec for free tier)
-let lastSemanticRequestMs = 0
-
 export async function searchSemanticScholar(
   query: string,
   options: SearchOptions = {}
 ): Promise<Paper[]> {
   const { maxResults = 20 } = options
 
-  // Rate limit: ensure at least 1 second between requests
-  const now = Date.now()
-  const elapsed = now - lastSemanticRequestMs
-  if (elapsed < 1000) {
-    await new Promise<void>((resolve) => setTimeout(resolve, 1000 - elapsed))
-  }
-  lastSemanticRequestMs = Date.now()
-
-  const url = new URL('https://api.semanticscholar.org/graph/v1/paper/search')
-  url.searchParams.set('query', query)
-  url.searchParams.set('limit', maxResults.toString())
-  url.searchParams.set(
-    'fields',
-    ['title', 'authors', 'year', 'abstract', 'url', 'openAccessPdf', 'isOpenAccess', 'externalIds'].join(',')
-  )
-
-  const response = await fetch(url.toString(), {
-    headers: { 'User-Agent': 'Anya-RA/0.1.0' },
+  // Delegate to Rust: browser fetch() blocks custom User-Agent headers
+  const rawJson = await invoke<string>('search_semantic_scholar', {
+    query,
+    maxResults,
   })
 
-  if (!response.ok) {
-    if (response.status === 429) {
-      throw new Error('Semantic Scholar rate limit exceeded. Please wait and try again.')
-    }
-    throw new Error(`Semantic Scholar API error: ${response.status}`)
-  }
-
-  const data = (await response.json()) as {
+  const data = JSON.parse(rawJson) as {
     total: number
     data: Array<{
       paperId: string
@@ -82,17 +58,13 @@ export async function searchSemanticScholar(
       url: string
       openAccessPdf: { url: string; status: string } | null
       isOpenAccess: boolean
-      externalIds: {
-        DOI?: string
-        ArXiv?: string
-        PubMed?: string
-      }
+      externalIds: { DOI?: string; ArXiv?: string; PubMed?: string }
     }>
   }
 
   const nowIso = new Date().toISOString()
 
-  return data.data.map((item) => {
+  return (data.data ?? []).map((item) => {
     const paperId = `semantic_${item.paperId}`
     const pdfUrl = item.openAccessPdf?.url ?? null
     const openAccessStatus = (item.openAccessPdf?.status?.toLowerCase() ?? null) as
@@ -107,8 +79,8 @@ export async function searchSemanticScholar(
       id: paperId,
       source: 'semantic_scholar' as const,
       externalId: item.paperId,
-      title: item.title,
-      authors: item.authors.map((a) => a.name),
+      title: item.title ?? 'Untitled',
+      authors: (item.authors ?? []).map((a) => a.name),
       year: item.year,
       abstract: item.abstract,
       url: item.url,

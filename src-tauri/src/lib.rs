@@ -16,6 +16,7 @@ pub fn run() {
             commands::papers::load_papers,
             commands::papers::delete_paper,
             commands::papers::search_arxiv,
+            commands::papers::search_semantic_scholar,
             commands::papers::import_local_pdf,
             commands::keystore::save_api_key,
             commands::keystore::load_api_key,
