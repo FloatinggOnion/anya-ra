@@ -1,0 +1,258 @@
+<script lang="ts">
+  import { selectedPaper } from '../stores/papers'
+
+  const sourceLabel: Record<string, string> = {
+    arxiv: 'arXiv',
+    semantic_scholar: 'Semantic Scholar',
+    local: 'Local',
+  }
+</script>
+
+<div class="paper-detail">
+  {#if $selectedPaper}
+    <div class="paper-content">
+      <h2 class="title">{$selectedPaper.title}</h2>
+
+      <div class="meta-section">
+        {#if $selectedPaper.authors.length > 0}
+          <div class="meta-row">
+            <span class="label">Authors</span>
+            <span class="value">{$selectedPaper.authors.join(', ')}</span>
+          </div>
+        {/if}
+        {#if $selectedPaper.year}
+          <div class="meta-row">
+            <span class="label">Year</span>
+            <span class="value">{$selectedPaper.year}</span>
+          </div>
+        {/if}
+        <div class="meta-row">
+          <span class="label">Source</span>
+          <span class="value">{sourceLabel[$selectedPaper.source] ?? $selectedPaper.source}</span>
+        </div>
+        {#if $selectedPaper.doi}
+          <div class="meta-row">
+            <span class="label">DOI</span>
+            <span class="value mono">{$selectedPaper.doi}</span>
+          </div>
+        {/if}
+        {#if $selectedPaper.arxivId}
+          <div class="meta-row">
+            <span class="label">arXiv ID</span>
+            <span class="value mono">{$selectedPaper.arxivId}</span>
+          </div>
+        {/if}
+        <div class="meta-row">
+          <span class="label">Access</span>
+          {#if $selectedPaper.isOpenAccess}
+            <span class="value oa">✓ Open Access</span>
+          {:else if $selectedPaper.pdfUrl}
+            <span class="value partial">Partial / Link available</span>
+          {:else}
+            <span class="value paywall">Paywalled — <a href={$selectedPaper.url} target="_blank" rel="noreferrer">View on source site ↗</a></span>
+          {/if}
+        </div>
+      </div>
+
+      {#if $selectedPaper.abstract}
+        <div class="abstract-section">
+          <h3>Abstract</h3>
+          <p>{$selectedPaper.abstract}</p>
+        </div>
+      {/if}
+
+      <div class="actions">
+        {#if $selectedPaper.pdfUrl}
+          <a href={$selectedPaper.pdfUrl} target="_blank" rel="noreferrer" class="btn primary">
+            View PDF ↗
+          </a>
+        {:else if !$selectedPaper.localPdfPath}
+          <!-- Paywall or no PDF: show disabled download button (Phase 3 enables download) -->
+          <button class="btn primary" disabled title="PDF download available after adding to library (Phase 3)">
+            Download PDF
+          </button>
+        {/if}
+        {#if $selectedPaper.url}
+          <a href={$selectedPaper.url} target="_blank" rel="noreferrer" class="btn secondary">
+            Source page ↗
+          </a>
+        {/if}
+      </div>
+    </div>
+  {:else}
+    <div class="empty">
+      <div class="empty-icon">📄</div>
+      <p>Select a paper to view details</p>
+    </div>
+  {/if}
+</div>
+
+<style>
+  .paper-detail {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem 2rem;
+    background: var(--color-bg, #0f0f0f);
+    height: 100%;
+    box-sizing: border-box;
+
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border, #2a2a2a) transparent;
+  }
+
+  .paper-content {
+    max-width: 800px;
+  }
+
+  .title {
+    font-size: 1.375rem;
+    font-weight: 700;
+    color: var(--color-text, #f0f0f0);
+    margin: 0 0 1.25rem 0;
+    line-height: 1.35;
+  }
+
+  .meta-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: var(--color-surface, #1a1a1a);
+    border: 1px solid var(--color-border, #2a2a2a);
+    border-radius: 0.375rem;
+  }
+
+  .meta-row {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.875rem;
+    align-items: flex-start;
+  }
+
+  .label {
+    font-weight: 600;
+    color: var(--color-text-muted, #666666);
+    min-width: 72px;
+    flex-shrink: 0;
+    font-size: 0.8125rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding-top: 0.125rem;
+  }
+
+  .value {
+    color: var(--color-text, #f0f0f0);
+    line-height: 1.4;
+  }
+
+  .value.mono {
+    font-family: monospace;
+    font-size: 0.8125rem;
+  }
+
+  .value.oa {
+    color: #4ade80;
+    font-weight: 600;
+  }
+
+  .value.partial {
+    color: #facc15;
+  }
+
+  .value.paywall {
+    color: #f87171;
+  }
+
+  .value.paywall a {
+    color: #f87171;
+    text-decoration: underline;
+  }
+
+  .abstract-section {
+    margin-bottom: 1.5rem;
+  }
+
+  .abstract-section h3 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-muted, #666666);
+    margin: 0 0 0.75rem 0;
+  }
+
+  .abstract-section p {
+    line-height: 1.7;
+    color: var(--color-text-secondary, #aaaaaa);
+    font-size: 0.9375rem;
+    margin: 0;
+  }
+
+  .actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s, opacity 0.15s;
+    border: 1px solid transparent;
+  }
+
+  .btn.primary {
+    background: var(--color-accent, #6b9cff);
+    color: #fff;
+    border-color: var(--color-accent, #6b9cff);
+  }
+
+  .btn.primary:hover:not(:disabled) {
+    background: var(--color-accent-hover, #5580e8);
+  }
+
+  .btn.primary:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .btn.secondary {
+    background: transparent;
+    color: var(--color-text-secondary, #aaaaaa);
+    border-color: var(--color-border, #2a2a2a);
+  }
+
+  .btn.secondary:hover {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--color-text, #f0f0f0);
+  }
+
+  .empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--color-text-muted, #666666);
+    gap: 0.75rem;
+    min-height: 300px;
+  }
+
+  .empty-icon {
+    font-size: 2.5rem;
+    opacity: 0.3;
+  }
+
+  .empty p {
+    margin: 0;
+    font-size: 0.9375rem;
+    color: var(--color-text-muted, #555555);
+  }
+</style>

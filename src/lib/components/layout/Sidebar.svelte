@@ -1,5 +1,7 @@
 <script lang="ts">
   import { workspace } from '../../stores/workspace'
+  import SearchBar from '../SearchBar.svelte'
+  import PaperList from '../PaperList.svelte'
 </script>
 
 <nav class="sidebar">
@@ -12,39 +14,32 @@
       </div>
     </div>
     <div class="divider"></div>
+    <!-- Paper search & list -->
+    <SearchBar />
+    <PaperList />
+  {:else}
+    <div class="section">
+      <p class="empty-state">No workspace open</p>
+    </div>
   {/if}
-
-  <div class="section">
-    <h3 class="section-title">Papers</h3>
-    <p class="empty-state">No papers yet</p>
-  </div>
-
-  <div class="section">
-    <h3 class="section-title">Notes</h3>
-    <p class="empty-state">No notes yet</p>
-  </div>
-
-  <div class="section">
-    <h3 class="section-title">Graph</h3>
-    <p class="empty-state">No connections yet</p>
-  </div>
 </nav>
 
 <style>
   .sidebar {
     display: flex;
     flex-direction: column;
-    padding: 0.75rem 0;
+    padding: 0;
     background: var(--color-surface, #1a1a1a);
     height: 100%;
-    overflow-y: auto;
+    overflow: hidden;
   }
 
   .workspace-header {
     display: flex;
     align-items: flex-start;
     gap: 0.625rem;
-    padding: 0.5rem 1rem 0.875rem;
+    padding: 0.625rem 0.75rem;
+    flex-shrink: 0;
   }
 
   .workspace-icon {

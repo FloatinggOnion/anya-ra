@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { workspace, hasWorkspace, initializeWorkspace } from './lib/stores/workspace'
+  import { papers } from './lib/stores/papers'
+  import { loadPapers } from './lib/services/papers'
   import WelcomeScreen from './lib/components/WelcomeScreen.svelte'
   import MainLayout from './lib/components/layout/MainLayout.svelte'
 
@@ -8,6 +10,17 @@
 
   onMount(async () => {
     await initializeWorkspace()
+
+    // Load existing papers from workspace on startup
+    if ($workspace) {
+      try {
+        const loaded = await loadPapers($workspace.path)
+        papers.set(loaded)
+      } catch (error) {
+        console.error('Failed to load papers:', error)
+      }
+    }
+
     isLoading = false
   })
 </script>

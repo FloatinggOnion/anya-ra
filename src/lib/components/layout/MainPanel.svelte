@@ -1,30 +1,107 @@
 <script lang="ts">
-  // Placeholder for Phase 2+: PDF viewer, editor, etc.
+  import PaperDetail from '../PaperDetail.svelte'
+  import ChatWindow from '../chat/ChatWindow.svelte'
+  import { selectedPaper } from '../../stores/papers'
+
+  // Tab navigation: 'chat' or 'papers'
+  let activeTab = $state<'chat' | 'papers'>('chat')
 </script>
 
 <div class="main-panel">
-  <div class="empty-state">
-    <div class="icon">📄</div>
-    <h2>Ready to research</h2>
-    <p>Add papers to your workspace to get started.</p>
-    <p class="coming-soon">Paper import and PDF viewer coming in Phase 2.</p>
+  <div class="tab-bar">
+    <button
+      class="tab-btn"
+      class:active={activeTab === 'chat'}
+      onclick={() => (activeTab = 'chat')}
+    >
+      💬 Chat
+    </button>
+    <button
+      class="tab-btn"
+      class:active={activeTab === 'papers'}
+      onclick={() => (activeTab = 'papers')}
+    >
+      📄 Papers
+    </button>
+  </div>
+
+  <div class="tab-content">
+    {#if activeTab === 'chat'}
+      <ChatWindow />
+    {:else if activeTab === 'papers'}
+      {#if $selectedPaper}
+        <PaperDetail />
+      {:else}
+        <div class="empty-state">
+          <div class="icon">📄</div>
+          <h2>Ready to research</h2>
+          <p>Search for papers or import a PDF to get started.</p>
+        </div>
+      {/if}
+    {/if}
   </div>
 </div>
 
 <style>
   .main-panel {
     display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    background: var(--color-bg, #0f0f0f);
+    overflow: hidden;
+  }
+
+  .tab-bar {
+    display: flex;
+    border-bottom: 1px solid var(--color-border, #2a2a2a);
+    background: var(--color-surface, #1a1a1a);
+    flex-shrink: 0;
+  }
+
+  .tab-btn {
+    padding: 10px 20px;
+    background: none;
+    border: none;
+    color: var(--color-text-secondary, #aaaaaa);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+  }
+
+  .tab-btn:hover {
+    color: var(--color-text, #f0f0f0);
+  }
+
+  .tab-btn.active {
+    color: var(--color-accent, #6b9cff);
+    border-bottom-color: var(--color-accent, #6b9cff);
+  }
+
+  .tab-content {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .tab-content :global(.paper-detail) {
+    width: 100%;
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     width: 100%;
     height: 100%;
-    background: var(--color-bg, #0f0f0f);
-  }
-
-  .empty-state {
     text-align: center;
     max-width: 400px;
     padding: 2rem;
+    margin: auto;
   }
 
   .icon {
@@ -44,12 +121,6 @@
     font-size: 0.9375rem;
     color: var(--color-text-secondary, #aaaaaa);
     line-height: 1.6;
-    margin: 0 0 0.25rem 0;
-  }
-
-  .coming-soon {
-    font-size: 0.8125rem !important;
-    color: var(--color-text-muted, #666666) !important;
-    font-style: italic;
+    margin: 0;
   }
 </style>
