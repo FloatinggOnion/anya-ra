@@ -11,9 +11,9 @@
 | 1 | Foundation | 1 | ✅ Complete | 1/1 complete |
 | 2 | Paper Management | 4 | Planned | 0/4 complete |
 | 3 | PDF Viewer & Annotations | 16 | Planned | 0/16 tasks |
-| 4 | Knowledge Graph | TBD | Planned | - |
-| 5 | Writing & Export | TBD | Planned | - |
-| 6 | LLM Integration | TBD | Planned | - |
+| 4 | LLM Integration | 5 | Planned | - |
+| 5 | Knowledge Graph | TBD | Planned | - |
+| 6 | Writing & Export | TBD | Planned | - |
 | 7 | Polish & Performance | TBD | Planned | - |
 
 ## Phase 1: Foundation
@@ -79,17 +79,40 @@ Plans:
 - Lazy rendering with LRU cache
 - RAF throttling for 60fps
 
-## Phase 4: Knowledge Graph (Planned)
+## Phase 4: LLM Integration (Planned)
+
+**Goal:** Ollama chat interface with streaming responses, user-selectable context (papers/notes), draft section suggestions with accept/reject UI, and cloud provider fallback
+
+**Plans:** 5 plans in 3 waves
+
+Plans:
+- [ ] 04-01-PLAN.md — LLM Provider abstraction + Ollama implementation + types
+- [ ] 04-02-PLAN.md — Chat store + streaming UI component
+- [ ] 04-03-PLAN.md — OpenAI provider + API key management + provider switcher
+- [ ] 04-04-PLAN.md — Context selection UI + token budgeting
+- [ ] 04-05-PLAN.md — Draft suggestions UI + chat persistence
+
+**Wave Structure:**
+- Wave 1: Plans 01, 02 (parallel - provider foundation + chat UI)
+- Wave 2: Plans 03, 04 (parallel - cloud fallback + context selection)
+- Wave 3: Plan 05 (depends on chat + context - draft suggestions + persistence)
+
+**Requirements:** LLM-01 (Ollama integration), LLM-02 (streaming chat), LLM-03 (chat UI), LLM-04 (context selection), LLM-05 (token budgeting), LLM-06 (cloud fallback), LLM-07 (draft suggestions + persistence)
+
+**Tech Stack:**
+- Browser `fetch` API for streaming (Ollama JSON-per-line, OpenAI SSE)
+- `js-tiktoken` for token counting
+- `tauri-plugin-store` for encrypted API keys
+- Ollama default model: `qwen2:0.5b` (32K context, ~2GB RAM)
+- Chat persistence: `{workspace}/chats/{chatId}.json`
+
+## Phase 5: Knowledge Graph (Planned)
 
 **Goal:** Visual knowledge graph of papers, concepts, and connections
 
-## Phase 5: Writing & Export (Planned)
+## Phase 6: Writing & Export (Planned)
 
 **Goal:** LaTeX-capable editor with export to PDF/DOCX
-
-## Phase 6: LLM Integration (Planned)
-
-**Goal:** Ollama-backed AI assistance throughout the app
 
 ## Phase 7: Polish & Performance (Planned)
 
