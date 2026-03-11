@@ -421,6 +421,7 @@ pub async fn download_pdf(url: String, dest_path: String) -> Result<(), String> 
 
     let response = client
         .get(&url)
+        .header("Accept-Encoding", "identity")
         .send()
         .await
         .map_err(|e| format!("Download failed: {}", e))?;
