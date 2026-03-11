@@ -12,6 +12,16 @@ pub fn run() {
             commands::workspace::save_workspace,
             commands::workspace::load_workspace,
             commands::workspace::get_app_data_dir,
+            commands::papers::save_paper,
+            commands::papers::load_papers,
+            commands::papers::delete_paper,
+            commands::papers::search_arxiv,
+            commands::papers::import_local_pdf,
+            commands::keystore::save_api_key,
+            commands::keystore::load_api_key,
+            commands::chat::save_chat_file,
+            commands::chat::load_chat_file,
+            commands::chat::list_chat_files,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
