@@ -17,7 +17,7 @@
         workspace.set(ws)
       }
     } catch (error) {
-      errorMessage = error instanceof Error ? error.message : 'Failed to select folder'
+      errorMessage = error instanceof Error ? error.message : String(error)
       console.error('Workspace selection error:', error)
     } finally {
       isSelecting = false

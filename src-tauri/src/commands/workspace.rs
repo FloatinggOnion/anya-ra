@@ -4,15 +4,19 @@ use crate::types::Workspace;
 
 #[command]
 pub async fn pick_folder(app: AppHandle) -> Result<Option<String>, String> {
-    use tauri_plugin_dialog::DialogExt;
+    use tauri_plugin_dialog::{DialogExt, FilePath};
     use tokio::sync::oneshot;
 
-    let (tx, rx) = oneshot::channel();
+    let (tx, rx) = oneshot::channel::<Option<String>>();
 
     app.dialog()
         .file()
         .pick_folder(move |folder| {
-            let _ = tx.send(folder.map(|p| p.to_string()));
+            let path_str = folder.map(|p| match p {
+                FilePath::Path(pb) => pb.to_string_lossy().to_string(),
+                FilePath::Url(url) => url.to_string(),
+            });
+            let _ = tx.send(path_str);
         });
 
     rx.await.map_err(|e| e.to_string())
