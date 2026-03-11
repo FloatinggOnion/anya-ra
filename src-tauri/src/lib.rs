@@ -22,6 +22,9 @@ pub fn run() {
             commands::chat::save_chat_file,
             commands::chat::load_chat_file,
             commands::chat::list_chat_files,
+            commands::annotations::load_annotations,
+            commands::annotations::save_annotations,
+            commands::annotations::compute_pdf_hash,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
