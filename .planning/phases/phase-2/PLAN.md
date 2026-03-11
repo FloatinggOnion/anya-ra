@@ -1291,7 +1291,7 @@ Create unified search bar with source filters:
 ```svelte
 <script lang="ts">
   import { searchQuery, sourceFilter, papers, addPaper } from '../stores/papers'
-  import { searchArxiv, searchSemanticScholar } from '../services/papers'
+  import { searchArxiv, searchSemanticScholar, savePaper, importLocalPdf } from '../services/papers'
   import { workspace } from '../stores/workspace'
   import type { Paper } from '../types/paper'
 
@@ -1314,8 +1314,11 @@ Create unified search bar with source filters:
         results = await searchSemanticScholar(query, { maxResults: 20 })
       }
       
-      // Add results to papers list
-      results.forEach(paper => addPaper(paper))
+      // Add results to papers list and persist to disk
+      for (const paper of results) {
+        addPaper(paper)
+        await savePaper($workspace.path, paper)
+      }
       
       // Show success message (could be toast in future)
       console.log(`Found ${results.length} papers from ${source}`)
@@ -1323,6 +1326,23 @@ Create unified search bar with source filters:
     } catch (error) {
       errorMessage = error instanceof Error ? error.message : 'Search failed'
       console.error('Search error:', error)
+    } finally {
+      isSearching = false
+    }
+  }
+
+  async function handleImportLocal() {
+    isSearching = true
+    errorMessage = null
+    
+    try {
+      const paper = await importLocalPdf($workspace.path)
+      addPaper(paper)
+      // importLocalPdf already persists via Rust command
+      console.log('Imported local PDF:', paper.title)
+    } catch (error) {
+      errorMessage = error instanceof Error ? error.message : 'Import failed'
+      console.error('Import error:', error)
     } finally {
       isSearching = false
     }
@@ -1358,6 +1378,13 @@ Create unified search bar with source filters:
       class="search-btn semantic"
     >
       Search Semantic Scholar
+    </button>
+    <button
+      onclick={handleImportLocal}
+      disabled={isSearching}
+      class="search-btn local"
+    >
+      Import Local PDF
     </button>
   </div>
 
@@ -1483,10 +1510,15 @@ Create unified search bar with source filters:
 Test in browser: search arXiv, search Semantic Scholar, verify results appear in list.
 
 **Done:**
-- Search input updates filter in real-time
-- API search buttons call respective services
-- Source filter radio buttons work
-- Error states displayed
+- [ ] Search input updates filter in real-time
+- [ ] API search buttons call respective services
+- [ ] Source filter radio buttons work
+- [ ] Error states displayed
+- [ ] Searched papers are saved to workspace folder (metadata.json created in papers/{id}/ dir)
+- [ ] After app restart, previously searched papers reload from disk and appear in paper list
+- [ ] "Import Local PDF" button visible in search/toolbar area
+- [ ] Clicking it opens native file picker (PDF filter), selected file appears in paper list
+- [ ] Imported paper persists to workspace folder after import
 
 ---
 
