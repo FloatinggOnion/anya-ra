@@ -97,6 +97,27 @@ Plans:
 
 **Goal:** Visual knowledge graph of papers, concepts, and connections
 
+**Plans:** 1 plan (9 tasks, 5 waves)
+
+Plans:
+- [ ] phase-5/PLAN.md — Knowledge Graph: @xyflow/svelte canvas, 3 custom node types, TypedEdge, Rust persistence, MainPanel tab integration, PaperDetail "Add to Graph", App.svelte init
+
+**Wave Structure:**
+- Wave 1: p5-t01 (types + install), p5-t02 (Rust commands) — parallel
+- Wave 2: p5-t03 (store + service), p5-t04 (custom node components) — parallel
+- Wave 3: p5-t05 (GraphCanvas)
+- Wave 4: p5-t06 (MainPanel tab), p5-t07 (PaperDetail button), p5-t08 (App.svelte init) — parallel
+- Wave 5: p5-t09 (polish)
+
+**Requirements:** GRAPH-01 through GRAPH-09
+
+**Tech Stack:**
+- `@xyflow/svelte` 1.5.1 (Svelte 5 native, peer: `svelte ^5.25.0`)
+- `$state.raw()` arrays (required by SvelteFlow — no deep reactivity)
+- `nodeTypes.ts` at module scope (prevents remount flicker)
+- Rust `save_graph_file` / `load_graph_file` → `{workspace}/graph.json`
+- Orphan filtering on load (paper nodes validated against papers store)
+
 ## Phase 6: Writing & Export (Planned)
 
 **Goal:** LaTeX-capable editor with export to PDF/DOCX
