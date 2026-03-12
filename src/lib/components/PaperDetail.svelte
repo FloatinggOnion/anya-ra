@@ -3,6 +3,7 @@
   import { updatePaper } from '../stores/papers'
   import { workspace } from '../stores/workspace'
   import { downloadPdfToWorkspace } from '../services/papers'
+  import { ensurePaperNode, graphNodes } from '../stores/graph'
 
   const sourceLabel: Record<string, string> = {
     arxiv: 'arXiv',
@@ -12,6 +13,12 @@
 
   let isDownloading = $state(false)
   let downloadError = $state('')
+
+  const isInGraph = $derived(
+    $graphNodes.some(
+      (n) => n.data.kind === 'paper' && (n.data as { kind: 'paper'; paperId: string }).paperId === ($selectedPaper?.id ?? '')
+    )
+  )
 
   async function handleDownload() {
     if (!$selectedPaper || !$selectedPaper.pdfUrl || !$workspace) return
@@ -117,6 +124,13 @@
             Source page ↗
           </a>
         {/if}
+        <button
+          class="add-to-graph-btn"
+          disabled={isInGraph}
+          onclick={() => $selectedPaper && ensurePaperNode($selectedPaper)}
+        >
+          {isInGraph ? '🕸 In Graph ✓' : '🕸 Add to Graph'}
+        </button>
       </div>
     </div>
   {:else}
@@ -329,5 +343,25 @@
     margin: 0;
     font-size: 0.9375rem;
     color: var(--color-text-muted, #555555);
+  }
+
+  .add-to-graph-btn {
+    background: #313244;
+    border: 1px solid #45475a;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 13px;
+    color: #cdd6f4;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .add-to-graph-btn:hover:not(:disabled) {
+    background: #45475a;
+  }
+  .add-to-graph-btn:disabled {
+    color: #a6e3a1;
+    border-color: #a6e3a1;
+    cursor: default;
+    opacity: 0.8;
   }
 </style>
