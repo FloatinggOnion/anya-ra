@@ -11,6 +11,8 @@ files_modified:
   - src/lib/components/graph/GraphCanvas.svelte
   - src/lib/components/graph/GraphToolbar.svelte
   - src/lib/components/graph/NodeEditor.svelte
+  - src/lib/components/graph/FlowController.svelte
+  - src/lib/components/graph/nodeTypes.ts
   - src/lib/components/graph/nodes/PaperNode.svelte
   - src/lib/components/graph/nodes/ConceptNode.svelte
   - src/lib/components/graph/nodes/NoteNode.svelte
@@ -297,7 +299,7 @@ cd /Users/paul/Documents/programming/anya-ra
 grep '"@xyflow/svelte"' package.json
 
 # 2. Type file compiles clean (no tsc errors on the new file)
-npx tsc --noEmit --strict src/lib/types/graph.ts 2>&1 | head -20
+pnpm run check 2>&1 | tail -5
 
 # 3. All expected exports present
 grep -E "^export (type|interface)" src/lib/types/graph.ts
@@ -307,7 +309,7 @@ grep -E "^export (type|interface)" src/lib/types/graph.ts
   <done>
 - `@xyflow/svelte` appears in `package.json` dependencies
 - `src/lib/types/graph.ts` exists and exports: `GraphNodeType`, `EdgeRelation`, `PaperNodeData`, `ConceptNodeData`, `NoteNodeData`, `AnyNodeData`, `GraphNode`, `GraphEdge`, `GraphEdgeData`, `GraphFile`
-- `npx tsc --noEmit` produces zero errors on the new file
+- `pnpm run check` produces zero errors on the new file
   </done>
 </task>
 
@@ -479,6 +481,13 @@ export const graphViewport = writable<{ x: number; y: number; zoom: number }>({
   zoom: 1,
 })
 
+/**
+ * Controls whether SvelteFlow calls fitView on init.
+ * Set to `true` on first run (no saved file) so the canvas fits all nodes.
+ * Set to `false` when a graph file is loaded — `initialViewport` takes over.
+ */
+export const graphFitOnInit = writable<boolean>(true)
+
 // ─── Persistence (debounced) ──────────────────────────────────────────────────
 
 let _saveTimer: ReturnType<typeof setTimeout> | null = null
@@ -542,11 +551,14 @@ export async function initializeGraph(): Promise<void> {
 
   const file = await loadGraph(ws.path)
   if (!file) {
-    // First run — nothing to restore
+    // First run — nothing to restore; fitView=true so canvas fits on open
     graphNodes.set([])
     graphEdges.set([])
     return
   }
+
+  // Saved file found — disable fitView so initialViewport restores the saved position
+  graphFitOnInit.set(false)
 
   const activePaperIds = new Set(get(papers).map((p) => p.id))
 
@@ -667,7 +679,7 @@ export function addNoteNode(body: string, position?: { x: number; y: number }): 
 ```bash
 cd /Users/paul/Documents/programming/anya-ra
 # TypeScript compile check
-npx tsc --noEmit 2>&1 | grep -E "graph\.(ts|svelte)" | head -20
+pnpm run check 2>&1 | tail -5
 
 # Confirm exports
 grep -E "^export" src/lib/stores/graph.ts
@@ -676,9 +688,9 @@ grep -E "^export" src/lib/services/graph.ts
   </verify>
 
   <done>
-- `src/lib/stores/graph.ts` exports: `graphNodes`, `graphEdges`, `graphViewport`, `persistGraph`, `initializeGraph`, `ensurePaperNode`, `addConceptNode`, `addNoteNode`
+- `src/lib/stores/graph.ts` exports: `graphNodes`, `graphEdges`, `graphViewport`, `graphFitOnInit`, `persistGraph`, `initializeGraph`, `ensurePaperNode`, `addConceptNode`, `addNoteNode`
 - `src/lib/services/graph.ts` exports: `loadGraph`, `saveGraph`
-- `npx tsc --noEmit` shows no errors in these files
+- `pnpm run check` shows no errors in these files
 - `persistGraph` accepts a viewport argument and debounces at 300ms
 - `initializeGraph` filters orphaned paper nodes and their attached edges
   </done>
@@ -731,7 +743,7 @@ export const edgeTypes: EdgeTypes = {
   import { selectedPaperId } from '$lib/stores/papers'
 
   // SvelteFlow passes `data` and `id` via props
-  let { data, id }: NodeProps<PaperNodeData> = $props()
+  let { data }: NodeProps<PaperNodeData> = $props()
 
   // First author, truncated at 20 chars
   const firstAuthor = $derived(
@@ -975,7 +987,7 @@ ls src/lib/components/graph/edges/
 ls src/lib/components/graph/nodeTypes.ts
 
 # TypeScript check on nodeTypes (catches component import issues early)
-npx tsc --noEmit 2>&1 | grep "graph/node" | head -10
+pnpm run check 2>&1 | tail -5
 ```
   </verify>
 
@@ -995,6 +1007,7 @@ npx tsc --noEmit 2>&1 | grep "graph/node" | head -10
   <name>p5-t05: GraphCanvas.svelte — SvelteFlow root with controlled pattern + toolbar</name>
 
   <files>
+    src/lib/components/graph/FlowController.svelte (CREATE)
     src/lib/components/graph/GraphCanvas.svelte (CREATE)
     src/lib/components/graph/GraphToolbar.svelte (CREATE)
     src/lib/components/graph/NodeEditor.svelte (CREATE)
@@ -1124,7 +1137,23 @@ Lives in a SvelteFlow `<Panel position="top-left">` inside GraphCanvas:
 </style>
 ```
 
-**Step 3 — Create `src/lib/components/graph/GraphCanvas.svelte`:**
+**Step 3 — Create `src/lib/components/graph/FlowController.svelte`:**
+
+`useSvelteFlow()` uses Svelte's `getContext()` under the hood, which only works in **child**
+components of `<SvelteFlow>`, not in the parent that renders it. This thin helper component
+calls `useSvelteFlow()` inside the SvelteFlow tree and passes the instance up via a callback prop.
+
+```svelte
+<script lang="ts">
+  import { useSvelteFlow } from '@xyflow/svelte'
+  interface Props { onready: (flow: ReturnType<typeof useSvelteFlow>) => void }
+  let { onready }: Props = $props()
+  const flow = useSvelteFlow()
+  $effect(() => { onready(flow) })
+</script>
+```
+
+**Step 4 — Create `src/lib/components/graph/GraphCanvas.svelte`:**
 
 ⚠️ **DO NOT** redefine `nodeTypes`/`edgeTypes` inside `<script>` — import from `nodeTypes.ts`.
 ⚠️ **USE** `$state.raw()` for nodes/edges arrays — `$state()` causes infinite re-renders.
@@ -1146,14 +1175,16 @@ Lives in a SvelteFlow `<Panel position="top-left">` inside GraphCanvas:
     type EdgeChange,
   } from '@xyflow/svelte'
   import '@xyflow/svelte/dist/style.css'
-  import { useSvelteFlow } from '@xyflow/svelte'
+  import type { useSvelteFlow } from '@xyflow/svelte'  // type reference only — called in FlowController child
   import { nodeTypes, edgeTypes } from './nodeTypes'
+  import FlowController from './FlowController.svelte'
   import GraphToolbar from './GraphToolbar.svelte'
   import NodeEditor from './NodeEditor.svelte'
   import {
     graphNodes,
     graphEdges,
     graphViewport,
+    graphFitOnInit,
     persistGraph,
     addConceptNode,
     addNoteNode,
@@ -1173,8 +1204,9 @@ Lives in a SvelteFlow `<Panel position="top-left">` inside GraphCanvas:
     edges = $graphEdges
   })
 
-  // ── SvelteFlow instance (for toObject / fitView) ─────────────────────────
-  const flow = useSvelteFlow()
+  // ── SvelteFlow instance (received from FlowController child via callback) ──
+  // useSvelteFlow() MUST be called inside SvelteFlow's tree — FlowController does this.
+  let flowInstance = $state.raw<ReturnType<typeof useSvelteFlow> | null>(null)
 
   // ── Node editor modal state ───────────────────────────────────────────────
   let editorMode = $state<'concept' | 'note' | null>(null)
@@ -1208,11 +1240,12 @@ Lives in a SvelteFlow `<Panel position="top-left">` inside GraphCanvas:
   }
 
   function _persist() {
+    if (!flowInstance) return  // FlowController not ready yet — skip
     try {
-      const { viewport } = flow.toObject()
+      const { viewport } = flowInstance.toObject()
       persistGraph(viewport)
     } catch {
-      // toObject may throw before SvelteFlow fully mounts — safe to ignore
+      // toObject may throw in edge cases — safe to ignore
       persistGraph({ x: 0, y: 0, zoom: 1 })
     }
   }
@@ -1226,7 +1259,8 @@ Lives in a SvelteFlow `<Panel position="top-left">` inside GraphCanvas:
 
   // ── Toolbar actions ───────────────────────────────────────────────────────
   function handleFitView() {
-    flow.fitView({ padding: 0.15 })
+    if (!flowInstance) return
+    flowInstance.fitView({ padding: 0.15 })
   }
 
   function handleAddSubmit(data: { label?: string; body: string }) {
@@ -1261,10 +1295,11 @@ Lives in a SvelteFlow `<Panel position="top-left">` inside GraphCanvas:
     {onnodedoubleclick}
     {isValidConnection}
     initialViewport={$graphViewport}
+    fitView={$graphFitOnInit}
     deleteKey="Backspace"
-    fitView
     proOptions={{ hideAttribution: true }}
   >
+    <FlowController onready={(f) => { flowInstance = f }} />
     <Background />
     <Controls />
     <MiniMap nodeStrokeWidth={3} zoomable pannable />
@@ -1300,13 +1335,14 @@ Lives in a SvelteFlow `<Panel position="top-left">` inside GraphCanvas:
   <verify>
 ```bash
 cd /Users/paul/Documents/programming/anya-ra
-# All 3 files exist
+# All 4 files exist
+ls src/lib/components/graph/FlowController.svelte
 ls src/lib/components/graph/GraphCanvas.svelte
 ls src/lib/components/graph/GraphToolbar.svelte
 ls src/lib/components/graph/NodeEditor.svelte
 
 # No tsc errors in graph components
-npx tsc --noEmit 2>&1 | grep "graph/" | head -20
+pnpm run check 2>&1 | tail -5
 
 # Confirm $state.raw usage (NOT $state()) in GraphCanvas
 grep 'state\.raw' src/lib/components/graph/GraphCanvas.svelte
@@ -1317,7 +1353,10 @@ grep 'from.*nodeTypes' src/lib/components/graph/GraphCanvas.svelte
   </verify>
 
   <done>
+- `FlowController.svelte` created — calls `useSvelteFlow()` inside SvelteFlow context and passes instance up via `onready` callback
 - `GraphCanvas.svelte` uses `$state.raw<GraphNode[]>([])` and `$state.raw<GraphEdge[]>([])` (not `$state()`)
+- `flowInstance` typed as `ReturnType<typeof useSvelteFlow> | null` via `$state.raw` — gated in `_persist()` and `handleFitView()`
+- `fitView={$graphFitOnInit}` — `true` on first run, `false` when graph file loaded (viewport restored via `initialViewport`)
 - `nodeTypes` and `edgeTypes` imported from `nodeTypes.ts`, not defined inside `<script>`
 - Root element has `height: 100%` via `.canvas-root` class
 - `deleteKey="Backspace"` enables node/edge deletion with keyboard
@@ -1404,7 +1443,7 @@ grep "GraphCanvas" src/lib/components/layout/MainPanel.svelte
 grep "activeTab.*graph\|graph.*activeTab" src/lib/components/layout/MainPanel.svelte
 
 # No tsc errors in MainPanel
-npx tsc --noEmit 2>&1 | grep "MainPanel" | head -5
+pnpm run check 2>&1 | tail -5
 ```
   </verify>
 
@@ -1495,7 +1534,7 @@ grep "Add to Graph\|In Graph" src/lib/components/PaperDetail.svelte
 grep "ensurePaperNode" src/lib/components/PaperDetail.svelte
 
 # No tsc errors
-npx tsc --noEmit 2>&1 | grep "PaperDetail" | head -5
+pnpm run check 2>&1 | tail -5
 ```
   </verify>
 
@@ -1581,7 +1620,7 @@ grep "initializeGraph" src/App.svelte
 grep -n "papers\.set\|initializeGraph" src/App.svelte
 
 # No tsc errors
-npx tsc --noEmit 2>&1 | grep "App\.svelte" | head -5
+pnpm run check 2>&1 | tail -5
 ```
   </verify>
 
@@ -1750,7 +1789,7 @@ cargo build --manifest-path src-tauri/Cargo.toml 2>&1 | grep -E "^error" | wc -l
 # Expected: 0
 
 # 3. TypeScript build
-npx tsc --noEmit 2>&1 | grep -E "^src" | wc -l
+pnpm run check 2>&1 | tail -5
 # Expected: 0
 
 # 4. Vite build
@@ -1802,7 +1841,7 @@ Phase 5 is complete when:
 
 - [ ] `pnpm build` succeeds (zero errors)
 - [ ] `cargo build` succeeds (zero errors)
-- [ ] `npx tsc --noEmit` produces zero errors
+- [ ] `pnpm run check` produces zero errors
 - [ ] "🕸 Graph" tab visible in MainPanel tab bar
 - [ ] GraphCanvas renders without zero-height bug (SvelteFlow visible, not collapsed)
 - [ ] Paper nodes auto-added via "Add to Graph" button on PaperDetail
