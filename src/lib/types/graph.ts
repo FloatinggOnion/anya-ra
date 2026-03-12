@@ -20,9 +20,9 @@ export interface ConceptNodeData {
 
 export interface NoteNodeData {
   kind: 'note'
-  paperId: string
-  annotationId: string
-  excerpt: string        // selectedText snippet
+  body: string           // free-form text OR annotation excerpt
+  paperId?: string       // optional — set for annotation-linked notes
+  annotationId?: string  // optional — set for annotation-linked notes
   color?: string
 }
 

@@ -10,7 +10,7 @@
 <div class="note-node" style={nodeData.color ? `background: ${nodeData.color}` : ''}>
   <Handle type="target" position={Position.Top} />
   <div class="badge">📝 Note</div>
-  <div class="body">{nodeData.excerpt}</div>
+  <div class="body">{nodeData.body}</div>
   <Handle type="source" position={Position.Bottom} />
 </div>
 

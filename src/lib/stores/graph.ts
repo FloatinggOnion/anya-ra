@@ -157,10 +157,9 @@ export function addConceptNode(
 }
 
 export function addNoteNode(
-  paperId: string,
-  annotationId: string,
-  excerpt: string,
-  position?: { x: number; y: number }
+  body: string,
+  position?: { x: number; y: number },
+  opts?: { paperId?: string; annotationId?: string }
 ): string {
   const id = `note-${crypto.randomUUID()}`
   graphNodes.update((nodes) => [
@@ -169,7 +168,7 @@ export function addNoteNode(
       id,
       type: 'note',
       position: position ?? { x: 400, y: 300 },
-      data: { kind: 'note', paperId, annotationId, excerpt } as AnyNodeData & Record<string, unknown>,
+      data: { kind: 'note', body, ...opts } as AnyNodeData & Record<string, unknown>,
     },
   ])
   return id
