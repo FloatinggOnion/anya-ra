@@ -1,4 +1,4 @@
-import type { Node, Edge } from '@xyflow/svelte'
+import type { Node, Edge, XYPosition } from '@xyflow/svelte'
 
 // ─── Node data discriminated unions ──────────────────────────────────────────
 
@@ -49,9 +49,25 @@ export interface GraphViewport {
   zoom: number
 }
 
+/** Lightweight serializable node used only in graph.json */
+export interface PersistedNode {
+  id: string
+  type: 'paper' | 'concept' | 'note'
+  position: XYPosition
+  data: AnyNodeData
+}
+
+/** Lightweight serializable edge used only in graph.json */
+export interface PersistedEdge {
+  id: string
+  source: string
+  target: string
+  data: AnyaEdgeData
+}
+
 export interface GraphFile {
   version: 1
-  nodes: GraphNode[]
-  edges: GraphEdge[]
+  nodes: PersistedNode[]
+  edges: PersistedEdge[]
   viewport: GraphViewport
 }
