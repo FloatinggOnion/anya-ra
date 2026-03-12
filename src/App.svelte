@@ -3,6 +3,7 @@
   import { workspace, hasWorkspace, initializeWorkspace } from './lib/stores/workspace'
   import { papers } from './lib/stores/papers'
   import { loadPapers } from './lib/services/papers'
+  import { initializeGraph } from './lib/stores/graph'
   import WelcomeScreen from './lib/components/WelcomeScreen.svelte'
   import MainLayout from './lib/components/layout/MainLayout.svelte'
 
@@ -18,6 +19,13 @@
         papers.set(loaded)
       } catch (error) {
         console.error('Failed to load papers:', error)
+      }
+
+      // Initialize graph AFTER papers — orphan filtering requires live paper list
+      try {
+        await initializeGraph()
+      } catch (error) {
+        console.error('Failed to load graph:', error)
       }
     }
 
