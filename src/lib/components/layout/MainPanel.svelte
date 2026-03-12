@@ -2,12 +2,13 @@
   import PaperDetail from '../PaperDetail.svelte'
   import ChatWindow from '../chat/ChatWindow.svelte'
   import PDFViewer from '../pdf/PDFViewer.svelte'
+  import GraphCanvas from '../graph/GraphCanvas.svelte'
   import { selectedPaper } from '../../stores/papers'
   import { workspace } from '../../stores/workspace'
   import { join } from '@tauri-apps/api/path'
 
   // Tab navigation: 'chat', 'papers', or 'pdf'
-  let activeTab = $state<'chat' | 'papers' | 'pdf'>('chat')
+  let activeTab = $state<'chat' | 'papers' | 'pdf' | 'graph'>('chat')
 
   // Computed absolute PDF path for the selected paper
   let resolvedPdfPath = $state<string | null>(null)
@@ -53,6 +54,13 @@
         📖 PDF
       </button>
     {/if}
+    <button
+      class="tab-btn"
+      class:active={activeTab === 'graph'}
+      onclick={() => (activeTab = 'graph')}
+    >
+      🕸 Graph
+    </button>
   </div>
 
   <div class="tab-content">
@@ -73,6 +81,8 @@
         pdfPath={resolvedPdfPath}
         paperId={$selectedPaper.id}
       />
+    {:else if activeTab === 'graph'}
+      <GraphCanvas />
     {/if}
   </div>
 </div>
