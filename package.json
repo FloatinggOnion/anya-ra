@@ -20,6 +20,7 @@
     "@tauri-apps/plugin-dialog": "^2",
     "@tauri-apps/plugin-fs": "^2",
     "@tauri-apps/plugin-store": "^2",
+    "@xyflow/svelte": "^1.5.1",
     "js-tiktoken": "^1.0.21",
     "pdfjs-dist": "^3.11.174",
     "svelte-virtual": "0.6.3"
