@@ -119,13 +119,32 @@
     {isValidConnection}
     initialViewport={$graphViewport}
     fitView={$graphFitOnInit}
-    deleteKey="Backspace"
+    deleteKey={['Backspace', 'Delete']}
     proOptions={{ hideAttribution: true }}
   >
     <FlowController onready={(f) => { flowInstance = f }} />
     <Background />
     <Controls />
-    <MiniMap nodeStrokeWidth={3} zoomable pannable />
+    <MiniMap
+      nodeStrokeWidth={3}
+      zoomable
+      pannable
+      nodeColor={(node) => {
+        const k = (node.data as { kind: string }).kind
+        if (k === 'paper') return '#89b4fa'
+        if (k === 'concept') return '#cba6f7'
+        if (k === 'note') return '#f9e2af'
+        return '#6c7086'
+      }}
+    />
+    {#if nodes.length === 0}
+      <Panel position="top-center">
+        <div class="empty-hint">
+          No nodes yet — use <strong>💡 Concept</strong> or <strong>📝 Note</strong> to add ideas,
+          or click <strong>🕸 Add to Graph</strong> on a paper.
+        </div>
+      </Panel>
+    {/if}
     <Panel position="top-left">
       <GraphToolbar
         onaddconcept={() => (editorMode = 'concept')}
@@ -149,5 +168,16 @@
     width: 100%;
     height: 100%;
     isolation: isolate;
+  }
+  .empty-hint {
+    background: rgba(30,30,46,0.85);
+    border: 1px solid #45475a;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 13px;
+    color: #a6adc8;
+    backdrop-filter: blur(4px);
+    margin-top: 16px;
+    pointer-events: none;
   }
 </style>

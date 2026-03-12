@@ -28,6 +28,7 @@
   {#if authorLine}
     <div class="meta">{authorLine}</div>
   {/if}
+  <div class="open-hint">↗ Double-click to open</div>
   <Handle type="source" position={Position.Bottom} />
 </div>
 
@@ -65,5 +66,15 @@
     font-size: 11px;
     color: var(--color-text-muted, #6c7086);
     margin-top: 4px;
+  }
+  .open-hint {
+    font-size: 10px;
+    color: #6c7086;
+    margin-top: 6px;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .paper-node:hover .open-hint {
+    opacity: 1;
   }
 </style>
