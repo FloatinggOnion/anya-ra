@@ -31,6 +31,8 @@ pub fn run() {
             commands::annotations::compute_pdf_hash,
             commands::graph::load_graph_file,
             commands::graph::save_graph_file,
+            commands::notes::load_notes,
+            commands::notes::save_notes,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
