@@ -37,6 +37,12 @@
 
   let flowInstance = $state.raw<ReturnType<typeof useSvelteFlow> | null>(null)
   let editorMode = $state<'concept' | 'note' | null>(null)
+  let editingNodeId = $state<string | null>(null)
+
+  // Double-click tracking
+  let lastClickTime = $state(0)
+  let lastClickedNodeId = $state<string | null>(null)
+  const DOUBLE_CLICK_THRESHOLD = 300 // ms
 
   function onconnect(connection: Connection) {
     const isDuplicate = edges.some(
@@ -76,10 +82,32 @@
     }
   }
 
-  // Single-click on paper node selects it in the sidebar
+  // Single-click on paper node selects it in the sidebar; double-click opens it or edit
   function onnodeclick({ node }: { node: GraphNode }) {
-    if (node.data.kind === 'paper') {
-      selectedPaperId.set((node.data as { kind: 'paper'; paperId: string }).paperId)
+    const now = Date.now()
+    const isDoubleClick = 
+      lastClickedNodeId === node.id && 
+      (now - lastClickTime) < DOUBLE_CLICK_THRESHOLD
+
+    if (isDoubleClick) {
+      // Handle double-click
+      if (node.data.kind === 'paper') {
+        // For papers, select in sidebar (will show in detail panel)
+        selectedPaperId.set((node.data as { kind: 'paper'; paperId: string }).paperId)
+      } else if (node.data.kind === 'note' || node.data.kind === 'concept') {
+        // For notes/concepts, open editor modal
+        editingNodeId = node.id
+        editorMode = node.data.kind === 'concept' ? 'concept' : 'note'
+      }
+      lastClickedNodeId = null
+      lastClickTime = 0
+    } else {
+      // Single click
+      if (node.data.kind === 'paper') {
+        selectedPaperId.set((node.data as { kind: 'paper'; paperId: string }).paperId)
+      }
+      lastClickedNodeId = node.id
+      lastClickTime = now
     }
   }
 
@@ -89,10 +117,31 @@
   }
 
   function handleAddSubmit(data: { label?: string; body: string }) {
-    if (editorMode === 'concept') {
-      addConceptNode(data.label ?? 'Concept', data.body)
-    } else if (editorMode === 'note') {
-      addNoteNode(data.body)
+    if (editingNodeId) {
+      // Editing existing node
+      graphNodes.update(ns =>
+        ns.map(n => {
+          if (n.id === editingNodeId) {
+            const updatedData = { ...n.data }
+            if ('label' in updatedData && data.label) {
+              updatedData.label = data.label
+            }
+            if ('body' in updatedData) {
+              updatedData.body = data.body
+            }
+            return { ...n, data: updatedData }
+          }
+          return n
+        })
+      )
+      editingNodeId = null
+    } else {
+      // Adding new node
+      if (editorMode === 'concept') {
+        addConceptNode(data.label ?? 'Concept', data.body)
+      } else if (editorMode === 'note') {
+        addNoteNode(data.body)
+      }
     }
     editorMode = null
     _persist()
@@ -158,8 +207,12 @@
 {#if editorMode}
   <NodeEditor
     mode={editorMode}
+    editingNodeId={editingNodeId}
     onsubmit={handleAddSubmit}
-    oncancel={() => (editorMode = null)}
+    oncancel={() => {
+      editorMode = null
+      editingNodeId = null
+    }}
   />
 {/if}
 

@@ -11,6 +11,7 @@
   <Handle type="target" position={Position.Top} />
   <div class="badge">📝 Note</div>
   <div class="body">{nodeData.body}</div>
+  <div class="edit-hint">↗ Double-click to edit</div>
   <Handle type="source" position={Position.Bottom} />
 </div>
 
@@ -41,5 +42,15 @@
     line-clamp: 5;
     -webkit-box-orient: vertical;
     overflow: hidden;
+  }
+  .edit-hint {
+    font-size: 10px;
+    color: #6c7086;
+    margin-top: 6px;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .note-node:hover .edit-hint {
+    opacity: 1;
   }
 </style>

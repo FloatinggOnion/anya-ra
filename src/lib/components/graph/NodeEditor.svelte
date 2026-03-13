@@ -1,13 +1,32 @@
 <script lang="ts">
+  import { graphNodes } from '../../stores/graph'
+  import { get } from 'svelte/store'
+
   interface Props {
     mode: 'concept' | 'note'
+    editingNodeId?: string | null
     onsubmit: (data: { label?: string; body: string }) => void
     oncancel: () => void
   }
 
-  let { mode, onsubmit, oncancel }: Props = $props()
+  let { mode, editingNodeId, onsubmit, oncancel }: Props = $props()
   let label = $state('')
   let body = $state('')
+
+  // Load existing node data if editing
+  $effect(() => {
+    if (editingNodeId) {
+      const node = get(graphNodes).find(n => n.id === editingNodeId)
+      if (node) {
+        const nodeData = node.data as any
+        label = nodeData.label || ''
+        body = nodeData.body || ''
+      }
+    } else {
+      label = ''
+      body = ''
+    }
+  })
 
   function handleSubmit(e: Event) {
     e.preventDefault()
@@ -15,11 +34,19 @@
     if (!body.trim() && mode === 'note') return
     onsubmit({ label: mode === 'concept' ? label : undefined, body })
   }
+
+  const isEditing = editingNodeId !== null && editingNodeId !== undefined
 </script>
 
 <div class="overlay" role="dialog" aria-modal="true">
   <div class="modal" onclick={(e) => e.stopPropagation()}>
-    <h3>{mode === 'concept' ? '💡 New Concept' : '📝 New Note'}</h3>
+    <h3>
+      {#if isEditing}
+        {mode === 'concept' ? '💡 Edit Concept' : '📝 Edit Note'}
+      {:else}
+        {mode === 'concept' ? '💡 New Concept' : '📝 New Note'}
+      {/if}
+    </h3>
     <form onsubmit={handleSubmit}>
       {#if mode === 'concept'}
         <label>
@@ -37,7 +64,7 @@
       </label>
       <div class="actions">
         <button type="button" class="cancel" onclick={oncancel}>Cancel</button>
-        <button type="submit">Add</button>
+        <button type="submit">{isEditing ? 'Save' : 'Add'}</button>
       </div>
     </form>
   </div>

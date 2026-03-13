@@ -28,7 +28,7 @@
   {#if authorLine}
     <div class="meta">{authorLine}</div>
   {/if}
-  <div class="open-hint">↗ Double-click to open</div>
+  <div class="open-hint">↗ Double-click to view</div>
   <Handle type="source" position={Position.Bottom} />
 </div>
 
