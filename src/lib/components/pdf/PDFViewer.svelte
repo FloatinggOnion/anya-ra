@@ -88,9 +88,12 @@
   async function loadPdf() {
     isLoading = true
     loadError = null
+    const startTime = performance.now()
 
     try {
       const url = convertFileSrc(decodeURIComponent(pdfPath))
+      console.debug('[PDFViewer] Loading PDF from:', url)
+      
       // Use linearized PDF loading for faster initial render
       // rangeChunkSize enables streaming for large PDFs
       const loadTask = pdfjsLib.getDocument({
@@ -99,11 +102,21 @@
         useWorkerFetch: true, // Use worker for fetching
         disableAutoFetch: false, // Fetch only needed pages initially
       })
+      
+      const docStartTime = performance.now()
       const doc = await loadTask.promise
+      const docLoadTime = performance.now() - docStartTime
+      
       pdf = doc as unknown as typeof pdf
       totalPages = doc.numPages
       currentPage = 1
       currentPageStore.set(1)
+
+      console.debug('[PDFViewer] PDF loaded', {
+        pages: totalPages,
+        loadTime: `${docLoadTime.toFixed(0)}ms`,
+        totalTime: `${(performance.now() - startTime).toFixed(0)}ms`,
+      })
 
       // Load annotations from sidecar
       await loadAnnotationsFromSidecar()
@@ -113,6 +126,8 @@
       console.error('[PDFViewer] Load error:', error)
     } finally {
       isLoading = false
+      const totalTime = performance.now() - startTime
+      console.debug('[PDFViewer] Load complete in', `${totalTime.toFixed(0)}ms`)
     }
   }
 

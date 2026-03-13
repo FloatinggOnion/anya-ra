@@ -45,6 +45,7 @@
 
     isRendering = true
     renderError = null
+    const renderStartTime = performance.now()
 
     try {
       const { canvas: renderedCanvas, viewport } = await effectiveCache.renderPage(
@@ -63,6 +64,13 @@
         ctx.clearRect(0, 0, canvasEl.width, canvasEl.height)
         ctx.drawImage(renderedCanvas, 0, 0)
       }
+
+      const renderTime = performance.now() - renderStartTime
+      console.debug('[PDFCanvas] Page rendered', {
+        page: pageNum,
+        scale: scale.toFixed(2),
+        renderTime: `${renderTime.toFixed(0)}ms`,
+      })
 
       // Prefetch adjacent pages in the background
       effectiveCache.prefetchAdjacent(
