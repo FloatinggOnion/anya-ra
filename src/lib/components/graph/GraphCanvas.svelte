@@ -33,14 +33,13 @@
   let nodes = $state.raw<GraphNode[]>([])
   let edges = $state.raw<GraphEdge[]>([])
 
-  // Track timestamps to prevent oscillation from $effect
-  let lastNodesUpdateTime = $state(0)
+  // Track whether we're currently dragging to prevent reactive effect from overwriting positions
+  let isDragging = $state(false)
 
   $effect(() => {
-    // Only sync from store if it's been > 100ms since we last updated it
-    // This prevents the store update from onnodedragstop from immediately reverting via $effect
-    const now = Date.now()
-    if (now - lastNodesUpdateTime > 100) {
+    // Don't sync from store while dragging - let SvelteFlow maintain the positions
+    // Only sync when we're not in a drag operation
+    if (!isDragging) {
       nodes = $graphNodes
     }
   })
@@ -78,18 +77,24 @@
   }
 
   // Persist node positions after drag (SvelteFlow mutates node.position in place)
+  function onnodedragstart() {
+    isDragging = true
+  }
+
   function onnodedragstop() {
     const positionsSnapshot = nodes.map(n => ({ id: n.id, pos: n.position }))
     console.debug('[graph] Node drag stopped - BEFORE store update', { positions: positionsSnapshot })
     
     // Create a deep copy to ensure positions are captured
     const nodesCopy = nodes.map(n => ({ ...n, position: { ...n.position } }))
-    lastNodesUpdateTime = Date.now()
     graphNodes.set(nodesCopy)
     
     // Verify store was updated
     const storeSnapshot = get(graphNodes).map(n => ({ id: n.id, pos: n.position }))
     console.debug('[graph] Node drag stopped - AFTER store update', { positions: storeSnapshot })
+    
+    // Re-enable reactive syncing now that drag is complete
+    isDragging = false
     
     _persist()
   }
@@ -185,6 +190,7 @@
     colorMode="dark"
     {onconnect}
     {ondelete}
+    {onnodedragstart}
     {onnodedragstop}
     {onnodeclick}
     {isValidConnection}
