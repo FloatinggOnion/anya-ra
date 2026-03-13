@@ -5,15 +5,14 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::command;
 
 use crate::types::Paper;
+use crate::workspace_paths::{get_papers_dir, get_notes_dir};
 
 // ─── Save / Load / Delete ───────────────────────────────────────────────────
 
-/// Save paper metadata to {workspace}/papers/{id}/metadata.json
+/// Save paper metadata to {workspace}/.anya/papers/{id}/metadata.json
 #[command]
 pub async fn save_paper(workspace_path: String, paper: Paper) -> Result<(), String> {
-    let paper_dir = PathBuf::from(&workspace_path)
-        .join("papers")
-        .join(&paper.id);
+    let paper_dir = get_papers_dir(&workspace_path).join(&paper.id);
 
     fs::create_dir_all(&paper_dir)
         .map_err(|e| format!("Failed to create paper dir: {}", e))?;
@@ -27,10 +26,10 @@ pub async fn save_paper(workspace_path: String, paper: Paper) -> Result<(), Stri
     Ok(())
 }
 
-/// Load all papers from {workspace}/papers/*/metadata.json
+/// Load all papers from {workspace}/.anya/papers/*/metadata.json
 #[command]
 pub async fn load_papers(workspace_path: String) -> Result<Vec<Paper>, String> {
-    let papers_dir = PathBuf::from(&workspace_path).join("papers");
+    let papers_dir = get_papers_dir(&workspace_path);
 
     if !papers_dir.exists() {
         return Ok(vec![]);
@@ -58,9 +57,7 @@ pub async fn load_papers(workspace_path: String) -> Result<Vec<Paper>, String> {
 /// Delete paper folder entirely AND its associated notes file
 #[command]
 pub async fn delete_paper(workspace_path: String, paper_id: String) -> Result<(), String> {
-    let paper_dir = PathBuf::from(&workspace_path)
-        .join("papers")
-        .join(&paper_id);
+    let paper_dir = get_papers_dir(&workspace_path).join(&paper_id);
 
     if paper_dir.exists() {
         fs::remove_dir_all(&paper_dir)
@@ -68,9 +65,7 @@ pub async fn delete_paper(workspace_path: String, paper_id: String) -> Result<()
     }
 
     // Also delete associated notes file
-    let notes_file = PathBuf::from(&workspace_path)
-        .join("notes")
-        .join(format!("{}.json", paper_id));
+    let notes_file = get_notes_dir(&workspace_path).join(format!("{}.json", paper_id));
 
     if notes_file.exists() {
         fs::remove_file(&notes_file)
@@ -366,10 +361,8 @@ pub async fn import_local_pdf(
     let sanitized = sanitize_filename(filename);
     let paper_id = format!("local_{}", sanitized);
 
-    // Create paper folder
-    let paper_dir = Path::new(&workspace_path)
-        .join("papers")
-        .join(&paper_id);
+    // Create paper folder in .anya/papers
+    let paper_dir = get_papers_dir(&workspace_path).join(&paper_id);
     fs::create_dir_all(&paper_dir)
         .map_err(|e| format!("Failed to create paper dir: {}", e))?;
 
@@ -380,7 +373,7 @@ pub async fn import_local_pdf(
 
     // Create metadata (basic info - user can edit later)
     let now = chrono::Utc::now().to_rfc3339();
-    let relative_pdf_path = format!("papers/{}/paper.pdf", paper_id);
+    let relative_pdf_path = format!(".anya/papers/{}/paper.pdf", paper_id);
 
     let paper = Paper {
         id: paper_id.clone(),

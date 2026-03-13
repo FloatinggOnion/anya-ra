@@ -1,7 +1,7 @@
 use std::fs;
-use std::path::PathBuf;
+use crate::workspace_paths::get_notes_dir;
 
-/// Load notes for a specific paper from {workspace_path}/notes/{paper_id}.json.
+/// Load notes for a specific paper from {workspace_path}/.anya/notes/{paper_id}.json.
 ///
 /// Returns `Err` if file doesn't exist — TypeScript maps this to `null`.
 /// If file exists but is invalid JSON, returns error.
@@ -9,8 +9,7 @@ use std::path::PathBuf;
 /// Called from TypeScript: `invoke('load_notes', { workspacePath, paperId })`
 #[tauri::command]
 pub fn load_notes(workspace_path: String, paper_id: String) -> Result<String, String> {
-    let notes_path = PathBuf::from(&workspace_path)
-        .join("notes")
+    let notes_path = get_notes_dir(&workspace_path)
         .join(format!("{}.json", paper_id));
 
     if !notes_path.exists() {
@@ -21,7 +20,7 @@ pub fn load_notes(workspace_path: String, paper_id: String) -> Result<String, St
         .map_err(|e| format!("Failed to read notes: {}", e))
 }
 
-/// Save notes for a specific paper to {workspace_path}/notes/{paper_id}.json.
+/// Save notes for a specific paper to {workspace_path}/.anya/notes/{paper_id}.json.
 ///
 /// Creates the notes directory if it doesn't exist.
 /// Overwrites existing notes file.
@@ -29,7 +28,7 @@ pub fn load_notes(workspace_path: String, paper_id: String) -> Result<String, St
 /// Called from TypeScript: `invoke('save_notes', { workspacePath, paperId, content })`
 #[tauri::command]
 pub fn save_notes(workspace_path: String, paper_id: String, content: String) -> Result<(), String> {
-    let notes_dir = PathBuf::from(&workspace_path).join("notes");
+    let notes_dir = get_notes_dir(&workspace_path);
 
     // Create notes directory if missing
     fs::create_dir_all(&notes_dir)
