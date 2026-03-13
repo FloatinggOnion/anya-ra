@@ -91,7 +91,14 @@
 
     try {
       const url = convertFileSrc(decodeURIComponent(pdfPath))
-      const loadTask = pdfjsLib.getDocument({ url })
+      // Use linearized PDF loading for faster initial render
+      // rangeChunkSize enables streaming for large PDFs
+      const loadTask = pdfjsLib.getDocument({
+        url,
+        rangeChunkSize: 65536, // 64KB chunks for streaming
+        useWorkerFetch: true, // Use worker for fetching
+        disableAutoFetch: false, // Fetch only needed pages initially
+      })
       const doc = await loadTask.promise
       pdf = doc as unknown as typeof pdf
       totalPages = doc.numPages
