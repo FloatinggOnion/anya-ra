@@ -5,3 +5,4 @@ pub mod chat;
 pub mod annotations;
 pub mod graph;
 pub mod notes;
+pub mod migration;

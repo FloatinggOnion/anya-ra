@@ -34,6 +34,8 @@ pub fn run() {
             commands::graph::save_graph_file,
             commands::notes::load_notes,
             commands::notes::save_notes,
+            commands::migration::check_workspace_needs_migration,
+            commands::migration::migrate_workspace_to_anya,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
