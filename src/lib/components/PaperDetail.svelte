@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { selectedPaper } from '../stores/papers'
-  import { updatePaper } from '../stores/papers'
+  import { selectedPaper, updatePaper, removePaper } from '../stores/papers'
   import { workspace } from '../stores/workspace'
-  import { downloadPdfToWorkspace } from '../services/papers'
+  import { downloadPdfToWorkspace, deletePaper } from '../services/papers'
   import { ensurePaperNode, graphNodes } from '../stores/graph'
+  import { showToast } from '../services/toast'
 
   const sourceLabel: Record<string, string> = {
     arxiv: 'arXiv',
@@ -13,6 +13,8 @@
 
   let isDownloading = $state(false)
   let downloadError = $state('')
+  let showDeleteConfirm = $state(false)
+  let isDeleting = $state(false)
 
   const isInGraph = $derived(
     $graphNodes.some(
@@ -35,6 +37,22 @@
       downloadError = err instanceof Error ? err.message : String(err)
     } finally {
       isDownloading = false
+    }
+  }
+
+  async function handleDelete() {
+    if (!$selectedPaper || !$workspace) return
+    isDeleting = true
+    try {
+      await deletePaper($workspace.path, $selectedPaper.id)
+      // Remove from papers list
+      removePaper($selectedPaper.id)
+      showToast(`Deleted "${$selectedPaper.title}"`, 'success')
+    } catch (err) {
+      showToast(`Failed to delete paper: ${err}`, 'error')
+    } finally {
+      isDeleting = false
+      showDeleteConfirm = false
     }
   }
 </script>
@@ -131,7 +149,35 @@
         >
           {isInGraph ? '🕸 In Graph ✓' : '🕸 Add to Graph'}
         </button>
+        <button
+          class="btn delete-btn"
+          onclick={() => (showDeleteConfirm = true)}
+          title="Delete this paper and its notes"
+        >
+          🗑️ Delete
+        </button>
       </div>
+
+      {#if showDeleteConfirm && $selectedPaper}
+        <div class="modal-overlay" onclick={() => (showDeleteConfirm = false)}>
+          <div class="modal" onclick={e => e.stopPropagation()}>
+            <h3>Delete Paper?</h3>
+            <p>This will permanently delete "{$selectedPaper.title}" and all its notes.</p>
+            <div class="modal-actions">
+              <button class="btn secondary" onclick={() => (showDeleteConfirm = false)}>
+                Cancel
+              </button>
+              <button
+                class="btn delete-btn"
+                onclick={handleDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      {/if}
     </div>
   {:else}
     <div class="empty">
@@ -363,5 +409,67 @@
     border-color: #a6e3a1;
     cursor: default;
     opacity: 0.8;
+  }
+
+  .delete-btn {
+    background: #3a2a2f;
+    border: 1px solid #45475a;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 13px;
+    color: #f38ba8;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .delete-btn:hover:not(:disabled) {
+    background: #45375a;
+    border-color: #f38ba8;
+  }
+
+  .delete-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9998;
+  }
+
+  .modal {
+    background: #313244;
+    border: 1px solid #45475a;
+    border-radius: 8px;
+    padding: 24px;
+    max-width: 400px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  }
+
+  .modal h3 {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    color: #cdd6f4;
+  }
+
+  .modal p {
+    margin: 0 0 20px 0;
+    font-size: 14px;
+    color: #a6adc8;
+    line-height: 1.5;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
   }
 </style>

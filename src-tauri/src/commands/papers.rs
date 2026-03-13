@@ -55,7 +55,7 @@ pub async fn load_papers(workspace_path: String) -> Result<Vec<Paper>, String> {
     Ok(papers)
 }
 
-/// Delete paper folder entirely
+/// Delete paper folder entirely AND its associated notes file
 #[command]
 pub async fn delete_paper(workspace_path: String, paper_id: String) -> Result<(), String> {
     let paper_dir = PathBuf::from(&workspace_path)
@@ -65,6 +65,16 @@ pub async fn delete_paper(workspace_path: String, paper_id: String) -> Result<()
     if paper_dir.exists() {
         fs::remove_dir_all(&paper_dir)
             .map_err(|e| format!("Failed to delete paper: {}", e))?;
+    }
+
+    // Also delete associated notes file
+    let notes_file = PathBuf::from(&workspace_path)
+        .join("notes")
+        .join(format!("{}.json", paper_id));
+
+    if notes_file.exists() {
+        fs::remove_file(&notes_file)
+            .map_err(|e| format!("Failed to delete notes: {}", e))?;
     }
 
     Ok(())

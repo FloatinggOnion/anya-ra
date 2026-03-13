@@ -7,6 +7,7 @@
   import { initializeGraph } from './lib/stores/graph'
   import WelcomeScreen from './lib/components/WelcomeScreen.svelte'
   import MainLayout from './lib/components/layout/MainLayout.svelte'
+  import Toast from './lib/components/Toast.svelte'
 
   let isLoading = $state(true)
 
@@ -50,6 +51,8 @@
 {:else}
   <WelcomeScreen />
 {/if}
+
+<Toast />
 
 <style>
   /* ── Design Tokens ──────────────────────────────────────────────── */

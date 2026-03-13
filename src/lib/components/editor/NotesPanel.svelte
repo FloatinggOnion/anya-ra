@@ -1,6 +1,7 @@
 <script lang="ts">
   import { workspace } from '../../stores/workspace'
   import { currentPaperNote, saveNote } from '../../stores/notes'
+  import { showToast } from '../../services/toast'
   import NotesEditor from './NotesEditor.svelte'
   import ExportDialog from './ExportDialog.svelte'
   import type { Paper } from '../../types/paper'
@@ -38,6 +39,7 @@
         console.log(`[NotesPanel] Auto-saved for ${paper.id}`)
       } catch (error) {
         console.error('[NotesPanel] Save failed:', error)
+        showToast('Failed to save note', 'error')
       } finally {
         isSaving = false
         pendingSave = null
@@ -45,14 +47,20 @@
     }, 300)
   }
 
-  function handleEditorBlur() {
+  async function handleEditorBlur() {
     if (pendingSave) {
       clearTimeout(pendingSave)
       pendingSave = null
     }
 
     if ($workspace && content) {
-      saveNote($workspace.path, paper.id, content)
+      try {
+        await saveNote($workspace.path, paper.id, content)
+        console.log(`[NotesPanel] Blur-saved for ${paper.id}`)
+      } catch (error) {
+        console.error('[NotesPanel] Blur-save failed:', error)
+        showToast('Failed to save note', 'error')
+      }
     }
   }
 </script>
