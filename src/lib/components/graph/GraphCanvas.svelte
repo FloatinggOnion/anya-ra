@@ -27,12 +27,23 @@
   import { selectedPaperId } from '../../stores/papers'
   import type { GraphNode, GraphEdge } from '../../types/graph'
   import { useSvelteFlow } from '@xyflow/svelte'
+  import { get } from 'svelte/store'
 
   // MUST be $state.raw — $state() causes infinite re-renders with SvelteFlow
   let nodes = $state.raw<GraphNode[]>([])
   let edges = $state.raw<GraphEdge[]>([])
 
-  $effect(() => { nodes = $graphNodes })
+  // Track timestamps to prevent oscillation from $effect
+  let lastNodesUpdateTime = $state(0)
+
+  $effect(() => {
+    // Only sync from store if it's been > 100ms since we last updated it
+    // This prevents the store update from onnodedragstop from immediately reverting via $effect
+    const now = Date.now()
+    if (now - lastNodesUpdateTime > 100) {
+      nodes = $graphNodes
+    }
+  })
   $effect(() => { edges = $graphEdges })
 
   let flowInstance = $state.raw<ReturnType<typeof useSvelteFlow> | null>(null)
@@ -68,7 +79,18 @@
 
   // Persist node positions after drag (SvelteFlow mutates node.position in place)
   function onnodedragstop() {
-    graphNodes.set(nodes)
+    const positionsSnapshot = nodes.map(n => ({ id: n.id, pos: n.position }))
+    console.debug('[graph] Node drag stopped - BEFORE store update', { positions: positionsSnapshot })
+    
+    // Create a deep copy to ensure positions are captured
+    const nodesCopy = nodes.map(n => ({ ...n, position: { ...n.position } }))
+    lastNodesUpdateTime = Date.now()
+    graphNodes.set(nodesCopy)
+    
+    // Verify store was updated
+    const storeSnapshot = get(graphNodes).map(n => ({ id: n.id, pos: n.position }))
+    console.debug('[graph] Node drag stopped - AFTER store update', { positions: storeSnapshot })
+    
     _persist()
   }
 

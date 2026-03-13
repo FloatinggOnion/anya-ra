@@ -50,7 +50,12 @@ export function persistGraph(viewport: { x: number; y: number; zoom: number }): 
 
     try {
       await saveGraph(ws.path, graphFile)
-      console.debug('[graph] Graph persisted successfully', { nodeCount: nodes.length, edgeCount: edges.length })
+      console.debug('[graph] Graph persisted successfully', {
+        nodeCount: nodes.length,
+        edgeCount: edges.length,
+        nodePositions: nodes.map(n => ({ id: n.id, pos: n.position })),
+        viewport,
+      })
     } catch (err) {
       console.error('[graph] Failed to persist graph:', err)
     }
@@ -109,6 +114,13 @@ export async function initializeGraph(): Promise<void> {
   graphNodes.set(validNodes)
   graphEdges.set(validEdges)
   graphViewport.set(file.viewport ?? { x: 0, y: 0, zoom: 1 })
+
+  console.debug('[graph] Graph initialized', {
+    nodeCount: validNodes.length,
+    edgeCount: validEdges.length,
+    nodePositions: validNodes.map(n => ({ id: n.id, pos: n.position })),
+    viewport: file.viewport,
+  })
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
