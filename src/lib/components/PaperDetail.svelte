@@ -1,6 +1,7 @@
 <script lang="ts">
   import { selectedPaper, updatePaper, removePaper } from '../stores/papers'
   import { workspace } from '../stores/workspace'
+  import { activeTab } from '../stores/ui'
   import { downloadPdfToWorkspace, deletePaper } from '../services/papers'
   import { ensurePaperNode, graphNodes, deleteNoteNodeForPaper } from '../stores/graph'
   import { showToast } from '../services/toast'
@@ -56,6 +57,10 @@
       isDeleting = false
       showDeleteConfirm = false
     }
+  }
+
+  function handleViewPdf() {
+    activeTab.set('pdf')
   }
 </script>
 
@@ -114,7 +119,9 @@
 
       <div class="actions">
         {#if $selectedPaper.localPdfPath}
-          <span class="btn secondary downloaded">✓ PDF Downloaded</span>
+          <button class="btn primary" onclick={handleViewPdf}>
+            📖 View Downloaded PDF
+          </button>
         {:else if $selectedPaper.pdfUrl}
           <a href={$selectedPaper.pdfUrl} target="_blank" rel="noreferrer" class="btn secondary">
             View PDF ↗

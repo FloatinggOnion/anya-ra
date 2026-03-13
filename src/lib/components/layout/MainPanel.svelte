@@ -5,10 +5,8 @@
   import NotesPanel from '../editor/NotesPanel.svelte'
   import { selectedPaper } from '../../stores/papers'
   import { workspace } from '../../stores/workspace'
+  import { activeTab } from '../../stores/ui'
   import { join } from '@tauri-apps/api/path'
-
-  // Tab navigation: 'chat', 'papers', 'pdf', 'notes', or 'graph'
-  let activeTab = $state<'chat' | 'papers' | 'pdf' | 'notes' | 'graph'>('chat')
 
   // Computed absolute PDF path for the selected paper
   let resolvedPdfPath = $state<string | null>(null)
@@ -24,17 +22,17 @@
       // Build absolute path from workspace + relative PDF path
       join(ws.path, paper.localPdfPath).then((p) => {
         resolvedPdfPath = p
-        if (activeTab !== 'pdf') activeTab = 'pdf'
+        if ($activeTab !== 'pdf') activeTab.set('pdf')
       })
     } else {
       resolvedPdfPath = null
-      if (activeTab === 'pdf') activeTab = 'papers'
+      if ($activeTab === 'pdf') activeTab.set('papers')
     }
   })
 
   // Lazy-load PDFViewer component when PDF tab is active
   $effect(() => {
-    if (activeTab === 'pdf' && !PDFViewerComponent) {
+    if ($activeTab === 'pdf' && !PDFViewerComponent) {
       import('../pdf/PDFViewer.svelte').then((mod) => {
         PDFViewerComponent = mod.default
       })
@@ -43,7 +41,7 @@
 
   // Lazy-load GraphCanvas component when graph tab is active
   $effect(() => {
-    if (activeTab === 'graph' && !GraphCanvasComponent) {
+    if ($activeTab === 'graph' && !GraphCanvasComponent) {
       import('../graph/GraphCanvas.svelte').then((mod) => {
         GraphCanvasComponent = mod.default
       })
@@ -55,23 +53,23 @@
   <div class="tab-bar">
     <button
       class="tab-btn"
-      class:active={activeTab === 'chat'}
-      onclick={() => (activeTab = 'chat')}
+      class:active={$activeTab === 'chat'}
+      onclick={() => activeTab.set('chat')}
     >
       💬 Chat
     </button>
     <button
       class="tab-btn"
-      class:active={activeTab === 'papers'}
-      onclick={() => (activeTab = 'papers')}
+      class:active={$activeTab === 'papers'}
+      onclick={() => activeTab.set('papers')}
     >
       📄 Papers
     </button>
     {#if resolvedPdfPath && $selectedPaper}
       <button
         class="tab-btn"
-        class:active={activeTab === 'pdf'}
-        onclick={() => (activeTab = 'pdf')}
+        class:active={$activeTab === 'pdf'}
+        onclick={() => activeTab.set('pdf')}
       >
         📖 PDF
       </button>
@@ -80,25 +78,25 @@
     {#if $selectedPaper}
       <button
         class="tab-btn"
-        class:active={activeTab === 'notes'}
-        onclick={() => (activeTab = 'notes')}
+        class:active={$activeTab === 'notes'}
+        onclick={() => activeTab.set('notes')}
       >
         📝 Notes
       </button>
     {/if}
     <button
       class="tab-btn"
-      class:active={activeTab === 'graph'}
-      onclick={() => (activeTab = 'graph')}
+      class:active={$activeTab === 'graph'}
+      onclick={() => activeTab.set('graph')}
     >
       🕸 Graph
     </button>
   </div>
 
   <div class="tab-content">
-    {#if activeTab === 'chat'}
+    {#if $activeTab === 'chat'}
       <ChatWindow />
-    {:else if activeTab === 'papers'}
+    {:else if $activeTab === 'papers'}
       {#if $selectedPaper}
         <PaperDetail />
       {:else}
@@ -108,7 +106,7 @@
           <p>Search for papers or import a PDF to get started.</p>
         </div>
       {/if}
-    {:else if activeTab === 'pdf' && resolvedPdfPath && $selectedPaper}
+    {:else if $activeTab === 'pdf' && resolvedPdfPath && $selectedPaper}
       {#if PDFViewerComponent}
         <svelte:component this={PDFViewerComponent} pdfPath={resolvedPdfPath} paperId={$selectedPaper.id} />
       {:else}
@@ -116,9 +114,9 @@
           <p>Loading PDF viewer...</p>
         </div>
       {/if}
-    {:else if activeTab === 'notes' && $selectedPaper}
+    {:else if $activeTab === 'notes' && $selectedPaper}
       <NotesPanel paper={$selectedPaper} />
-    {:else if activeTab === 'graph'}
+    {:else if $activeTab === 'graph'}
       {#if GraphCanvasComponent}
         <svelte:component this={GraphCanvasComponent} />
       {:else}
