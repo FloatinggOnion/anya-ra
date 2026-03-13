@@ -33,17 +33,14 @@
   let nodes = $state.raw<GraphNode[]>([])
   let edges = $state.raw<GraphEdge[]>([])
 
-  // Track whether we're currently dragging to prevent reactive effect from overwriting positions
-  let isDragging = $state(false)
-
-  $effect(() => {
-    // Don't sync from store while dragging - let SvelteFlow maintain the positions
-    // Only sync when we're not in a drag operation
-    if (!isDragging) {
-      nodes = $graphNodes
-    }
+  // Initialize nodes/edges from store on mount, then SvelteFlow owns them
+  let initialized = $state(false)
+  
+  onMount(async () => {
+    nodes = get(graphNodes)
+    edges = get(graphEdges)
+    initialized = true
   })
-  $effect(() => { edges = $graphEdges })
 
   let flowInstance = $state.raw<ReturnType<typeof useSvelteFlow> | null>(null)
   let editorMode = $state<'concept' | 'note' | null>(null)
@@ -77,24 +74,12 @@
   }
 
   // Persist node positions after drag (SvelteFlow mutates node.position in place)
-  function onnodedragstart() {
-    isDragging = true
-  }
-
   function onnodedragstop() {
     const positionsSnapshot = nodes.map(n => ({ id: n.id, pos: n.position }))
-    console.debug('[graph] Node drag stopped - BEFORE store update', { positions: positionsSnapshot })
+    console.debug('[graph] Node drag stopped - positions:', positionsSnapshot)
     
-    // Create a deep copy to ensure positions are captured
-    const nodesCopy = nodes.map(n => ({ ...n, position: { ...n.position } }))
-    graphNodes.set(nodesCopy)
-    
-    // Verify store was updated
-    const storeSnapshot = get(graphNodes).map(n => ({ id: n.id, pos: n.position }))
-    console.debug('[graph] Node drag stopped - AFTER store update', { positions: storeSnapshot })
-    
-    // Re-enable reactive syncing now that drag is complete
-    isDragging = false
+    // Update store with current node positions (which SvelteFlow has mutated in place)
+    graphNodes.set([...nodes])
     
     _persist()
   }
@@ -190,7 +175,6 @@
     colorMode="dark"
     {onconnect}
     {ondelete}
-    {onnodedragstart}
     {onnodedragstop}
     {onnodeclick}
     {isValidConnection}
