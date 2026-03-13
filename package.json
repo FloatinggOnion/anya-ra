@@ -27,6 +27,8 @@
     "html2canvas": "^1.4.1",
     "js-tiktoken": "^1.0.21",
     "jspdf": "^4.2.0",
+    "jszip": "^3.10.1",
+    "lunr": "^2.3.9",
     "marked": "^17.0.4",
     "minisearch": "^7.2.0",
     "pdfjs-dist": "^3.11.174",
@@ -36,6 +38,7 @@
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^5.0.0",
     "@tauri-apps/cli": "^2",
+    "@types/lunr": "^2.3.7",
     "@vitest/coverage-v8": "^4.0.18",
     "@vitest/ui": "^4.0.18",
     "jsdom": "^28.1.0",
