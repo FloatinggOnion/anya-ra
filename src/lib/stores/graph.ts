@@ -50,10 +50,11 @@ export function persistGraph(viewport: { x: number; y: number; zoom: number }): 
 
     try {
       await saveGraph(ws.path, graphFile)
+      console.debug('[graph] Graph persisted successfully', { nodeCount: nodes.length, edgeCount: edges.length })
     } catch (err) {
       console.error('[graph] Failed to persist graph:', err)
     }
-  }, 300)
+  }, 1000) // Increased from 300ms to 1000ms to ensure save completes
 }
 
 // ─── Initialization ───────────────────────────────────────────────────────────
