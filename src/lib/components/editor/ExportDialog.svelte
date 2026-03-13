@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { exportNotesToPDF, exportNotesToDOCX, downloadFile } from '../../services/notes-export'
   import type { Paper } from '../../types/paper'
   import type { Note } from '../../types/notes'
 
@@ -20,6 +19,7 @@
     exportError = ''
 
     try {
+      const { exportNotesToPDF, downloadFile } = await import('../../services/notes-export')
       const note: Note = {
         id: paper.id,
         paperId: paper.id,
@@ -47,6 +47,7 @@
     exportError = ''
 
     try {
+      const { exportNotesToDOCX, downloadFile } = await import('../../services/notes-export')
       const note: Note = {
         id: paper.id,
         paperId: paper.id,

@@ -3,9 +3,9 @@
   import { currentPaperNote, saveNote } from '../../stores/notes'
   import { ensureNoteNodeForPaper, deleteNoteNodeForPaper } from '../../stores/graph'
   import { showToast } from '../../services/toast'
-  import NotesEditor from './NotesEditor.svelte'
   import ExportDialog from './ExportDialog.svelte'
   import type { Paper } from '../../types/paper'
+  import { onMount } from 'svelte'
 
   interface Props {
     paper: Paper
@@ -17,12 +17,23 @@
   let isSaving = $state(false)
   let showExportDialog = $state(false)
   let pendingSave: ReturnType<typeof setTimeout> | null = null
+  let NotesEditorComponent: any = $state(null)
 
   $effect(() => {
     if (paper && $currentPaperNote?.notes[0]) {
       content = $currentPaperNote.notes[0].content
     } else {
       content = ''
+    }
+  })
+
+  onMount(async () => {
+    try {
+      const mod = await import('./NotesEditor.svelte')
+      NotesEditorComponent = mod.default
+    } catch (err) {
+      console.error('Failed to load NotesEditor:', err)
+      showToast('Failed to load notes editor', 'error')
     }
   })
 
@@ -96,10 +107,17 @@
   </div>
 
   <div class="editor-wrapper">
-    <NotesEditor
-      bind:content
-      onChange={debouncedSave}
-    />
+    {#if NotesEditorComponent}
+      <svelte:component
+        this={NotesEditorComponent}
+        bind:content
+        onChange={debouncedSave}
+      />
+    {:else}
+      <div class="loading-placeholder">
+        <p>Loading notes editor...</p>
+      </div>
+    {/if}
   </div>
 
   {#if showExportDialog}
@@ -181,5 +199,19 @@
     flex-direction: column;
     border-radius: 4px;
     border: 1px solid var(--color-surface-2);
+  }
+
+  .loading-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: var(--color-text-secondary, #aaaaaa);
+  }
+
+  .loading-placeholder p {
+    margin: 0;
+    font-size: 14px;
   }
 </style>

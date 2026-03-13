@@ -1,7 +1,6 @@
 <script lang="ts">
   import PaperDetail from '../PaperDetail.svelte'
   import ChatWindow from '../chat/ChatWindow.svelte'
-  import PDFViewer from '../pdf/PDFViewer.svelte'
   import GraphCanvas from '../graph/GraphCanvas.svelte'
   import NotesPanel from '../editor/NotesPanel.svelte'
   import { selectedPaper } from '../../stores/papers'
@@ -13,6 +12,10 @@
 
   // Computed absolute PDF path for the selected paper
   let resolvedPdfPath = $state<string | null>(null)
+
+  // Lazy-loaded components
+  let PDFViewerComponent: any = $state(null)
+  let GraphCanvasComponent: any = $state(null)
 
   $effect(() => {
     const paper = $selectedPaper
@@ -26,6 +29,24 @@
     } else {
       resolvedPdfPath = null
       if (activeTab === 'pdf') activeTab = 'papers'
+    }
+  })
+
+  // Lazy-load PDFViewer component when PDF tab is active
+  $effect(() => {
+    if (activeTab === 'pdf' && !PDFViewerComponent) {
+      import('../pdf/PDFViewer.svelte').then((mod) => {
+        PDFViewerComponent = mod.default
+      })
+    }
+  })
+
+  // Lazy-load GraphCanvas component when graph tab is active
+  $effect(() => {
+    if (activeTab === 'graph' && !GraphCanvasComponent) {
+      import('../graph/GraphCanvas.svelte').then((mod) => {
+        GraphCanvasComponent = mod.default
+      })
     }
   })
 </script>
@@ -88,14 +109,23 @@
         </div>
       {/if}
     {:else if activeTab === 'pdf' && resolvedPdfPath && $selectedPaper}
-      <PDFViewer
-        pdfPath={resolvedPdfPath}
-        paperId={$selectedPaper.id}
-      />
+      {#if PDFViewerComponent}
+        <svelte:component this={PDFViewerComponent} pdfPath={resolvedPdfPath} paperId={$selectedPaper.id} />
+      {:else}
+        <div class="loading-placeholder">
+          <p>Loading PDF viewer...</p>
+        </div>
+      {/if}
     {:else if activeTab === 'notes' && $selectedPaper}
       <NotesPanel paper={$selectedPaper} />
     {:else if activeTab === 'graph'}
-      <GraphCanvas />
+      {#if GraphCanvasComponent}
+        <svelte:component this={GraphCanvasComponent} />
+      {:else}
+        <div class="loading-placeholder">
+          <p>Loading graph canvas...</p>
+        </div>
+      {/if}
     {/if}
   </div>
 </div>
@@ -180,5 +210,18 @@
     color: var(--color-text-secondary, #aaaaaa);
     line-height: 1.6;
     margin: 0;
+  }
+
+  .loading-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--color-text-secondary, #aaaaaa);
+  }
+
+  .loading-placeholder p {
+    margin: 0;
+    font-size: 14px;
   }
 </style>
