@@ -94,13 +94,15 @@
       const url = convertFileSrc(decodeURIComponent(pdfPath))
       console.debug('[PDFViewer] Loading PDF from:', url)
       
-      // Use linearized PDF loading for faster initial render
-      // rangeChunkSize enables streaming for large PDFs
+      // Use smart PDF.js options for faster loading:
+      // - rangeChunkSize enables streaming for large PDFs
+      // - disableAutoFetch: true means fetch only what's needed for current view
+      // - useWorkerFetch: true offloads fetching to worker thread
       const loadTask = pdfjsLib.getDocument({
         url,
         rangeChunkSize: 65536, // 64KB chunks for streaming
         useWorkerFetch: true, // Use worker for fetching
-        disableAutoFetch: false, // Fetch only needed pages initially
+        disableAutoFetch: true, // Only fetch pages as needed (faster initial load)
       })
       
       const docStartTime = performance.now()
