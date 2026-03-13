@@ -109,7 +109,9 @@ export async function downloadPdfToWorkspace(
 ): Promise<Paper> {
   const destPath = `${workspacePath}/papers/${paper.id}/paper.pdf`
   await invoke<void>('download_pdf', { url: pdfUrl, destPath })
-  const updated: Paper = { ...paper, localPdfPath: destPath, pdfDownloaded: true }
+  // Store relative path (not absolute) to match imported PDF behavior
+  const relativePdfPath = `papers/${paper.id}/paper.pdf`
+  const updated: Paper = { ...paper, localPdfPath: relativePdfPath, pdfDownloaded: true }
   await invoke<void>('save_paper', { workspacePath, paper: updated })
   return updated
 }
