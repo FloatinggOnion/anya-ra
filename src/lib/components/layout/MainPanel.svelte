@@ -7,6 +7,7 @@
   import { workspace } from '../../stores/workspace'
   import { activeTab } from '../../stores/ui'
   import { join } from '@tauri-apps/api/path'
+  import { initPDFWorker } from '../../pdf/pdf-init'
 
   // Computed absolute PDF path for the selected paper
   let resolvedPdfPath = $state<string | null>(null)
@@ -22,6 +23,9 @@
       // Build absolute path from workspace + relative PDF path
       join(ws.path, paper.localPdfPath).then((p) => {
         resolvedPdfPath = p
+        // Preload PDF.js worker when a paper with a PDF is selected
+        // This way the worker is ready before the PDF viewer opens
+        initPDFWorker()
         if ($activeTab !== 'pdf') activeTab.set('pdf')
       })
     } else {
