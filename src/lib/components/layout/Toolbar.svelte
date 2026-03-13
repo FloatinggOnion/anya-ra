@@ -1,5 +1,6 @@
 <script lang="ts">
   import { workspace } from '../../stores/workspace'
+  import FullTextSearch from '../FullTextSearch.svelte'
 </script>
 
 <header class="toolbar">
@@ -11,7 +12,8 @@
     {/if}
   </div>
   <div class="right">
-    <span class="phase-badge">Phase 1</span>
+    <FullTextSearch />
+    <span class="phase-badge">Phase 7</span>
   </div>
 </header>
 
@@ -60,7 +62,7 @@
   .right {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 1rem;
   }
 
   .phase-badge {
