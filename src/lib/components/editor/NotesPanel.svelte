@@ -60,7 +60,7 @@
       pendingSave = null
     }
 
-    if ($workspace && content) {
+    if ($workspace) {
       try {
         await saveNote($workspace.path, paper.id, content)
         // Add/update note in graph

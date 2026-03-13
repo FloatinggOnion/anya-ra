@@ -2,6 +2,7 @@
   import CodeMirror from 'svelte-codemirror-editor'
   import { markdown } from '@codemirror/lang-markdown'
   import { EditorView } from 'codemirror'
+  import { onMount } from 'svelte'
 
   interface Props {
     content: string
@@ -9,7 +10,7 @@
   }
 
   let { content = $bindable(''), onChange } = $props()
-  let editorElement: HTMLDivElement
+  let editorElement: HTMLDivElement | undefined = $state()
 
   const theme = EditorView.theme({
     '.cm-editor': {
@@ -26,9 +27,21 @@
     },
   })
 
-  function handleBlur() {
-    onChange(content)
-  }
+  onMount(() => {
+    if (!editorElement) return
+    
+    // Find the CodeMirror editor element within the container
+    const cmEditor = editorElement.querySelector('.cm-editor')
+    if (cmEditor) {
+      cmEditor.addEventListener('blur', () => onChange(content))
+    }
+
+    return () => {
+      if (cmEditor) {
+        cmEditor.removeEventListener('blur', () => onChange(content))
+      }
+    }
+  })
 
   function handleKeydown(e: KeyboardEvent) {
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
