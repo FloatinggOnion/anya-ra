@@ -1,5 +1,4 @@
 import { activeTab } from '../stores/ui'
-import { graph } from '../stores/graph'
 import { get } from 'svelte/store'
 
 export interface KeyboardHandler {
@@ -57,21 +56,21 @@ export function createKeyboardHandlers(onToggleShortcuts: () => void) {
         // Cmd++: Zoom in
         if (isMeta && (key === '+' || key === '=')) {
           e.preventDefault()
-          graph.update(g => ({ ...g, zoom: (g.zoom || 1) * 1.2 }))
+          // TODO: Implement graph zoom in
           return
         }
 
         // Cmd+-: Zoom out
         if (isMeta && key === '-') {
           e.preventDefault()
-          graph.update(g => ({ ...g, zoom: (g.zoom || 1) / 1.2 }))
+          // TODO: Implement graph zoom out
           return
         }
 
         // Cmd+0: Reset zoom
         if (isMeta && key === '0') {
           e.preventDefault()
-          graph.update(g => ({ ...g, zoom: 1 }))
+          // TODO: Implement graph zoom reset
           return
         }
 

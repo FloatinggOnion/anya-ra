@@ -2,9 +2,11 @@ import { writable, derived } from 'svelte/store'
 import type { Workspace } from '../types/workspace'
 import { 
   loadWorkspace as loadWorkspaceFromBackend,
+} from '../services/workspace'
+import {
   checkWorkspaceNeedsMigration,
   migrateWorkspaceToAnya
-} from '../services/workspace'
+} from '../services/workspace-migration'
 
 export const workspace = writable<Workspace | null>(null)
 

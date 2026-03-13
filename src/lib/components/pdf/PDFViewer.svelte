@@ -51,6 +51,10 @@
   let selectionText = $state('')
   let selectionRects = $state<ReturnType<typeof TextSelectionHandler.prototype.getSelection>['rects']>([])
 
+  // Annotation editing state
+  let selectedAnnotationId = $state<string | null>(null)
+  let annotationEditText = $state('')
+
   // Viewer container
   let viewerEl: HTMLDivElement | undefined = $state()
   let scrollEl: HTMLDivElement | undefined = $state()
@@ -156,6 +160,10 @@
 
   function handlePageRender(vp: PDFViewport) {
     viewport = vp
+    if (scrollEl) {
+      // Attach selection handler to scroll container for text selection
+      selectionHandler.attachToElement(scrollEl, vp)
+    }
     if (viewerEl) {
       selectionHandler.updateViewport(vp)
     }
@@ -236,8 +244,22 @@
   }
 
   function handleAnnotationSelect(annotation: Annotation) {
-    // Future: open edit panel
-    console.log('[PDFViewer] Selected annotation:', annotation.id)
+    selectedAnnotationId = annotation.id
+    annotationEditText = annotation.note ?? ''
+  }
+
+  function saveAnnotationNote() {
+    if (selectedAnnotationId) {
+      updateAnnotation(selectedAnnotationId, { note: annotationEditText })
+      persistAnnotations()
+      selectedAnnotationId = null
+      annotationEditText = ''
+    }
+  }
+
+  function cancelAnnotationEdit() {
+    selectedAnnotationId = null
+    annotationEditText = ''
   }
 
   function handleNoteUpdate(id: string, content: string) {
@@ -335,6 +357,27 @@
             onCreateNote={createStickyNote}
             onDismiss={dismissToolbar}
           />
+        {/if}
+
+        <!-- Annotation editor modal (shown when annotation is selected) -->
+        {#if selectedAnnotationId}
+          <div class="modal-overlay" onclick={cancelAnnotationEdit}>
+            <div class="annotation-modal" onclick={(e) => e.stopPropagation()}>
+              <div class="modal-header">
+                <h3>Edit Annotation</h3>
+                <button class="close-btn" onclick={cancelAnnotationEdit}>✕</button>
+              </div>
+              <textarea
+                class="annotation-input"
+                placeholder="Add a note to this annotation..."
+                bind:value={annotationEditText}
+              ></textarea>
+              <div class="modal-footer">
+                <button class="btn-cancel" onclick={cancelAnnotationEdit}>Cancel</button>
+                <button class="btn-save" onclick={saveAnnotationNote}>Save</button>
+              </div>
+            </div>
+          </div>
         {/if}
       </div>
     {/if}
@@ -440,6 +483,120 @@
   }
 
   .retry-btn:hover {
+    opacity: 0.85;
+  }
+
+  /* Annotation editor modal */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+  }
+
+  .annotation-modal {
+    background: var(--color-surface, #1e1e1e);
+    border: 1px solid var(--color-border, #3a3a3a);
+    border-radius: 8px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    width: 90%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .modal-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--color-border, #3a3a3a);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .modal-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-text, #f0f0f0);
+  }
+
+  .close-btn {
+    background: none;
+    border: none;
+    color: var(--color-text-secondary, #aaaaaa);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.15s;
+  }
+
+  .close-btn:hover {
+    color: var(--color-text, #f0f0f0);
+  }
+
+  .annotation-input {
+    flex: 1;
+    padding: 12px 16px;
+    background: transparent;
+    border: none;
+    color: var(--color-text, #f0f0f0);
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100px;
+    resize: none;
+  }
+
+  .annotation-input:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .annotation-input::placeholder {
+    color: var(--color-text-muted, #666666);
+  }
+
+  .modal-footer {
+    padding: 12px 16px;
+    border-top: 1px solid var(--color-border, #3a3a3a);
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  .btn-cancel,
+  .btn-save {
+    padding: 8px 16px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.15s;
+  }
+
+  .btn-cancel {
+    background: transparent;
+    color: var(--color-text-secondary, #aaaaaa);
+    border: 1px solid var(--color-border, #3a3a3a);
+  }
+
+  .btn-cancel:hover {
+    background: var(--color-hover-bg, rgba(255, 255, 255, 0.05));
+  }
+
+  .btn-save {
+    background: var(--color-accent, #6b9cff);
+    color: white;
+  }
+
+  .btn-save:hover {
     opacity: 0.85;
   }
 </style>
