@@ -11,6 +11,7 @@ export interface KeyboardShortcut {
 export const KEYBOARD_SHORTCUTS: KeyboardShortcut[] = [
   // Global
   { keys: ['Cmd', 'K'], description: 'Open search', category: 'global' },
+  { keys: ['Cmd', '?'], description: 'Show keyboard shortcuts', category: 'global' },
   { keys: ['Cmd', '\\'], description: 'Toggle sidebar', category: 'global' },
   { keys: ['Esc'], description: 'Close modal/dropdown', category: 'global' },
 

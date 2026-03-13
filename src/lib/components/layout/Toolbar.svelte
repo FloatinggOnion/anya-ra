@@ -1,6 +1,7 @@
 <script lang="ts">
   import { workspace } from '../../stores/workspace'
   import FullTextSearch from '../FullTextSearch.svelte'
+  import ThemeToggle from '../ThemeToggle.svelte'
 </script>
 
 <header class="toolbar">
@@ -13,7 +14,8 @@
   </div>
   <div class="right">
     <FullTextSearch />
-    <span class="phase-badge">Phase 7</span>
+    <ThemeToggle />
+    <span class="phase-badge">Phase 8</span>
   </div>
 </header>
 

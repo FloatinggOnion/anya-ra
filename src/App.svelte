@@ -5,6 +5,7 @@
   import { loadPapers } from './lib/services/papers'
   import { initializeNotes } from './lib/services/notes-io'
   import { initializeGraph } from './lib/stores/graph'
+  import { initializeTheme } from './lib/stores/theme'
   import WelcomeScreen from './lib/components/WelcomeScreen.svelte'
   import MainLayout from './lib/components/layout/MainLayout.svelte'
   import Toast from './lib/components/Toast.svelte'
@@ -12,6 +13,9 @@
   let isLoading = $state(true)
 
   onMount(async () => {
+    // Initialize theme first (before other UI)
+    await initializeTheme()
+
     await initializeWorkspace()
 
     // Load existing papers from workspace on startup
@@ -40,6 +44,7 @@
 
     isLoading = false
   })
+
 </script>
 
 {#if isLoading}
@@ -57,7 +62,7 @@
 <style>
   /* ── Design Tokens ──────────────────────────────────────────────── */
   :global(:root) {
-    /* Backgrounds — near-black with subtle warmth */
+    /* Dark mode (default) — near-black with subtle warmth */
     --color-bg: #0a0a0b;
     --color-surface: #111113;
     --color-surface-2: #18181c;
@@ -81,6 +86,36 @@
     --color-error: #ff453a;
     --color-success: #30d158;
     --color-warning: #ffd60a;
+
+    /* Hover */
+    --color-hover-bg: rgba(255, 255, 255, 0.1);
+    --color-primary: #0a84ff;
+  }
+
+  /* Light mode */
+  :global(html.light) {
+    --color-bg: #ffffff;
+    --color-surface: #f5f5f7;
+    --color-surface-2: #ebebf0;
+    --color-surface-3: #e5e5ea;
+
+    --color-border: #0000000f;
+    --color-border-strong: #0000001a;
+
+    --color-text: #000000;
+    --color-text-secondary: #515154;
+    --color-text-muted: #999a9d;
+
+    --color-accent: #7c6af7;
+    --color-accent-hover: #9b8df9;
+    --color-accent-subtle: #7c6af71a;
+
+    --color-error: #ff453a;
+    --color-success: #30d158;
+    --color-warning: #d2a200;
+
+    --color-hover-bg: rgba(0, 0, 0, 0.06);
+    --color-primary: #0a84ff;
   }
 
   /* ── Reset & Base ───────────────────────────────────────────────── */

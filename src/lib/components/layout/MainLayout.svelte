@@ -4,20 +4,25 @@
   import Sidebar from './Sidebar.svelte'
   import MainPanel from './MainPanel.svelte'
   import KeyboardShortcutsPanel from '../KeyboardShortcutsPanel.svelte'
+  import { createKeyboardHandlers } from '../../services/keyboard-handler'
 
   let showShortcuts = $state(false)
 
   onMount(() => {
+    const handlers = createKeyboardHandlers(() => {
+      showShortcuts = !showShortcuts
+    })
+
     function handleKeydown(e: KeyboardEvent) {
-      // Cmd/Ctrl + K: Open shortcuts
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault()
-        showShortcuts = true
-      }
       // Esc: Close shortcuts
       if (e.key === 'Escape' && showShortcuts) {
         showShortcuts = false
+        e.preventDefault()
+        return
       }
+
+      // Delegate to keyboard handler
+      handlers.handleKeydown(e)
     }
 
     window.addEventListener('keydown', handleKeydown)
