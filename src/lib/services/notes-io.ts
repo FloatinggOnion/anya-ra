@@ -53,3 +53,16 @@ export async function saveNotes(
     throw error
   }
 }
+
+/**
+ * Initialize notes store on app startup.
+ * Currently a no-op (lazy-loads notes on paper selection).
+ * Pre-loading can be implemented later if needed.
+ */
+export async function initializeNotes(workspacePath: string): Promise<void> {
+  try {
+    console.log('[notes-io] Notes store initialized for workspace:', workspacePath)
+  } catch (error) {
+    console.error('[notes-io] Failed to initialize notes:', error)
+  }
+}

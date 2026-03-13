@@ -3,12 +3,13 @@
   import ChatWindow from '../chat/ChatWindow.svelte'
   import PDFViewer from '../pdf/PDFViewer.svelte'
   import GraphCanvas from '../graph/GraphCanvas.svelte'
+  import NotesPanel from '../editor/NotesPanel.svelte'
   import { selectedPaper } from '../../stores/papers'
   import { workspace } from '../../stores/workspace'
   import { join } from '@tauri-apps/api/path'
 
-  // Tab navigation: 'chat', 'papers', or 'pdf'
-  let activeTab = $state<'chat' | 'papers' | 'pdf' | 'graph'>('chat')
+  // Tab navigation: 'chat', 'papers', 'pdf', 'notes', or 'graph'
+  let activeTab = $state<'chat' | 'papers' | 'pdf' | 'notes' | 'graph'>('chat')
 
   // Computed absolute PDF path for the selected paper
   let resolvedPdfPath = $state<string | null>(null)
@@ -54,6 +55,16 @@
         📖 PDF
       </button>
     {/if}
+    <!-- Notes tab — conditional on paper selection -->
+    {#if $selectedPaper}
+      <button
+        class="tab-btn"
+        class:active={activeTab === 'notes'}
+        onclick={() => (activeTab = 'notes')}
+      >
+        📝 Notes
+      </button>
+    {/if}
     <button
       class="tab-btn"
       class:active={activeTab === 'graph'}
@@ -81,6 +92,8 @@
         pdfPath={resolvedPdfPath}
         paperId={$selectedPaper.id}
       />
+    {:else if activeTab === 'notes' && $selectedPaper}
+      <NotesPanel paper={$selectedPaper} />
     {:else if activeTab === 'graph'}
       <GraphCanvas />
     {/if}

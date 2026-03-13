@@ -3,6 +3,7 @@
   import { workspace, hasWorkspace, initializeWorkspace } from './lib/stores/workspace'
   import { papers } from './lib/stores/papers'
   import { loadPapers } from './lib/services/papers'
+  import { initializeNotes } from './lib/services/notes-io'
   import { initializeGraph } from './lib/stores/graph'
   import WelcomeScreen from './lib/components/WelcomeScreen.svelte'
   import MainLayout from './lib/components/layout/MainLayout.svelte'
@@ -19,6 +20,13 @@
         papers.set(loaded)
       } catch (error) {
         console.error('Failed to load papers:', error)
+      }
+
+      // Initialize notes after papers are loaded
+      try {
+        await initializeNotes($workspace.path)
+      } catch (error) {
+        console.error('Failed to initialize notes:', error)
       }
 
       // Initialize graph AFTER papers — orphan filtering requires live paper list
