@@ -5,7 +5,6 @@
    * annotation toolbar, sticky notes, page navigation, and performance caches.
    */
   import { onMount, onDestroy } from 'svelte'
-  import { convertFileSrc } from '@tauri-apps/api/core'
   import { initPDFWorker, pdfjsLib } from '../../pdf/pdf-init'
   import { PageCache } from '../../pdf/page-cache'
   import { ViewportManager } from '../../pdf/viewport-manager'
@@ -91,7 +90,9 @@
     const startTime = performance.now()
 
     try {
-      const url = convertFileSrc(decodeURIComponent(pdfPath))
+      // Use file:// protocol directly for faster access than asset://
+      // The pdfPath is an absolute filesystem path from Tauri
+      const url = `file://${pdfPath}`
       console.debug('[PDFViewer] Loading PDF from:', url)
       
       // Use smart PDF.js options for faster loading:
