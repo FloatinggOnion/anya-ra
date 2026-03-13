@@ -1,5 +1,6 @@
 <script lang="ts">
   import { workspace } from '../../stores/workspace'
+  import { showDownloadedOnly } from '../../stores/papers'
   import SearchBar from '../SearchBar.svelte'
   import PaperList from '../PaperList.svelte'
 
@@ -20,6 +21,15 @@
     <div class="divider"></div>
     <!-- Paper search & list -->
     <SearchBar />
+    <div class="filter-controls">
+      <label class="filter-toggle">
+        <input
+          type="checkbox"
+          bind:checked={$showDownloadedOnly}
+        />
+        <span>📥 Downloaded Only</span>
+      </label>
+    </div>
     <PaperList />
     <div class="sidebar-footer">
       <button class="switch-btn" onclick={switchWorkspace} title="Switch workspace">
@@ -136,5 +146,37 @@
     background: rgba(255, 255, 255, 0.04);
     color: var(--color-text);
     border-color: var(--color-accent);
+  }
+
+  .filter-controls {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--color-border, #2a2a2a);
+    flex-shrink: 0;
+  }
+
+  .filter-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    user-select: none;
+    transition: color 0.15s;
+  }
+
+  .filter-toggle:hover {
+    color: var(--color-text);
+  }
+
+  .filter-toggle input {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: var(--color-accent);
+  }
+
+  .filter-toggle span {
+    flex: 1;
   }
 </style>

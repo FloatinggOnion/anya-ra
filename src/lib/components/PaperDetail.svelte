@@ -2,7 +2,7 @@
   import { selectedPaper, updatePaper, removePaper } from '../stores/papers'
   import { workspace } from '../stores/workspace'
   import { downloadPdfToWorkspace, deletePaper } from '../services/papers'
-  import { ensurePaperNode, graphNodes } from '../stores/graph'
+  import { ensurePaperNode, graphNodes, deleteNoteNodeForPaper } from '../stores/graph'
   import { showToast } from '../services/toast'
 
   const sourceLabel: Record<string, string> = {
@@ -47,6 +47,8 @@
       await deletePaper($workspace.path, $selectedPaper.id)
       // Remove from papers list
       removePaper($selectedPaper.id)
+      // Remove note node from graph
+      deleteNoteNodeForPaper($selectedPaper.id)
       showToast(`Deleted "${$selectedPaper.title}"`, 'success')
     } catch (err) {
       showToast(`Failed to delete paper: ${err}`, 'error')

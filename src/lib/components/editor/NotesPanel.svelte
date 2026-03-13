@@ -1,6 +1,7 @@
 <script lang="ts">
   import { workspace } from '../../stores/workspace'
   import { currentPaperNote, saveNote } from '../../stores/notes'
+  import { ensureNoteNodeForPaper, deleteNoteNodeForPaper } from '../../stores/graph'
   import { showToast } from '../../services/toast'
   import NotesEditor from './NotesEditor.svelte'
   import ExportDialog from './ExportDialog.svelte'
@@ -36,6 +37,12 @@
 
       try {
         await saveNote($workspace.path, paper.id, content)
+        // Add/update note in graph
+        if (content.trim()) {
+          ensureNoteNodeForPaper(paper.id, content)
+        } else {
+          deleteNoteNodeForPaper(paper.id)
+        }
         console.log(`[NotesPanel] Auto-saved for ${paper.id}`)
       } catch (error) {
         console.error('[NotesPanel] Save failed:', error)
@@ -56,6 +63,12 @@
     if ($workspace && content) {
       try {
         await saveNote($workspace.path, paper.id, content)
+        // Add/update note in graph
+        if (content.trim()) {
+          ensureNoteNodeForPaper(paper.id, content)
+        } else {
+          deleteNoteNodeForPaper(paper.id)
+        }
         console.log(`[NotesPanel] Blur-saved for ${paper.id}`)
       } catch (error) {
         console.error('[NotesPanel] Blur-save failed:', error)

@@ -7,6 +7,7 @@ export const papers = writable<Paper[]>([])
 export const selectedPaperId = writable<string | null>(null)
 export const searchQuery = writable<string>('')
 export const sourceFilter = writable<'all' | PaperSource>('all')
+export const showDownloadedOnly = writable<boolean>(false)
 
 // ─── Derived stores ──────────────────────────────────────────────────────────
 
@@ -19,11 +20,16 @@ export const selectedPaper = derived(
   }
 )
 
-/** Papers filtered by search query and source */
+/** Papers filtered by search query, source, and download status */
 export const filteredPapers = derived(
-  [papers, searchQuery, sourceFilter],
-  ([$papers, $query, $source]) => {
+  [papers, searchQuery, sourceFilter, showDownloadedOnly],
+  ([$papers, $query, $source, $downloadedOnly]) => {
     let filtered = $papers
+
+    // Filter by download status
+    if ($downloadedOnly) {
+      filtered = filtered.filter((p) => p.pdfDownloaded || p.localPdfPath)
+    }
 
     // Filter by source
     if ($source !== 'all') {

@@ -173,3 +173,52 @@ export function addNoteNode(
   ])
   return id
 }
+
+/**
+ * Ensure a note node exists for a paper in the graph.
+ * If it already exists, update its body. If not, create it.
+ * Positions it relative to the paper node if it exists.
+ */
+export function ensureNoteNodeForPaper(paperId: string, body: string): string {
+  let existingNoteId: string | null = null
+  let paperNodeId: string | null = null
+
+  // Find existing note node and paper node
+  graphNodes.update((nodes) => {
+    paperNodeId = nodes.find((n) => n.data.kind === 'paper' && (n.data as any).paperId === paperId)?.id ?? null
+    const existing = nodes.find(
+      (n) => n.data.kind === 'note' && (n.data as any).paperId === paperId
+    )
+    if (existing) {
+      existingNoteId = existing.id
+      // Update existing note
+      return nodes.map((n) =>
+        n.id === existing.id
+          ? { ...n, data: { ...(n.data as any), body } }
+          : n
+      )
+    }
+    return nodes
+  })
+
+  // If note exists, return its ID
+  if (existingNoteId) {
+    return existingNoteId
+  }
+
+  // Otherwise, create new note node positioned below the paper node
+  const position = paperNodeId
+    ? { x: 100, y: 150 } // Relative offset from paper
+    : { x: 400, y: 300 }
+
+  return addNoteNode(body, position, { paperId })
+}
+
+/**
+ * Delete note node for a paper from the graph.
+ */
+export function deleteNoteNodeForPaper(paperId: string): void {
+  graphNodes.update((nodes) =>
+    nodes.filter((n) => !(n.data.kind === 'note' && (n.data as any).paperId === paperId))
+  )
+}
