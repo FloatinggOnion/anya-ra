@@ -1,7 +1,28 @@
 <script lang="ts">
+  import { onMount } from 'svelte'
   import Toolbar from './Toolbar.svelte'
   import Sidebar from './Sidebar.svelte'
   import MainPanel from './MainPanel.svelte'
+  import KeyboardShortcutsPanel from '../KeyboardShortcutsPanel.svelte'
+
+  let showShortcuts = $state(false)
+
+  onMount(() => {
+    function handleKeydown(e: KeyboardEvent) {
+      // Cmd/Ctrl + K: Open shortcuts
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        showShortcuts = true
+      }
+      // Esc: Close shortcuts
+      if (e.key === 'Escape' && showShortcuts) {
+        showShortcuts = false
+      }
+    }
+
+    window.addEventListener('keydown', handleKeydown)
+    return () => window.removeEventListener('keydown', handleKeydown)
+  })
 </script>
 
 <div class="main-layout">
@@ -15,6 +36,8 @@
     </main>
   </div>
 </div>
+
+<KeyboardShortcutsPanel bind:isOpen={showShortcuts} />
 
 <style>
   .main-layout {
