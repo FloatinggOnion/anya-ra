@@ -63,10 +63,14 @@
   const pageCache = new PageCache()
   let viewportManager: ViewportManager
   const selectionHandler = new TextSelectionHandler()
+  let hasMounted = $state(false)
+  let lastLoadedPath = $state<string | null>(null)
+  let loadRequestId = $state(0)
 
   // ─── Lifecycle ───────────────────────────────────────────────────────────────
 
   onMount(async () => {
+    hasMounted = true
     initPDFWorker()
 
     viewportManager = new ViewportManager((state) => {
@@ -85,28 +89,56 @@
 
   // ─── PDF Loading ─────────────────────────────────────────────────────────────
 
+  $effect(() => {
+    if (!hasMounted) return
+    const nextPath = pdfPath
+    if (nextPath && nextPath !== lastLoadedPath) {
+      void loadPdf()
+    }
+  })
+
   async function loadPdf() {
+    const requestId = ++loadRequestId
     isLoading = true
     loadError = null
+    pdf = null
+    viewport = null
+    // Cache must be per-document; clear when switching documents.
+    pageCache.clear()
+    selectionHandler.detach()
 
     try {
       // Restore known-good loading path used before recent regressions.
-      const url = convertFileSrc(decodeURIComponent(pdfPath))
+      const normalizedPath = (() => {
+        try {
+          return decodeURIComponent(pdfPath)
+        } catch {
+          return pdfPath
+        }
+      })()
+      const url = convertFileSrc(normalizedPath)
+      console.debug('[PDFViewer] load start', { paperId, pdfPath: normalizedPath, url })
       const loadTask = pdfjsLib.getDocument({ url })
       const doc = await loadTask.promise
+      if (requestId !== loadRequestId) return
       pdf = doc as unknown as typeof pdf
       totalPages = doc.numPages
       currentPage = 1
       currentPageStore.set(1)
+      lastLoadedPath = pdfPath
 
       // Load annotations from sidecar
       await loadAnnotationsFromSidecar()
+      console.debug('[PDFViewer] load success', { paperId, pages: doc.numPages })
     } catch (err) {
+      if (requestId !== loadRequestId) return
       const error = err instanceof Error ? err : new Error(String(err))
       loadError = `Failed to load PDF: ${error.message}`
       console.error('[PDFViewer] Load error:', error)
     } finally {
-      isLoading = false
+      if (requestId === loadRequestId) {
+        isLoading = false
+      }
     }
   }
 

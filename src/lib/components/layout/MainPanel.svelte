@@ -15,20 +15,36 @@
   // Lazy-loaded components
   let PDFViewerComponent: any = $state(null)
   let GraphCanvasComponent: any = $state(null)
+  let resolvePathRequest = $state(0)
+
+  function isAbsolutePath(path: string): boolean {
+    return path.startsWith('/') || /^[A-Za-z]:[\\/]/.test(path)
+  }
 
   $effect(() => {
     const paper = $selectedPaper
     const ws = $workspace
     if (paper?.localPdfPath && ws?.path) {
-      // Build absolute path from workspace + relative PDF path
-      join(ws.path, paper.localPdfPath).then((p) => {
-        resolvedPdfPath = p
-        // Preload PDF.js worker when a paper with a PDF is selected
-        // This way the worker is ready before the PDF viewer opens
+      const requestId = ++resolvePathRequest
+      const localPath = paper.localPdfPath
+
+      const assignResolved = (path: string) => {
+        // Ignore stale async resolutions from previous paper selections.
+        if (requestId !== resolvePathRequest) return
+        resolvedPdfPath = path
         initPDFWorker()
         if ($activeTab !== 'pdf') activeTab.set('pdf')
-      })
+      }
+
+      // Handle legacy metadata that stored absolute paths.
+      if (isAbsolutePath(localPath)) {
+        assignResolved(localPath)
+      } else {
+        // Build absolute path from workspace + relative PDF path.
+        join(ws.path, localPath).then(assignResolved)
+      }
     } else {
+      resolvePathRequest++
       resolvedPdfPath = null
       if ($activeTab === 'pdf') activeTab.set('papers')
     }
@@ -112,7 +128,9 @@
       {/if}
     {:else if $activeTab === 'pdf' && resolvedPdfPath && $selectedPaper}
       {#if PDFViewerComponent}
-        <svelte:component this={PDFViewerComponent} pdfPath={resolvedPdfPath} paperId={$selectedPaper.id} />
+        {#key `${$selectedPaper.id}:${resolvedPdfPath}`}
+          <PDFViewerComponent pdfPath={resolvedPdfPath} paperId={$selectedPaper.id} />
+        {/key}
       {:else}
         <div class="loading-placeholder">
           <p>Loading PDF viewer...</p>
@@ -122,7 +140,7 @@
       <NotesPanel paper={$selectedPaper} />
     {:else if $activeTab === 'graph'}
       {#if GraphCanvasComponent}
-        <svelte:component this={GraphCanvasComponent} />
+        <GraphCanvasComponent />
       {:else}
         <div class="loading-placeholder">
           <p>Loading graph canvas...</p>

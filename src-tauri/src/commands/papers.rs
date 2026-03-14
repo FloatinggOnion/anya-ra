@@ -43,7 +43,13 @@ pub async fn load_papers(workspace_path: String) -> Result<Vec<Paper>, String> {
         if metadata_path.exists() {
             match fs::read_to_string(&metadata_path) {
                 Ok(json) => match serde_json::from_str::<Paper>(&json) {
-                    Ok(paper) => papers.push(paper),
+                    Ok(mut paper) => {
+                        if let Some(ref local_path) = paper.local_pdf_path.clone() {
+                            paper.local_pdf_path =
+                                normalize_local_pdf_path(&workspace_path, local_path);
+                        }
+                        papers.push(paper)
+                    }
                     Err(e) => eprintln!("Skipping malformed metadata at {:?}: {}", metadata_path, e),
                 },
                 Err(e) => eprintln!("Failed to read {:?}: {}", metadata_path, e),
@@ -52,6 +58,20 @@ pub async fn load_papers(workspace_path: String) -> Result<Vec<Paper>, String> {
     }
 
     Ok(papers)
+}
+
+fn normalize_local_pdf_path(workspace_path: &str, local_pdf_path: &str) -> Option<String> {
+    let path = PathBuf::from(local_pdf_path);
+    if !path.is_absolute() {
+        return Some(local_pdf_path.to_string());
+    }
+
+    let workspace = Path::new(workspace_path);
+    if let Ok(relative) = path.strip_prefix(workspace) {
+        return Some(relative.to_string_lossy().replace('\\', "/"));
+    }
+
+    Some(local_pdf_path.to_string())
 }
 
 /// Delete paper folder entirely AND its associated notes file
