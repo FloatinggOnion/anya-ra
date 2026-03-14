@@ -5,8 +5,8 @@
    * annotation toolbar, sticky notes, page navigation, and performance caches.
    */
   import { onMount, onDestroy } from 'svelte'
-  import { convertFileSrc } from '@tauri-apps/api/core'
-  import { initPDFWorker, pdfjsLib } from '../../pdf/pdf-init'
+  import { initPDFWorker } from '../../pdf/pdf-init'
+  import { loadPdfWithFallback, withTimeout } from '../../pdf/document-loader'
   import { PageCache } from '../../pdf/page-cache'
   import { ViewportManager } from '../../pdf/viewport-manager'
   import { TextSelectionHandler } from '../../pdf/text-selection'
@@ -91,26 +91,13 @@
     const startTime = performance.now()
 
     try {
-      // Use convertFileSrc to convert filesystem path to asset:// URL
-      // This is required by Tauri for proper file access
-      const url = convertFileSrc(decodeURIComponent(pdfPath))
-      console.debug('[PDFViewer] Loading PDF from:', url)
-      
-      // Use smart PDF.js options for faster loading:
-      // - rangeChunkSize enables streaming for large PDFs
-      // - disableAutoFetch: true means fetch only what's needed for current view
-      // - useWorkerFetch: true offloads fetching to worker thread
-      const loadTask = pdfjsLib.getDocument({
-        url,
-        rangeChunkSize: 65536, // 64KB chunks for streaming
-        useWorkerFetch: true, // Use worker for fetching
-        disableAutoFetch: true, // Only fetch pages as needed (faster initial load)
-      })
-      
+      // Reliability-first loading:
+      // 1) asset:// URL (known stable in Tauri)
+      // 2) binary-data fallback if URL path hangs/fails
       const docStartTime = performance.now()
-      const doc = await loadTask.promise
+      const { doc, source } = await loadPdfWithFallback(pdfPath)
       const docLoadTime = performance.now() - docStartTime
-      
+
       pdf = doc as unknown as typeof pdf
       totalPages = doc.numPages
       currentPage = 1
@@ -118,12 +105,14 @@
 
       console.debug('[PDFViewer] PDF loaded', {
         pages: totalPages,
+        source,
         loadTime: `${docLoadTime.toFixed(0)}ms`,
         totalTime: `${(performance.now() - startTime).toFixed(0)}ms`,
       })
 
-      // Load annotations from sidecar
-      await loadAnnotationsFromSidecar()
+      // Sidecar loading should never keep the main PDF spinner active.
+      // Run it with a short timeout and swallow failures.
+      void loadAnnotationsFromSidecar()
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err))
       loadError = `Failed to load PDF: ${error.message}`
@@ -137,7 +126,7 @@
 
   async function loadAnnotationsFromSidecar() {
     try {
-      const sidecar = await loadAnnotations(pdfPath)
+      const sidecar = await withTimeout(loadAnnotations(pdfPath), 3000, 'Annotation sidecar load')
       if (sidecar) {
         setAnnotations(sidecar.annotations)
       }
