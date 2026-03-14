@@ -6,6 +6,7 @@
   import { onMount } from 'svelte'
   import type { PDFViewport } from '../../types/annotation'
   import { PageCache } from '../../pdf/page-cache'
+  import { withTimeout } from '../../pdf/document-loader'
 
   // We defer the PDF.js type import to avoid SSR issues
   type PDFDocumentProxy = {
@@ -48,10 +49,14 @@
     const renderStartTime = performance.now()
 
     try {
-      const { canvas: renderedCanvas, viewport } = await effectiveCache.renderPage(
-        pdf as Parameters<typeof effectiveCache.renderPage>[0],
-        pageNum,
-        scale
+      const { canvas: renderedCanvas, viewport } = await withTimeout(
+        effectiveCache.renderPage(
+          pdf as Parameters<typeof effectiveCache.renderPage>[0],
+          pageNum,
+          scale
+        ),
+        12000,
+        `PDF page ${pageNum} render`
       )
 
       // Set canvas dimensions from the rendered canvas

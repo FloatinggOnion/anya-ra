@@ -15,7 +15,7 @@ interface LoaderDeps<TDoc = unknown> {
   timeoutMs: number
 }
 
-const DEFAULT_TIMEOUT_MS = 12000
+const DEFAULT_TIMEOUT_MS = 4000
 
 function defaultDeps<TDoc = unknown>(): LoaderDeps<TDoc> {
   return {

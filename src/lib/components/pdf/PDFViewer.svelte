@@ -184,6 +184,13 @@
     }
   }
 
+  function handleCanvasError(error: Error) {
+    // Surface render-level failures at viewer level so the user does not see
+    // an indefinite spinner without context.
+    loadError = `Failed to render PDF page: ${error.message}`
+    console.error('[PDFViewer] Canvas render error:', error)
+  }
+
   // ─── Text selection & annotation creation ────────────────────────────────────
 
   function handleMouseUp(e: MouseEvent) {
@@ -339,6 +346,7 @@
           {scale}
           {pageCache}
           onPageRender={handlePageRender}
+          onError={handleCanvasError}
         />
 
         <!-- SVG annotation overlay (positioned over canvas) -->
