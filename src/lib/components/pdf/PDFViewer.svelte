@@ -5,8 +5,8 @@
    * annotation toolbar, sticky notes, page navigation, and performance caches.
    */
   import { onMount, onDestroy } from 'svelte'
-  import { initPDFWorker } from '../../pdf/pdf-init'
-  import { loadPdfWithFallback, withTimeout } from '../../pdf/document-loader'
+  import { convertFileSrc } from '@tauri-apps/api/core'
+  import { initPDFWorker, pdfjsLib } from '../../pdf/pdf-init'
   import { PageCache } from '../../pdf/page-cache'
   import { ViewportManager } from '../../pdf/viewport-manager'
   import { TextSelectionHandler } from '../../pdf/text-selection'
@@ -88,45 +88,31 @@
   async function loadPdf() {
     isLoading = true
     loadError = null
-    const startTime = performance.now()
 
     try {
-      // Reliability-first loading:
-      // 1) asset:// URL (known stable in Tauri)
-      // 2) binary-data fallback if URL path hangs/fails
-      const docStartTime = performance.now()
-      const { doc, source } = await loadPdfWithFallback(pdfPath)
-      const docLoadTime = performance.now() - docStartTime
-
+      // Restore known-good loading path used before recent regressions.
+      const url = convertFileSrc(decodeURIComponent(pdfPath))
+      const loadTask = pdfjsLib.getDocument({ url })
+      const doc = await loadTask.promise
       pdf = doc as unknown as typeof pdf
       totalPages = doc.numPages
       currentPage = 1
       currentPageStore.set(1)
 
-      console.debug('[PDFViewer] PDF loaded', {
-        pages: totalPages,
-        source,
-        loadTime: `${docLoadTime.toFixed(0)}ms`,
-        totalTime: `${(performance.now() - startTime).toFixed(0)}ms`,
-      })
-
-      // Sidecar loading should never keep the main PDF spinner active.
-      // Run it with a short timeout and swallow failures.
-      void loadAnnotationsFromSidecar()
+      // Load annotations from sidecar
+      await loadAnnotationsFromSidecar()
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err))
       loadError = `Failed to load PDF: ${error.message}`
       console.error('[PDFViewer] Load error:', error)
     } finally {
       isLoading = false
-      const totalTime = performance.now() - startTime
-      console.debug('[PDFViewer] Load complete in', `${totalTime.toFixed(0)}ms`)
     }
   }
 
   async function loadAnnotationsFromSidecar() {
     try {
-      const sidecar = await withTimeout(loadAnnotations(pdfPath), 3000, 'Annotation sidecar load')
+      const sidecar = await loadAnnotations(pdfPath)
       if (sidecar) {
         setAnnotations(sidecar.annotations)
       }
@@ -182,13 +168,6 @@
     if (viewerEl) {
       selectionHandler.updateViewport(vp)
     }
-  }
-
-  function handleCanvasError(error: Error) {
-    // Surface render-level failures at viewer level so the user does not see
-    // an indefinite spinner without context.
-    loadError = `Failed to render PDF page: ${error.message}`
-    console.error('[PDFViewer] Canvas render error:', error)
   }
 
   // ─── Text selection & annotation creation ────────────────────────────────────
@@ -346,7 +325,6 @@
           {scale}
           {pageCache}
           onPageRender={handlePageRender}
-          onError={handleCanvasError}
         />
 
         <!-- SVG annotation overlay (positioned over canvas) -->
