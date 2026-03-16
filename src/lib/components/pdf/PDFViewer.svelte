@@ -1,16 +1,16 @@
 <script lang="ts">
   /**
    * PDFViewer — main PDF viewer component.
-   * Integrates PDF.js rendering, annotation overlay, text selection,
-   * annotation toolbar, sticky notes, page navigation, and performance caches.
+   * Now uses svelte-pdf library for core rendering to ensure production compatibility,
+   * while maintaining the custom annotation and selection layers on top.
    */
   import { onMount, onDestroy } from 'svelte'
   import { convertFileSrc } from '@tauri-apps/api/core'
-  import { initPDFWorker, pdfjsLib } from '../../pdf/pdf-init'
-  import { PageCache } from '../../pdf/page-cache'
-  import { ViewportManager } from '../../pdf/viewport-manager'
-  import { TextSelectionHandler } from '../../pdf/text-selection'
+  import { readFile } from '@tauri-apps/plugin-fs'
   import { get } from 'svelte/store'
+  import * as pdfjs from 'pdfjs-dist'
+  import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url'
+  import PdfViewer from 'svelte-pdf'
   import {
     annotations,
     addAnnotation,
@@ -21,12 +21,12 @@
     currentPage as currentPageStore,
   } from '../../stores/annotations'
   import { loadAnnotations, saveAnnotations, computePdfHash } from '../../services/annotation-store'
-  import PDFCanvas from './PDFCanvas.svelte'
   import AnnotationOverlay from './AnnotationOverlay.svelte'
   import StickyNoteLayer from './StickyNoteLayer.svelte'
   import AnnotationToolbar from './AnnotationToolbar.svelte'
   import PDFControls from './PDFControls.svelte'
   import type { Annotation, AnnotationSidecar, PDFViewport } from '../../types/annotation'
+  import { TextSelectionHandler } from '../../pdf/text-selection'
 
   interface Props {
     pdfPath: string
@@ -36,14 +36,15 @@
   let { pdfPath, paperId }: Props = $props()
 
   // PDF state
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let pdf = $state<any>(null)
   let totalPages = $state(0)
   let currentPage = $state(1)
   let scale = $state(1.5)
   let viewport = $state<PDFViewport | null>(null)
   let isLoading = $state(true)
   let loadError = $state<string | null>(null)
+  let pdfUrl = $state('')
+  let pdfDoc = $state<any>(null)
+  let pdfData = $state<Uint8Array | null>(null)
 
   // Annotation toolbar state
   let showToolbar = $state(false)
@@ -60,91 +61,67 @@
   let scrollEl: HTMLDivElement | undefined = $state()
 
   // Services
-  const pageCache = new PageCache()
-  let viewportManager: ViewportManager
   const selectionHandler = new TextSelectionHandler()
-  let hasMounted = $state(false)
-  let lastLoadedPath = $state<string | null>(null)
-  let loadRequestId = $state(0)
 
   // ─── Lifecycle ───────────────────────────────────────────────────────────────
 
   onMount(async () => {
-    hasMounted = true
-    initPDFWorker()
-
-    viewportManager = new ViewportManager((state) => {
-      scale = state.scale
-    }, scale)
-
+    pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker
     await loadPdf()
   })
 
   onDestroy(() => {
-    viewportManager?.destroy()
     selectionHandler.detach()
     clearAnnotations()
-    pageCache.clear()
-  })
-
-  // ─── PDF Loading ─────────────────────────────────────────────────────────────
-
-  $effect(() => {
-    if (!hasMounted) return
-    const nextPath = pdfPath
-    if (nextPath && nextPath !== lastLoadedPath) {
-      void loadPdf()
+    if (pdfDoc) {
+      pdfDoc.destroy()
     }
   })
 
+  const decodedPdfPath = $derived(decodeURIComponent(pdfPath))
+
+  // ─── PDF Loading ─────────────────────────────────────────────────────────────
+
   async function loadPdf() {
-    const requestId = ++loadRequestId
     isLoading = true
     loadError = null
-    pdf = null
-    viewport = null
-    // Cache must be per-document; clear when switching documents.
-    pageCache.clear()
-    selectionHandler.detach()
 
     try {
-      // Restore known-good loading path used before recent regressions.
-      const normalizedPath = (() => {
-        try {
-          return decodeURIComponent(pdfPath)
-        } catch {
-          return pdfPath
-        }
-      })()
-      const url = convertFileSrc(normalizedPath)
-      console.debug('[PDFViewer] load start', { paperId, pdfPath: normalizedPath, url })
-      const loadTask = pdfjsLib.getDocument({ url })
-      const doc = await loadTask.promise
-      if (requestId !== loadRequestId) return
-      pdf = doc as unknown as typeof pdf
-      totalPages = doc.numPages
+      // Read the PDF as a Uint8Array for maximum robustness
+      pdfData = await readFile(decodedPdfPath)
+      
+      // Load the document for our custom logic
+      const loadingTask = pdfjs.getDocument({ data: $state.snapshot(pdfData) })
+      pdfDoc = await loadingTask.promise
+      
+      totalPages = pdfDoc.numPages
       currentPage = 1
       currentPageStore.set(1)
-      lastLoadedPath = pdfPath
+
+      // Initial viewport calculation for the first page
+      const page = await pdfDoc.getPage(1)
+      const vp = page.getViewport({ scale })
+      viewport = {
+        width: vp.width,
+        height: vp.height,
+        scale: vp.scale,
+        rotation: vp.rotation
+      }
 
       // Load annotations from sidecar
       await loadAnnotationsFromSidecar()
-      console.debug('[PDFViewer] load success', { paperId, pages: doc.numPages })
     } catch (err) {
-      if (requestId !== loadRequestId) return
       const error = err instanceof Error ? err : new Error(String(err))
-      loadError = `Failed to load PDF: ${error.message}`
-      console.error('[PDFViewer] Load error:', error)
+      loadError = `Failed to initialize PDF: ${error.message}`
+      console.error('[PDFViewer] Initialization error:', error)
     } finally {
-      if (requestId === loadRequestId) {
-        isLoading = false
-      }
+      isLoading = false
     }
   }
 
   async function loadAnnotationsFromSidecar() {
     try {
-      const sidecar = await loadAnnotations(pdfPath)
+      const sidecar = await loadAnnotations(decodedPdfPath)
       if (sidecar) {
         setAnnotations(sidecar.annotations)
       }
@@ -156,7 +133,7 @@
   async function persistAnnotations() {
     let pdfHash = 'unknown'
     try {
-      pdfHash = await computePdfHash(pdfPath)
+      pdfHash = await computePdfHash(decodedPdfPath)
     } catch {
       // Hash computation failure is non-fatal
     }
@@ -170,13 +147,42 @@
     }
 
     try {
-      await saveAnnotations(pdfPath, sidecar)
+      await saveAnnotations(decodedPdfPath, sidecar)
     } catch (err) {
       console.error('[PDFViewer] Failed to save annotations:', err)
     }
   }
 
-  // ─── Page navigation ─────────────────────────────────────────────────────────
+  // ─── Viewport Sync ──────────────────────────────────────────────────────────
+
+  // Update overlay viewport whenever scale or page changes.
+  $effect(() => {
+    if (pdfDoc && !isLoading) {
+      updateViewport()
+    }
+  })
+
+  async function updateViewport() {
+    try {
+      if (!pdfDoc) return
+      const page = await pdfDoc.getPage(currentPage)
+      const vp = page.getViewport({ scale })
+      viewport = {
+        width: vp.width,
+        height: vp.height,
+        scale: vp.scale,
+        rotation: vp.rotation
+      }
+      
+      if (scrollEl) {
+        selectionHandler.attachToElement(scrollEl, viewport)
+      }
+    } catch (err) {
+      console.error('[PDFViewer] Viewport update error:', err)
+    }
+  }
+
+  // ─── Interaction Handlers ────────────────────────────────────────────────────
 
   function handlePageChange(page: number) {
     if (page >= 1 && page <= totalPages) {
@@ -186,23 +192,8 @@
   }
 
   function handleZoomChange(newScale: number) {
-    viewportManager?.handleZoom(newScale)
-    // Invalidate cache for old scale before zoom
-    pageCache.invalidateScale(scale)
+    scale = newScale
   }
-
-  function handlePageRender(vp: PDFViewport) {
-    viewport = vp
-    if (scrollEl) {
-      // Attach selection handler to scroll container for text selection
-      selectionHandler.attachToElement(scrollEl, vp)
-    }
-    if (viewerEl) {
-      selectionHandler.updateViewport(vp)
-    }
-  }
-
-  // ─── Text selection & annotation creation ────────────────────────────────────
 
   function handleMouseUp(e: MouseEvent) {
     if (!viewport) return
@@ -212,7 +203,6 @@
       selectionText = selection.text
       selectionRects = selection.rects
       showToolbar = true
-      // Position toolbar near the mouse
       toolbarPosition = {
         top: e.clientY - (viewerEl?.getBoundingClientRect().top ?? 0),
         left: e.clientX - (viewerEl?.getBoundingClientRect().left ?? 0),
@@ -309,13 +299,6 @@
     showToolbar = false
     selectionHandler.clearSelection()
   }
-
-  // ─── Scroll handling ─────────────────────────────────────────────────────────
-
-  function handleScroll(e: Event) {
-    const el = e.target as HTMLElement
-    viewportManager?.handleScroll(el.scrollTop, el.scrollLeft)
-  }
 </script>
 
 <div class="pdf-viewer" bind:this={viewerEl}>
@@ -332,7 +315,6 @@
   <div
     class="pdf-scroll-container"
     bind:this={scrollEl}
-    onscroll={handleScroll}
     onmouseup={handleMouseUp}
     role="document"
     aria-label="PDF document viewer"
@@ -348,18 +330,22 @@
         <p>{loadError}</p>
         <button class="retry-btn" onclick={loadPdf}>Retry</button>
       </div>
-    {:else if pdf}
+    {:else if pdfData}
       <div class="pdf-page-container">
-        <!-- PDF page canvas -->
-        <PDFCanvas
-          {pdf}
-          pageNum={currentPage}
-          {scale}
-          {pageCache}
-          onPageRender={handlePageRender}
-        />
+        <!-- Core PDF Rendering Component -->
+        <div class="library-viewer-wrap">
+          {#if pdfData}
+            <PdfViewer
+              data={$state.snapshot(pdfData)}
+              pageNum={currentPage}
+              scale={scale}
+              showButtons={[]}
+              showBorder={false}
+            />
+          {/if}
+        </div>
 
-        <!-- SVG annotation overlay (positioned over canvas) -->
+        <!-- Custom Overlays -->
         {#if viewport}
           <div class="overlay-container" style="width: {viewport.width}px; height: {viewport.height}px;">
             <AnnotationOverlay
@@ -378,7 +364,7 @@
           </div>
         {/if}
 
-        <!-- Annotation toolbar (shown on text selection) -->
+        <!-- Interaction Layers -->
         {#if showToolbar}
           <AnnotationToolbar
             selectedText={selectionText}
@@ -392,7 +378,6 @@
           />
         {/if}
 
-        <!-- Annotation editor modal (shown when annotation is selected) -->
         {#if selectedAnnotationId}
           <div class="modal-overlay" onclick={cancelAnnotationEdit}>
             <div class="annotation-modal" onclick={(e) => e.stopPropagation()}>
@@ -444,6 +429,15 @@
     align-items: center;
     gap: 16px;
     flex-shrink: 0;
+  }
+
+  .library-viewer-wrap {
+    /* svelte-pdf includes its own styles, we want to control the layout */
+    display: inline-block;
+  }
+
+  .library-viewer-wrap :global(.parent) {
+    margin: 0 !important;
   }
 
   .overlay-container {
@@ -519,7 +513,6 @@
     opacity: 0.85;
   }
 
-  /* Annotation editor modal */
   .modal-overlay {
     position: fixed;
     top: 0;

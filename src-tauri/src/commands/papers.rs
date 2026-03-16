@@ -5,13 +5,18 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::command;
 
 use crate::types::Paper;
-use crate::workspace_paths::{get_papers_dir, get_notes_dir};
+use crate::workspace_paths::{
+    get_notes_dir, get_papers_dir, validate_path_under_workspace_anya, validate_safe_id,
+    validate_workspace_path,
+};
 
 // ─── Save / Load / Delete ───────────────────────────────────────────────────
 
 /// Save paper metadata to {workspace}/.anya/papers/{id}/metadata.json
 #[command]
 pub async fn save_paper(workspace_path: String, paper: Paper) -> Result<(), String> {
+    validate_workspace_path(&workspace_path)?;
+    validate_safe_id(&paper.id, "paper.id")?;
     let paper_dir = get_papers_dir(&workspace_path).join(&paper.id);
 
     fs::create_dir_all(&paper_dir)
@@ -29,6 +34,7 @@ pub async fn save_paper(workspace_path: String, paper: Paper) -> Result<(), Stri
 /// Load all papers from {workspace}/.anya/papers/*/metadata.json
 #[command]
 pub async fn load_papers(workspace_path: String) -> Result<Vec<Paper>, String> {
+    validate_workspace_path(&workspace_path)?;
     let papers_dir = get_papers_dir(&workspace_path);
 
     if !papers_dir.exists() {
@@ -44,7 +50,16 @@ pub async fn load_papers(workspace_path: String) -> Result<Vec<Paper>, String> {
             match fs::read_to_string(&metadata_path) {
                 Ok(json) => match serde_json::from_str::<Paper>(&json) {
                     Ok(mut paper) => {
-                        if let Some(ref local_path) = paper.local_pdf_path.clone() {
+                        let paper_id = entry.file_name().to_string_lossy().into_owned();
+                        let pdf_in_folder = entry.path().join("paper.pdf");
+                        
+                        if pdf_in_folder.exists() {
+                            // HEAL: If paper.pdf exists in the expected subfolder, 
+                            // always prefer the relative .anya path.
+                            paper.local_pdf_path = Some(format!(".anya/papers/{}/paper.pdf", paper_id));
+                            paper.pdf_downloaded = true;
+                        } else if let Some(ref local_path) = paper.local_pdf_path.clone() {
+                            // Otherwise, try to normalize the existing path
                             paper.local_pdf_path =
                                 normalize_local_pdf_path(&workspace_path, local_path);
                         }
@@ -62,21 +77,34 @@ pub async fn load_papers(workspace_path: String) -> Result<Vec<Paper>, String> {
 
 fn normalize_local_pdf_path(workspace_path: &str, local_pdf_path: &str) -> Option<String> {
     let path = PathBuf::from(local_pdf_path);
-    if !path.is_absolute() {
-        return Some(local_pdf_path.to_string());
+    
+    // 1. Try to make it relative to the workspace if it's absolute
+    let mut normalized = if path.is_absolute() {
+        let workspace = Path::new(workspace_path);
+        if let Ok(relative) = path.strip_prefix(workspace) {
+            relative.to_string_lossy().replace('\\', "/")
+        } else {
+            // It's absolute but outside current workspace (likely old machine/path)
+            local_pdf_path.to_string()
+        }
+    } else {
+        local_pdf_path.to_string()
+    };
+
+    // 2. Fix legacy paths (e.g. "papers/..." -> ".anya/papers/...")
+    // All papers in the new structure MUST be under .anya
+    if !normalized.starts_with(".anya/") && (normalized.starts_with("papers/") || normalized.starts_with("notes/")) {
+        normalized = format!(".anya/{}", normalized);
     }
 
-    let workspace = Path::new(workspace_path);
-    if let Ok(relative) = path.strip_prefix(workspace) {
-        return Some(relative.to_string_lossy().replace('\\', "/"));
-    }
-
-    Some(local_pdf_path.to_string())
+    Some(normalized)
 }
 
 /// Delete paper folder entirely AND its associated notes file
 #[command]
 pub async fn delete_paper(workspace_path: String, paper_id: String) -> Result<(), String> {
+    validate_workspace_path(&workspace_path)?;
+    validate_safe_id(&paper_id, "paper_id")?;
     let paper_dir = get_papers_dir(&workspace_path).join(&paper_id);
 
     if paper_dir.exists() {
@@ -432,7 +460,7 @@ pub async fn import_local_pdf(
 
 /// Download a remote PDF URL to a local workspace path
 #[command]
-pub async fn download_pdf(url: String, dest_path: String) -> Result<(), String> {
+pub async fn download_pdf(workspace_path: String, url: String, dest_path: String) -> Result<(), String> {
     use std::time::Duration;
     use tokio::io::AsyncWriteExt;
 
@@ -455,15 +483,19 @@ pub async fn download_pdf(url: String, dest_path: String) -> Result<(), String> 
 
     let bytes = response.bytes().await.map_err(|e| e.to_string())?;
 
+    let dest = validate_path_under_workspace_anya(&workspace_path, &dest_path)?;
+    if dest.file_name().and_then(|s| s.to_str()) != Some("paper.pdf") {
+        return Err("destination must be a paper.pdf path under workspace/.anya".to_string());
+    }
+
     // Ensure parent directory exists
-    let dest = std::path::Path::new(&dest_path);
     if let Some(parent) = dest.parent() {
         tokio::fs::create_dir_all(parent)
             .await
             .map_err(|e| e.to_string())?;
     }
 
-    let mut file = tokio::fs::File::create(&dest_path)
+    let mut file = tokio::fs::File::create(&dest)
         .await
         .map_err(|e| e.to_string())?;
     file.write_all(&bytes).await.map_err(|e| e.to_string())?;

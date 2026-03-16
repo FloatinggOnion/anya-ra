@@ -2,7 +2,41 @@ import { vi } from 'vitest'
 
 // ─── Mock PDF.js ──────────────────────────────────────────────────────────────
 
-vi.mock('pdfjs-dist', () => ({
+const pdfMock = {
+  default: {
+    GlobalWorkerOptions: { workerSrc: '' },
+    getDocument: vi.fn(() => ({
+      promise: Promise.resolve({
+        numPages: 5,
+        getPage: vi.fn((pageNum: number) =>
+          Promise.resolve({
+            pageNumber: pageNum,
+            getViewport: vi.fn(({ scale }: { scale: number }) => ({
+              width: 800 * scale,
+              height: 1100 * scale,
+              scale,
+              viewBox: [0, 0, 800, 1100],
+            })),
+            render: vi.fn(() => ({
+              promise: Promise.resolve(),
+              cancel: vi.fn(),
+            })),
+            getTextContent: vi.fn(() =>
+              Promise.resolve({
+                items: [
+                  { str: 'Hello', transform: [1, 0, 0, 1, 10, 100], width: 40, height: 12 },
+                  { str: ' World', transform: [1, 0, 0, 1, 50, 100], width: 50, height: 12 },
+                ],
+              })
+            ),
+            cleanup: vi.fn(),
+            destroy: vi.fn(),
+          })
+        ),
+        destroy: vi.fn(),
+      }),
+    })),
+  },
   GlobalWorkerOptions: { workerSrc: '' },
   getDocument: vi.fn(() => ({
     promise: Promise.resolve({
@@ -35,7 +69,11 @@ vi.mock('pdfjs-dist', () => ({
       destroy: vi.fn(),
     }),
   })),
-}))
+}
+
+vi.mock('pdfjs-dist', () => pdfMock)
+
+vi.mock('pdfjs-dist/build/pdf.js', () => pdfMock)
 
 // ─── Mock Tauri IPC ───────────────────────────────────────────────────────────
 

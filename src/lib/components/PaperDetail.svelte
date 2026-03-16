@@ -45,12 +45,14 @@
     if (!$selectedPaper || !$workspace) return
     isDeleting = true
     try {
-      await deletePaper($workspace.path, $selectedPaper.id)
+      const paperTitle = $selectedPaper.title
+      const paperId = $selectedPaper.id
+      await deletePaper($workspace.path, paperId)
       // Remove from papers list
-      removePaper($selectedPaper.id)
+      removePaper(paperId)
       // Remove note node from graph
-      deleteNoteNodeForPaper($selectedPaper.id)
-      showToast(`Deleted "${$selectedPaper.title}"`, 'success')
+      deleteNoteNodeForPaper(paperId)
+      showToast(`Deleted "${paperTitle}"`, 'success')
     } catch (err) {
       showToast(`Failed to delete paper: ${err}`, 'error')
     } finally {

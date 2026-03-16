@@ -1,10 +1,14 @@
 <script lang="ts">
-  import { papers, notes } from '../../stores'
+  import { papers } from '../../stores/papers'
+  import { notes } from '../../stores/notes'
+  import { graphNodes, graphEdges, graphViewport } from '../../stores/graph'
   import { exportWorkspace, generateExportFilename } from '../../services/workspace-export'
   import { estimateExportSize } from '../../types/export'
   import { showToast } from '../../services/toast'
   import ExportProgress from './ExportProgress.svelte'
   import type { ExportOptions } from '../../types/export'
+  import type { Note } from '../../types/notes'
+  import type { GraphFile, PersistedNode, PersistedEdge, AnyaEdgeData, AnyNodeData } from '../../types/graph'
 
   // ─── State ───────────────────────────────────────────────────────────────
 
@@ -24,6 +28,43 @@
   )
   let selectedTags = $state<string[]>([])
 
+  const EMPTY_GRAPH: GraphFile = {
+    version: 1,
+    nodes: [],
+    edges: [],
+    viewport: { x: 0, y: 0, zoom: 1 },
+  }
+
+  let exportNotes: Note[] = $derived(
+    Array.from($notes.entries()).flatMap(([paperId, sidecar]) =>
+      sidecar.notes.map((note) => ({
+        ...note,
+        paperId: note.paperId || paperId,
+      }))
+    )
+  )
+
+  let exportGraphData: GraphFile = $derived({
+    version: 1,
+    nodes: $graphNodes.map(
+      (n): PersistedNode => ({
+        id: n.id,
+        type: n.type as 'paper' | 'concept' | 'note',
+        position: n.position,
+        data: n.data as AnyNodeData,
+      })
+    ),
+    edges: $graphEdges.map(
+      (e): PersistedEdge => ({
+        id: e.id,
+        source: e.source,
+        target: e.target,
+        data: (e.data ?? { type: 'related' }) as AnyaEdgeData,
+      })
+    ),
+    viewport: $graphViewport,
+  })
+
   // Derived
   let filteredPapers = $derived(
     selectedTags.length > 0
@@ -32,7 +73,7 @@
   )
 
   let estimatedSize = $derived(
-    estimateExportSize(filteredPapers, $notes, {
+    estimateExportSize(filteredPapers, exportNotes, {
       includePDFs,
       includeAnnotations,
       includeGraph
@@ -73,8 +114,8 @@
 
       const blob = await exportWorkspace(
         filteredPapers,
-        $notes,
-        { nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1 } }, // TODO: get actual graph
+        exportNotes,
+        includeGraph ? exportGraphData : EMPTY_GRAPH,
         options,
         (current, total) => {
           progress = (current / total) * 100

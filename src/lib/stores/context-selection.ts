@@ -39,14 +39,18 @@ export const availableItems = derived([papers, notes], ([$papers, $notes]) => {
   }
   
   // Add all notes as context items
-  for (const note of $notes) {
-    items.push({
-      id: `note-${note.paperId}`,
-      type: 'note',
-      title: `Notes: ${$papers.find(p => p.id === note.paperId)?.title || 'Unknown Paper'}`,
-      content: note.body,
-      tokens: Math.ceil(note.body.length / 4)
-    })
+  for (const [paperId, sidecar] of $notes.entries()) {
+    for (const note of sidecar.notes) {
+      const resolvedPaperId = note.paperId || paperId
+      const content = note.content || ''
+      items.push({
+        id: `note-${note.id}`,
+        type: 'note',
+        title: `Notes: ${$papers.find(p => p.id === resolvedPaperId)?.title || 'Unknown Paper'}`,
+        content,
+        tokens: Math.ceil(content.length / 4)
+      })
+    }
   }
   
   return items

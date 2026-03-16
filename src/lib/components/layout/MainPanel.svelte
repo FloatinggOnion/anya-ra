@@ -6,8 +6,9 @@
   import { selectedPaper } from '../../stores/papers'
   import { workspace } from '../../stores/workspace'
   import { activeTab } from '../../stores/ui'
+  import { get } from 'svelte/store'
   import { join } from '@tauri-apps/api/path'
-  import { initPDFWorker } from '../../pdf/pdf-init'
+
 
   // Computed absolute PDF path for the selected paper
   let resolvedPdfPath = $state<string | null>(null)
@@ -15,7 +16,7 @@
   // Lazy-loaded components
   let PDFViewerComponent: any = $state(null)
   let GraphCanvasComponent: any = $state(null)
-  let resolvePathRequest = $state(0)
+  let resolvePathRequest = 0
 
   function isAbsolutePath(path: string): boolean {
     return path.startsWith('/') || /^[A-Za-z]:[\\/]/.test(path)
@@ -32,8 +33,8 @@
         // Ignore stale async resolutions from previous paper selections.
         if (requestId !== resolvePathRequest) return
         resolvedPdfPath = path
-        initPDFWorker()
-        if ($activeTab !== 'pdf') activeTab.set('pdf')
+
+        if (get(activeTab) !== 'pdf') activeTab.set('pdf')
       }
 
       // Handle legacy metadata that stored absolute paths.
@@ -46,7 +47,7 @@
     } else {
       resolvePathRequest++
       resolvedPdfPath = null
-      if ($activeTab === 'pdf') activeTab.set('papers')
+      if (get(activeTab) === 'pdf') activeTab.set('papers')
     }
   })
 

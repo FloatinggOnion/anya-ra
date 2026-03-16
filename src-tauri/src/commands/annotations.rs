@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::path::PathBuf;
 use tokio::fs;
+use crate::workspace_paths::validate_path_under_workspace_anya;
 
 // ─── Data types ───────────────────────────────────────────────────────────────
 
@@ -44,8 +45,12 @@ pub struct AnnotationSidecar {
 /// Load annotations from the sidecar file alongside a PDF.
 /// Returns `None` if no sidecar file exists yet.
 #[tauri::command]
-pub async fn load_annotations(pdf_path: String) -> Result<Option<AnnotationSidecar>, String> {
-    let sidecar_path = sidecar_path_for(&pdf_path);
+pub async fn load_annotations(
+    workspace_path: String,
+    pdf_path: String,
+) -> Result<Option<AnnotationSidecar>, String> {
+    let validated_pdf = validate_path_under_workspace_anya(&workspace_path, &pdf_path)?;
+    let sidecar_path = sidecar_path_for(validated_pdf.as_path());
 
     if !sidecar_path.exists() {
         return Ok(None);
@@ -65,10 +70,12 @@ pub async fn load_annotations(pdf_path: String) -> Result<Option<AnnotationSidec
 /// Creates or overwrites the existing sidecar.
 #[tauri::command]
 pub async fn save_annotations(
+    workspace_path: String,
     pdf_path: String,
     annotations: AnnotationSidecar,
 ) -> Result<(), String> {
-    let sidecar_path = sidecar_path_for(&pdf_path);
+    let validated_pdf = validate_path_under_workspace_anya(&workspace_path, &pdf_path)?;
+    let sidecar_path = sidecar_path_for(validated_pdf.as_path());
 
     // Ensure parent directory exists
     if let Some(parent) = sidecar_path.parent() {
@@ -90,8 +97,9 @@ pub async fn save_annotations(
 /// Compute SHA-256 hash of a PDF file.
 /// Returns the hash in `sha256:HEX` format.
 #[tauri::command]
-pub async fn compute_pdf_hash(pdf_path: String) -> Result<String, String> {
-    let bytes = fs::read(&pdf_path)
+pub async fn compute_pdf_hash(workspace_path: String, pdf_path: String) -> Result<String, String> {
+    let validated_pdf = validate_path_under_workspace_anya(&workspace_path, &pdf_path)?;
+    let bytes = fs::read(&validated_pdf)
         .await
         .map_err(|e| format!("Failed to read PDF for hashing: {e}"))?;
 
@@ -106,7 +114,7 @@ pub async fn compute_pdf_hash(pdf_path: String) -> Result<String, String> {
 
 /// Derive the sidecar JSON path from a PDF path.
 /// E.g. `/papers/foo.pdf` → `/papers/foo.pdf.annotations.json`
-fn sidecar_path_for(pdf_path: &str) -> PathBuf {
+fn sidecar_path_for(pdf_path: &std::path::Path) -> PathBuf {
     let mut path = PathBuf::from(pdf_path);
     let file_name = path
         .file_name()

@@ -108,7 +108,7 @@ export async function downloadPdfToWorkspace(
   pdfUrl: string
 ): Promise<Paper> {
   const destPath = `${workspacePath}/.anya/papers/${paper.id}/paper.pdf`
-  await invoke<void>('download_pdf', { url: pdfUrl, destPath })
+  await invoke<void>('download_pdf', { workspacePath, url: pdfUrl, destPath })
   // Store relative path to .anya folder (not absolute)
   const relativePdfPath = `.anya/papers/${paper.id}/paper.pdf`
   const updated: Paper = { ...paper, localPdfPath: relativePdfPath, pdfDownloaded: true }

@@ -2,7 +2,7 @@
   import { KEYBOARD_SHORTCUTS } from '../config/keyboard-shortcuts'
   import type { KeyboardShortcut } from '../config/keyboard-shortcuts'
 
-  let { isOpen = false } = $props()
+  let { isOpen = $bindable(false) } = $props()
 
   const grouped = $derived.by(() => {
     const map = new Map<string, KeyboardShortcut[]>()

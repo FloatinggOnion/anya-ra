@@ -32,13 +32,14 @@
     
     // Find the CodeMirror editor element within the container
     const cmEditor = editorElement.querySelector('.cm-editor')
+    const handleBlur = () => onChange(content)
     if (cmEditor) {
-      cmEditor.addEventListener('blur', () => onChange(content))
+      cmEditor.addEventListener('blur', handleBlur)
     }
 
     return () => {
       if (cmEditor) {
-        cmEditor.removeEventListener('blur', () => onChange(content))
+        cmEditor.removeEventListener('blur', handleBlur)
       }
     }
   })
