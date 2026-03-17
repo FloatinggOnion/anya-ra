@@ -1,7 +1,7 @@
 <script lang="ts">
   import { selectedPaper, updatePaper, removePaper } from '../stores/papers'
   import { workspace } from '../stores/workspace'
-  import { activeTab } from '../stores/ui'
+  import { activateTab } from '../stores/panel-layout'
   import { downloadPdfToWorkspace, deletePaper } from '../services/papers'
   import { ensurePaperNode, graphNodes, deleteNoteNodeForPaper } from '../stores/graph'
   import { showToast } from '../services/toast'
@@ -62,7 +62,7 @@
   }
 
   function handleViewPdf() {
-    activeTab.set('pdf')
+    activateTab('pdf')
   }
 </script>
 

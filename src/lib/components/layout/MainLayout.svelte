@@ -63,9 +63,11 @@
   .sidebar-container {
     border-right: 1px solid var(--color-border);
     overflow: hidden;
+    z-index: 1;
   }
 
   .main-panel-container {
     overflow: hidden;
+    min-width: 0;
   }
 </style>
