@@ -9,7 +9,9 @@ pub fn save_api_key(app: tauri::AppHandle, service: String, api_key: String) -> 
 
     let key = format!("api_key_{}", service);
     store.set(key, api_key);
-    store.save().map_err(|e| format!("Failed to persist keystore: {}", e))?;
+    store
+        .save()
+        .map_err(|e| format!("Failed to persist keystore: {}", e))?;
 
     Ok(())
 }

@@ -1,6 +1,6 @@
-use tauri::{AppHandle, Manager, command};
-use tauri_plugin_store::StoreExt;
 use crate::types::Workspace;
+use tauri::{command, AppHandle, Manager};
+use tauri_plugin_store::StoreExt;
 
 #[command]
 pub async fn pick_folder(app: AppHandle) -> Result<Option<String>, String> {
@@ -9,15 +9,13 @@ pub async fn pick_folder(app: AppHandle) -> Result<Option<String>, String> {
 
     let (tx, rx) = oneshot::channel::<Option<String>>();
 
-    app.dialog()
-        .file()
-        .pick_folder(move |folder| {
-            let path_str = folder.map(|p| match p {
-                FilePath::Path(pb) => pb.to_string_lossy().to_string(),
-                FilePath::Url(url) => url.to_string(),
-            });
-            let _ = tx.send(path_str);
+    app.dialog().file().pick_folder(move |folder| {
+        let path_str = folder.map(|p| match p {
+            FilePath::Path(pb) => pb.to_string_lossy().to_string(),
+            FilePath::Url(url) => url.to_string(),
         });
+        let _ = tx.send(path_str);
+    });
 
     rx.await.map_err(|e| e.to_string())
 }
@@ -39,8 +37,7 @@ pub async fn load_workspace(app: AppHandle) -> Result<Option<Workspace>, String>
 
     match store.get("workspace") {
         Some(value) => {
-            let ws: Workspace =
-                serde_json::from_value(value.clone()).map_err(|e| e.to_string())?;
+            let ws: Workspace = serde_json::from_value(value.clone()).map_err(|e| e.to_string())?;
             Ok(Some(ws))
         }
         None => Ok(None),
@@ -49,10 +46,7 @@ pub async fn load_workspace(app: AppHandle) -> Result<Option<Workspace>, String>
 
 #[command]
 pub async fn get_app_data_dir(app: AppHandle) -> Result<String, String> {
-    let path = app
-        .path()
-        .app_data_dir()
-        .map_err(|e| e.to_string())?;
+    let path = app.path().app_data_dir().map_err(|e| e.to_string())?;
     Ok(path.to_string_lossy().to_string())
 }
 

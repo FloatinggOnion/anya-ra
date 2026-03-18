@@ -1,5 +1,5 @@
-use std::fs;
 use crate::workspace_paths::{get_chat_dir, validate_safe_id, validate_workspace_path};
+use std::fs;
 
 /// Save a chat history JSON file to the workspace's .anya/chat directory.
 #[tauri::command]
@@ -13,8 +13,7 @@ pub fn save_chat_file(
     let chat_dir = get_chat_dir(&workspace_path);
 
     // Create chat directory if it doesn't exist
-    fs::create_dir_all(&chat_dir)
-        .map_err(|e| format!("Failed to create chat directory: {}", e))?;
+    fs::create_dir_all(&chat_dir).map_err(|e| format!("Failed to create chat directory: {}", e))?;
 
     let chat_path = chat_dir.join(format!("{}.json", chat_id));
 
@@ -28,8 +27,7 @@ pub fn save_chat_file(
 pub fn load_chat_file(workspace_path: String, chat_id: String) -> Result<String, String> {
     validate_workspace_path(&workspace_path)?;
     validate_safe_id(&chat_id, "chat_id")?;
-    let chat_path = get_chat_dir(&workspace_path)
-        .join(format!("{}.json", chat_id));
+    let chat_path = get_chat_dir(&workspace_path).join(format!("{}.json", chat_id));
 
     fs::read_to_string(&chat_path).map_err(|e| format!("Failed to read chat file: {}", e))
 }

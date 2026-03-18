@@ -1,5 +1,5 @@
-use tauri::command;
 use crate::workspace_paths::get_graph_file;
+use tauri::command;
 
 #[command]
 pub async fn load_graph_file(workspace_path: String) -> Result<Option<String>, String> {

@@ -197,19 +197,21 @@
 
             {#if availableTags.length > 0}
               <div class="tags-filter">
-                <label>Filter by tags:</label>
-                <div class="tags-list">
-                  {#each availableTags as tag}
-                    <button
-                      class="tag-button"
-                      class:active={selectedTags.includes(tag)}
-                      onclick={() => toggleTag(tag)}
-                      disabled={isExporting}
-                    >
-                      {tag}
-                    </button>
-                  {/each}
-                </div>
+                <fieldset>
+                  <legend>Filter by tags:</legend>
+                  <div class="tags-list">
+                    {#each availableTags as tag}
+                      <button
+                        class="tag-button"
+                        class:active={selectedTags.includes(tag)}
+                        onclick={() => toggleTag(tag)}
+                        disabled={isExporting}
+                      >
+                        {tag}
+                      </button>
+                    {/each}
+                  </div>
+                </fieldset>
               </div>
             {/if}
           </div>

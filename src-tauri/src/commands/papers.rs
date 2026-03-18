@@ -19,14 +19,12 @@ pub async fn save_paper(workspace_path: String, paper: Paper) -> Result<(), Stri
     validate_safe_id(&paper.id, "paper.id")?;
     let paper_dir = get_papers_dir(&workspace_path).join(&paper.id);
 
-    fs::create_dir_all(&paper_dir)
-        .map_err(|e| format!("Failed to create paper dir: {}", e))?;
+    fs::create_dir_all(&paper_dir).map_err(|e| format!("Failed to create paper dir: {}", e))?;
 
     let metadata_path = paper_dir.join("metadata.json");
     let json =
         serde_json::to_string_pretty(&paper).map_err(|e| format!("Serialization error: {}", e))?;
-    fs::write(&metadata_path, json)
-        .map_err(|e| format!("Failed to write metadata: {}", e))?;
+    fs::write(&metadata_path, json).map_err(|e| format!("Failed to write metadata: {}", e))?;
 
     Ok(())
 }
@@ -52,11 +50,12 @@ pub async fn load_papers(workspace_path: String) -> Result<Vec<Paper>, String> {
                     Ok(mut paper) => {
                         let paper_id = entry.file_name().to_string_lossy().into_owned();
                         let pdf_in_folder = entry.path().join("paper.pdf");
-                        
+
                         if pdf_in_folder.exists() {
-                            // HEAL: If paper.pdf exists in the expected subfolder, 
+                            // HEAL: If paper.pdf exists in the expected subfolder,
                             // always prefer the relative .anya path.
-                            paper.local_pdf_path = Some(format!(".anya/papers/{}/paper.pdf", paper_id));
+                            paper.local_pdf_path =
+                                Some(format!(".anya/papers/{}/paper.pdf", paper_id));
                             paper.pdf_downloaded = true;
                         } else if let Some(ref local_path) = paper.local_pdf_path.clone() {
                             // Otherwise, try to normalize the existing path
@@ -65,7 +64,9 @@ pub async fn load_papers(workspace_path: String) -> Result<Vec<Paper>, String> {
                         }
                         papers.push(paper)
                     }
-                    Err(e) => eprintln!("Skipping malformed metadata at {:?}: {}", metadata_path, e),
+                    Err(e) => {
+                        eprintln!("Skipping malformed metadata at {:?}: {}", metadata_path, e)
+                    }
                 },
                 Err(e) => eprintln!("Failed to read {:?}: {}", metadata_path, e),
             }
@@ -77,7 +78,7 @@ pub async fn load_papers(workspace_path: String) -> Result<Vec<Paper>, String> {
 
 fn normalize_local_pdf_path(workspace_path: &str, local_pdf_path: &str) -> Option<String> {
     let path = PathBuf::from(local_pdf_path);
-    
+
     // 1. Try to make it relative to the workspace if it's absolute
     let mut normalized = if path.is_absolute() {
         let workspace = Path::new(workspace_path);
@@ -93,7 +94,9 @@ fn normalize_local_pdf_path(workspace_path: &str, local_pdf_path: &str) -> Optio
 
     // 2. Fix legacy paths (e.g. "papers/..." -> ".anya/papers/...")
     // All papers in the new structure MUST be under .anya
-    if !normalized.starts_with(".anya/") && (normalized.starts_with("papers/") || normalized.starts_with("notes/")) {
+    if !normalized.starts_with(".anya/")
+        && (normalized.starts_with("papers/") || normalized.starts_with("notes/"))
+    {
         normalized = format!(".anya/{}", normalized);
     }
 
@@ -108,16 +111,14 @@ pub async fn delete_paper(workspace_path: String, paper_id: String) -> Result<()
     let paper_dir = get_papers_dir(&workspace_path).join(&paper_id);
 
     if paper_dir.exists() {
-        fs::remove_dir_all(&paper_dir)
-            .map_err(|e| format!("Failed to delete paper: {}", e))?;
+        fs::remove_dir_all(&paper_dir).map_err(|e| format!("Failed to delete paper: {}", e))?;
     }
 
     // Also delete associated notes file
     let notes_file = get_notes_dir(&workspace_path).join(format!("{}.json", paper_id));
 
     if notes_file.exists() {
-        fs::remove_file(&notes_file)
-            .map_err(|e| format!("Failed to delete notes: {}", e))?;
+        fs::remove_file(&notes_file).map_err(|e| format!("Failed to delete notes: {}", e))?;
     }
 
     Ok(())
@@ -232,13 +233,9 @@ fn parse_arxiv_feed(xml: &str) -> Result<Vec<Paper>, String> {
                             let key_bytes = attr.key.local_name().as_ref().to_vec();
                             let key = String::from_utf8_lossy(&key_bytes).into_owned();
                             match key.as_str() {
-                                "href" => {
-                                    href =
-                                        String::from_utf8_lossy(&attr.value).into_owned()
-                                }
+                                "href" => href = String::from_utf8_lossy(&attr.value).into_owned(),
                                 "title" => {
-                                    link_title =
-                                        String::from_utf8_lossy(&attr.value).into_owned()
+                                    link_title = String::from_utf8_lossy(&attr.value).into_owned()
                                 }
                                 _ => {}
                             }
@@ -262,15 +259,13 @@ fn parse_arxiv_feed(xml: &str) -> Result<Vec<Paper>, String> {
                     let year = extract_year_from_date(&published);
                     let now = chrono::Utc::now().to_rfc3339();
 
-                    let final_pdf_url = pdf_url
-                        .clone()
-                        .or_else(|| {
-                            if !arxiv_id.is_empty() {
-                                Some(format!("https://arxiv.org/pdf/{}", arxiv_id))
-                            } else {
-                                None
-                            }
-                        });
+                    let final_pdf_url = pdf_url.clone().or_else(|| {
+                        if !arxiv_id.is_empty() {
+                            Some(format!("https://arxiv.org/pdf/{}", arxiv_id))
+                        } else {
+                            None
+                        }
+                    });
 
                     papers.push(Paper {
                         id: paper_id,
@@ -346,10 +341,7 @@ fn extract_year_from_date(date_str: &str) -> i32 {
 
 /// Search Semantic Scholar via Rust (browser fetch() blocks custom User-Agent)
 #[command]
-pub async fn search_semantic_scholar(
-    query: String,
-    max_results: u32,
-) -> Result<String, String> {
+pub async fn search_semantic_scholar(query: String, max_results: u32) -> Result<String, String> {
     use std::time::Duration;
 
     let client = reqwest::Client::builder()
@@ -387,10 +379,7 @@ pub async fn search_semantic_scholar(
 
 /// Import local PDF: copy to workspace and create metadata
 #[command]
-pub async fn import_local_pdf(
-    workspace_path: String,
-    file_path: String,
-) -> Result<Paper, String> {
+pub async fn import_local_pdf(workspace_path: String, file_path: String) -> Result<Paper, String> {
     let source_path = Path::new(&file_path);
 
     if !source_path.exists() {
@@ -411,13 +400,11 @@ pub async fn import_local_pdf(
 
     // Create paper folder in .anya/papers
     let paper_dir = get_papers_dir(&workspace_path).join(&paper_id);
-    fs::create_dir_all(&paper_dir)
-        .map_err(|e| format!("Failed to create paper dir: {}", e))?;
+    fs::create_dir_all(&paper_dir).map_err(|e| format!("Failed to create paper dir: {}", e))?;
 
     // Copy PDF
     let dest_pdf = paper_dir.join("paper.pdf");
-    fs::copy(source_path, &dest_pdf)
-        .map_err(|e| format!("Failed to copy PDF: {}", e))?;
+    fs::copy(source_path, &dest_pdf).map_err(|e| format!("Failed to copy PDF: {}", e))?;
 
     // Create metadata (basic info - user can edit later)
     let now = chrono::Utc::now().to_rfc3339();
@@ -450,8 +437,7 @@ pub async fn import_local_pdf(
     let metadata_path = paper_dir.join("metadata.json");
     let json =
         serde_json::to_string_pretty(&paper).map_err(|e| format!("Serialization error: {}", e))?;
-    fs::write(&metadata_path, json)
-        .map_err(|e| format!("Failed to write metadata: {}", e))?;
+    fs::write(&metadata_path, json).map_err(|e| format!("Failed to write metadata: {}", e))?;
 
     Ok(paper)
 }
@@ -460,7 +446,11 @@ pub async fn import_local_pdf(
 
 /// Download a remote PDF URL to a local workspace path
 #[command]
-pub async fn download_pdf(workspace_path: String, url: String, dest_path: String) -> Result<(), String> {
+pub async fn download_pdf(
+    workspace_path: String,
+    url: String,
+    dest_path: String,
+) -> Result<(), String> {
     use std::time::Duration;
     use tokio::io::AsyncWriteExt;
 
@@ -478,7 +468,10 @@ pub async fn download_pdf(workspace_path: String, url: String, dest_path: String
         .map_err(|e| format!("Download failed: {}", e))?;
 
     if !response.status().is_success() {
-        return Err(format!("HTTP {}: could not download PDF", response.status()));
+        return Err(format!(
+            "HTTP {}: could not download PDF",
+            response.status()
+        ));
     }
 
     let bytes = response.bytes().await.map_err(|e| e.to_string())?;

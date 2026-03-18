@@ -1,9 +1,9 @@
-pub mod workspace;
-pub mod papers;
-pub mod keystore;
-pub mod chat;
 pub mod annotations;
+pub mod chat;
 pub mod graph;
-pub mod notes;
+pub mod keystore;
 pub mod migration;
+pub mod notes;
+pub mod papers;
 pub mod ui_layout;
+pub mod workspace;
