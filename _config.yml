@@ -1,0 +1,31 @@
+title: Anya Research Assistant
+description: An open-source desktop app for managing academic papers, note-taking, and knowledge visualization
+logo: public/icons/icon-512x512.png
+show_downloads: true
+theme: jekyll-theme-minimal
+
+# Site configuration
+url: "https://github.com/anya-ra/anya-ra"
+github_username: anya-ra
+
+# Navigation
+nav_links:
+  - text: Download
+    href: https://github.com/anya-ra/anya-ra/releases
+  - text: Docs
+    href: /anya-ra/docs/AI_SETUP.md
+  - text: Contributing
+    href: https://github.com/anya-ra/anya-ra/blob/main/CONTRIBUTING.md
+  - text: GitHub
+    href: https://github.com/anya-ra/anya-ra
+
+# Markdown
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+
+# Plugins
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
