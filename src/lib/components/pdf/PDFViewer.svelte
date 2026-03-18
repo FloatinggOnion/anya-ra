@@ -11,6 +11,9 @@
   import * as pdfjs from 'pdfjs-dist'
   import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url'
   import PdfViewer from 'svelte-pdf'
+  
+  // Set PDF.js worker URL for client-side operations
+  pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker as string
   import {
     annotations,
     addAnnotation,
@@ -91,7 +94,10 @@
       pdfData = await readFile(decodedPdfPath)
       
       // Load the document for our custom logic
-      const loadingTask = pdfjs.getDocument({ data: $state.snapshot(pdfData) })
+      if (!pdfData) {
+        throw new Error('Failed to read PDF data')
+      }
+      const loadingTask = pdfjs.getDocument({ data: pdfData })
       pdfDoc = await loadingTask.promise
       
       totalPages = pdfDoc.numPages
@@ -104,8 +110,7 @@
       viewport = {
         width: vp.width,
         height: vp.height,
-        scale: vp.scale,
-        rotation: vp.rotation
+        scale: vp.scale
       }
 
       // Load annotations from sidecar
@@ -170,11 +175,10 @@
       viewport = {
         width: vp.width,
         height: vp.height,
-        scale: vp.scale,
-        rotation: vp.rotation
+        scale: vp.scale
       }
       
-      if (scrollEl) {
+      if (scrollEl && viewport) {
         selectionHandler.attachToElement(scrollEl, viewport)
       }
     } catch (err) {
