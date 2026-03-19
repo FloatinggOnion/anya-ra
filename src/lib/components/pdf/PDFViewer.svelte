@@ -90,14 +90,18 @@
     loadError = null
 
     try {
-      // Read the PDF as a Uint8Array for maximum robustness
-      pdfData = await readFile(decodedPdfPath)
-      
+      // Read the PDF as a Uint8Array. Create a plain heap copy so the buffer
+      // is freely transferable to the PDF.js web worker (Tauri's native buffer
+      // is not always structuredClone-able / transferable directly).
+      const tauri_bytes = await readFile(decodedPdfPath)
+      pdfData = new Uint8Array(tauri_bytes)
+
       // Load the document for our custom logic
-      if (!pdfData) {
+      const rawData = pdfData
+      if (!rawData) {
         throw new Error('Failed to read PDF data')
       }
-      const loadingTask = pdfjs.getDocument({ data: pdfData })
+      const loadingTask = pdfjs.getDocument({ data: rawData.slice() })
       pdfDoc = await loadingTask.promise
       
       totalPages = pdfDoc.numPages
@@ -178,8 +182,9 @@
         scale: vp.scale
       }
       
-      if (scrollEl && viewport) {
-        selectionHandler.attachToElement(scrollEl, viewport)
+      const currentViewport = viewport
+      if (scrollEl && currentViewport) {
+        selectionHandler.attachToElement(scrollEl, currentViewport)
       }
     } catch (err) {
       console.error('[PDFViewer] Viewport update error:', err)
@@ -340,7 +345,7 @@
         <div class="library-viewer-wrap">
           {#if pdfData}
             <PdfViewer
-              data={$state.snapshot(pdfData)}
+              data={pdfData}
               pageNum={currentPage}
               scale={scale}
               showButtons={[]}
