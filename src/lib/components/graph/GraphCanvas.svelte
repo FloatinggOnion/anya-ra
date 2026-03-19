@@ -74,14 +74,13 @@
     _persist()
   }
 
-  // Persist node positions after drag (SvelteFlow mutates node.position in place)
+  // Persist node positions after drag.
+  // IMPORTANT: use flowInstance.getNodes() — not the local `nodes` variable, which is only
+  // set at mount and is stale with respect to SvelteFlow's internal position tracking.
   function onnodedragstop() {
-    const positionsSnapshot = nodes.map(n => ({ id: n.id, pos: n.position }))
-    console.debug('[graph] Node drag stopped - positions:', positionsSnapshot)
-    
-    // Update store with current node positions (which SvelteFlow has mutated in place)
-    graphNodes.set([...nodes])
-    
+    if (!flowInstance) return
+    const currentNodes = flowInstance.getNodes() as GraphNode[]
+    graphNodes.set(currentNodes)
     _persist()
   }
 

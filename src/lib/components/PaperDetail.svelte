@@ -3,7 +3,7 @@
   import { workspace } from '../stores/workspace'
   import { activateTab } from '../stores/panel-layout'
   import { downloadPdfToWorkspace, deletePaper } from '../services/papers'
-  import { ensurePaperNode, graphNodes, deleteNoteNodeForPaper } from '../stores/graph'
+  import { addPaperToGraph, graphNodes, deleteNoteNodeForPaper } from '../stores/graph'
   import { showToast } from '../services/toast'
 
   const sourceLabel: Record<string, string> = {
@@ -156,7 +156,7 @@
         <button
           class="add-to-graph-btn"
           disabled={isInGraph}
-          onclick={() => $selectedPaper && ensurePaperNode($selectedPaper)}
+          onclick={() => $selectedPaper && addPaperToGraph($selectedPaper)}
         >
           {isInGraph ? '🕸 In Graph ✓' : '🕸 Add to Graph'}
         </button>

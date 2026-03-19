@@ -2,6 +2,7 @@ import { writable, get } from 'svelte/store'
 import { workspace } from './workspace'
 import { papers } from './papers'
 import { loadGraph, saveGraph } from '../services/graph'
+import { loadNotes } from '../services/notes-io'
 import type { GraphNode, GraphEdge, GraphFile, AnyNodeData, PersistedNode, PersistedEdge, AnyaEdgeData } from '../types/graph'
 import type { Paper } from '../types/paper'
 
@@ -151,6 +152,25 @@ export function ensurePaperNode(paper: Paper): void {
   })
 }
 
+/**
+ * Add a paper to the graph, and automatically include its note (if one exists)
+ * as a linked node. This is the preferred entry point over ensurePaperNode directly.
+ */
+export async function addPaperToGraph(paper: Paper): Promise<void> {
+  ensurePaperNode(paper)
+
+  const ws = get(workspace)
+  if (ws?.path) {
+    const sidecar = await loadNotes(ws.path, paper.id)
+    const content = sidecar?.notes[0]?.content?.trim()
+    if (content) {
+      ensureNoteNodeForPaper(paper.id, content)
+    }
+  }
+
+  persistGraph(get(graphViewport))
+}
+
 export function addConceptNode(
   label: string,
   body: string,
@@ -189,22 +209,24 @@ export function addNoteNode(
 
 /**
  * Ensure a note node exists for a paper in the graph.
- * If it already exists, update its body. If not, create it.
- * Positions it relative to the paper node if it exists.
+ * If it already exists, update its body. If not, create it positioned
+ * below the paper node and linked to it with an edge.
  */
 export function ensureNoteNodeForPaper(paperId: string, body: string): string {
   let existingNoteId: string | null = null
-  let paperNodeId: string | null = null
+  let paperNodePos: { x: number; y: number } | null = null
 
-  // Find existing note node and paper node
   graphNodes.update((nodes) => {
-    paperNodeId = nodes.find((n) => n.data.kind === 'paper' && (n.data as any).paperId === paperId)?.id ?? null
+    const paperNode = nodes.find(
+      (n) => n.data.kind === 'paper' && (n.data as { kind: string; paperId: string }).paperId === paperId
+    )
+    if (paperNode) paperNodePos = paperNode.position
+
     const existing = nodes.find(
       (n) => n.data.kind === 'note' && (n.data as any).paperId === paperId
     )
     if (existing) {
       existingNoteId = existing.id
-      // Update existing note
       return nodes.map((n) =>
         n.id === existing.id
           ? { ...n, data: { ...(n.data as any), body } }
@@ -214,17 +236,34 @@ export function ensureNoteNodeForPaper(paperId: string, body: string): string {
     return nodes
   })
 
-  // If note exists, return its ID
-  if (existingNoteId) {
-    return existingNoteId
-  }
+  if (existingNoteId) return existingNoteId
 
-  // Otherwise, create new note node positioned below the paper node
-  const position = paperNodeId
-    ? { x: 100, y: 150 } // Relative offset from paper
+  // Position note below-right of the paper node
+  const pos = paperNodePos as { x: number; y: number } | null
+  const position = pos
+    ? { x: pos.x + 60, y: pos.y + 220 }
     : { x: 400, y: 300 }
 
-  return addNoteNode(body, position, { paperId })
+  const noteId = addNoteNode(body, position, { paperId })
+
+  // Link note to its paper with a 'related' edge
+  const paperNodeId = `paper-${paperId}`
+  graphEdges.update((edges) => {
+    const alreadyLinked = edges.some((e) => e.source === paperNodeId && e.target === noteId)
+    if (alreadyLinked) return edges
+    return [
+      ...edges,
+      {
+        id: `edge-${paperNodeId}-${noteId}`,
+        source: paperNodeId,
+        target: noteId,
+        type: 'typed',
+        data: { type: 'related' },
+      } as GraphEdge,
+    ]
+  })
+
+  return noteId
 }
 
 /**
