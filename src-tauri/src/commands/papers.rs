@@ -325,7 +325,7 @@ fn parse_arxiv_feed(xml: &str) -> Result<Vec<Paper>, String> {
 
 fn extract_arxiv_id(url: &str) -> String {
     // Extract "2112.05095v1" from "http://arxiv.org/abs/2112.05095v1"
-    url.split('/').last().unwrap_or("unknown").to_string()
+    url.split('/').next_back().unwrap_or("unknown").to_string()
 }
 
 fn extract_year_from_date(date_str: &str) -> i32 {
