@@ -73,9 +73,27 @@ jobs:
         if: runner.os == 'Linux' && matrix.arch == 'aarch64'
         run: |
           sudo dpkg --add-architecture arm64
-          sudo sed -i 's/^deb /deb [arch=amd64] /' /etc/apt/sources.list
-          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $(lsb_release -cs) main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
-          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports $(lsb_release -cs)-updates main restricted universe multiverse" | sudo tee -a /etc/apt/sources.list
+
+          # Restrict existing Ubuntu sources to amd64 only.
+          # Ubuntu 24.04 uses DEB822 format in ubuntu.sources; security.ubuntu.com
+          # does NOT host arm64 packages (those live on ports.ubuntu.com), so we
+          # must prevent apt from querying it for arm64 after adding the architecture.
+          if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
+            # Insert 'Architectures: amd64' before each 'Signed-By:' line (once per stanza)
+            sudo sed -i '/^Signed-By:/i Architectures: amd64' \
+              /etc/apt/sources.list.d/ubuntu.sources
+          fi
+          # Also handle legacy sources.list (Ubuntu 22.04 fallback)
+          if [ -f /etc/apt/sources.list ] && grep -q '^deb ' /etc/apt/sources.list; then
+            sudo sed -i 's|^deb \([^[]\)|deb [arch=amd64] \1|' /etc/apt/sources.list
+          fi
+
+          # Add arm64 packages from Ubuntu Ports
+          CODENAME=$(lsb_release -cs)
+          printf 'deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports %s main restricted universe multiverse\n' \
+            "$CODENAME" "${CODENAME}-updates" "${CODENAME}-security" \
+            | sudo tee /etc/apt/sources.list.d/ubuntu-arm64-ports.list
+
           sudo apt-get update
           sudo apt-get install -y \
             gcc-aarch64-linux-gnu \
