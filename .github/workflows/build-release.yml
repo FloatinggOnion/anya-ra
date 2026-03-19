@@ -12,9 +12,11 @@ jobs:
       matrix:
         include:
           # macOS builds
-          - os: macos-latest
+          # macos-13 = last Intel runner (native x86_64 — avoids ARM→x86_64 cross-compile bundler issues)
+          - os: macos-13
             arch: x86_64
             target: x86_64-apple-darwin
+          # macos-14 = Apple Silicon runner (native aarch64)
           - os: macos-14
             arch: aarch64
             target: aarch64-apple-darwin
@@ -128,14 +130,16 @@ jobs:
       - name: Prepare release assets
         id: prepare_assets
         run: |
+          # tauri build --target <triple> places bundles under target/<triple>/release/bundle/
+          BUNDLE_BASE="src-tauri/target/${{ matrix.target }}/release/bundle"
           if [ "${{ runner.os }}" == "macOS" ]; then
-            find src-tauri/target/release/bundle/dmg -name "*.dmg" -exec mv {} "Anya_${{ github.ref_name }}_${{ matrix.arch }}.dmg" \;
+            find "$BUNDLE_BASE/dmg" -name "*.dmg" -exec mv {} "Anya_${{ github.ref_name }}_${{ matrix.arch }}.dmg" \;
             echo "asset_path=Anya_${{ github.ref_name }}_${{ matrix.arch }}.dmg" >> $GITHUB_OUTPUT
           elif [ "${{ runner.os }}" == "Windows" ]; then
-            find src-tauri/target/release/bundle/msi -name "*.msi" -exec mv {} "Anya_${{ github.ref_name }}_${{ matrix.arch }}.msi" \;
+            find "$BUNDLE_BASE/msi" -name "*.msi" -exec mv {} "Anya_${{ github.ref_name }}_${{ matrix.arch }}.msi" \;
             echo "asset_path=Anya_${{ github.ref_name }}_${{ matrix.arch }}.msi" >> $GITHUB_OUTPUT
           else
-            find src-tauri/target/release/bundle/appimage -name "*.AppImage" -exec mv {} "Anya_${{ github.ref_name }}_${{ matrix.arch }}.AppImage" \;
+            find "$BUNDLE_BASE/appimage" -name "*.AppImage" -exec mv {} "Anya_${{ github.ref_name }}_${{ matrix.arch }}.AppImage" \;
             echo "asset_path=Anya_${{ github.ref_name }}_${{ matrix.arch }}.AppImage" >> $GITHUB_OUTPUT
           fi
         shell: bash
