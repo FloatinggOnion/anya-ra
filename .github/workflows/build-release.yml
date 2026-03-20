@@ -106,14 +106,6 @@ jobs:
             librsvg2-dev:arm64 \
             libglib2.0-dev:arm64 \
             libsoup-3.0-dev:arm64
-          # NOTE: cross-compile env vars are intentionally NOT written to $GITHUB_ENV here.
-          # If they were, cargo install tauri-cli (next step) would pick up the aarch64
-          # PKG_CONFIG_PATH, add /usr/lib/aarch64-linux-gnu to the linker search path, and
-          # fail with "incompatible with elf64-littleaarch64". They are set only on the
-          # build step below where they are actually needed.
-
-      - name: Install Tauri CLI
-        run: cargo install tauri-cli
 
       - name: Install dependencies
         run: pnpm install
@@ -130,16 +122,20 @@ jobs:
       - name: Prepare release assets
         id: prepare_assets
         run: |
-          # tauri build --target <triple> places bundles under target/<triple>/release/bundle/
-          BUNDLE_BASE="src-tauri/target/${{ matrix.target }}/release/bundle"
+          # Native builds produce bundles at target/release/bundle/
+          # Cross-compiled builds (Linux aarch64, Windows i686/aarch64) use target/<triple>/release/bundle/
+          # Use find to locate the bundle regardless of where Tauri placed it.
           if [ "${{ runner.os }}" == "macOS" ]; then
-            find "$BUNDLE_BASE/dmg" -name "*.dmg" -exec mv {} "Anya_${{ github.ref_name }}_${{ matrix.arch }}.dmg" \;
+            DMG=$(find src-tauri/target -name "*.dmg" -path "*/bundle/dmg/*" | head -1)
+            mv "$DMG" "Anya_${{ github.ref_name }}_${{ matrix.arch }}.dmg"
             echo "asset_path=Anya_${{ github.ref_name }}_${{ matrix.arch }}.dmg" >> $GITHUB_OUTPUT
           elif [ "${{ runner.os }}" == "Windows" ]; then
-            find "$BUNDLE_BASE/msi" -name "*.msi" -exec mv {} "Anya_${{ github.ref_name }}_${{ matrix.arch }}.msi" \;
+            MSI=$(find src-tauri/target -name "*.msi" -path "*/bundle/msi/*" | head -1)
+            mv "$MSI" "Anya_${{ github.ref_name }}_${{ matrix.arch }}.msi"
             echo "asset_path=Anya_${{ github.ref_name }}_${{ matrix.arch }}.msi" >> $GITHUB_OUTPUT
           else
-            find "$BUNDLE_BASE/appimage" -name "*.AppImage" -exec mv {} "Anya_${{ github.ref_name }}_${{ matrix.arch }}.AppImage" \;
+            APPIMAGE=$(find src-tauri/target -name "*.AppImage" -path "*/bundle/appimage/*" | head -1)
+            mv "$APPIMAGE" "Anya_${{ github.ref_name }}_${{ matrix.arch }}.AppImage"
             echo "asset_path=Anya_${{ github.ref_name }}_${{ matrix.arch }}.AppImage" >> $GITHUB_OUTPUT
           fi
         shell: bash
