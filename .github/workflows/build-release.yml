@@ -9,15 +9,15 @@ on:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         include:
-          # macOS builds
-          # macos-13 = last Intel runner (native x86_64 — avoids ARM→x86_64 cross-compile bundler issues)
-          - os: macos-13
+          # macOS builds - both use macos-latest (Apple Silicon runner)
+          # x86_64 is cross-compiled from ARM64 (Tauri 2.x supports this)
+          - os: macos-latest
             arch: x86_64
             target: x86_64-apple-darwin
-          # macos-14 = Apple Silicon runner (native aarch64)
-          - os: macos-14
+          - os: macos-latest
             arch: aarch64
             target: aarch64-apple-darwin
           # Windows builds
@@ -51,7 +51,7 @@ jobs:
           node-version: '20'
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v4
         with:
           version: 8
 
@@ -64,6 +64,12 @@ jobs:
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri'
+
+      - name: Set up MSVC ARM64 cross-compilation environment
+        if: runner.os == 'Windows' && matrix.arch == 'aarch64'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: amd64_arm64
 
       - name: Install Linux x86_64 dependencies
         if: runner.os == 'Linux' && matrix.arch == 'x86_64'
@@ -111,11 +117,20 @@ jobs:
         run: pnpm install
 
       - name: Build Tauri application
-        run: pnpm tauri build -- --target ${{ matrix.target }}
+        run: |
+          if [ "${{ runner.os }}" == "macOS" ]; then
+            pnpm tauri build -- --target ${{ matrix.target }} --bundles dmg
+          elif [ "${{ runner.os }}" == "Windows" ]; then
+            pnpm tauri build -- --target ${{ matrix.target }} --bundles nsis
+          else
+            pnpm tauri build -- --target ${{ matrix.target }} --bundles appimage
+          fi
+        shell: bash
         env:
           RUSTFLAGS: ${{ runner.os == 'Windows' && '-C target-feature=+crt-static' || '' }} # Windows only — Linux GTK libs are dynamic
           # Cross-compilation env vars for Linux aarch64 — scoped to this step only
-          PKG_CONFIG_PATH: ${{ matrix.arch == 'aarch64' && runner.os == 'Linux' && '/usr/lib/aarch64-linux-gnu/pkgconfig' || '' }}
+          PKG_CONFIG_LIBDIR: ${{ matrix.arch == 'aarch64' && runner.os == 'Linux' && '/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig' || '' }}
+          PKG_CONFIG_ALLOW_CROSS: ${{ matrix.arch == 'aarch64' && runner.os == 'Linux' && '1' || '' }}
           PKG_CONFIG_SYSROOT_DIR: ${{ matrix.arch == 'aarch64' && runner.os == 'Linux' && '/' || '' }}
           CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: ${{ matrix.arch == 'aarch64' && runner.os == 'Linux' && 'aarch64-linux-gnu-gcc' || '' }}
 
@@ -127,14 +142,17 @@ jobs:
           # Use find to locate the bundle regardless of where Tauri placed it.
           if [ "${{ runner.os }}" == "macOS" ]; then
             DMG=$(find src-tauri/target -name "*.dmg" -path "*/bundle/dmg/*" | head -1)
+            if [ -z "$DMG" ]; then echo "ERROR: No DMG found in build output" && find src-tauri/target -name "*.dmg" 2>/dev/null; exit 1; fi
             mv "$DMG" "Anya_${{ github.ref_name }}_${{ matrix.arch }}.dmg"
             echo "asset_path=Anya_${{ github.ref_name }}_${{ matrix.arch }}.dmg" >> $GITHUB_OUTPUT
           elif [ "${{ runner.os }}" == "Windows" ]; then
-            MSI=$(find src-tauri/target -name "*.msi" -path "*/bundle/msi/*" | head -1)
-            mv "$MSI" "Anya_${{ github.ref_name }}_${{ matrix.arch }}.msi"
-            echo "asset_path=Anya_${{ github.ref_name }}_${{ matrix.arch }}.msi" >> $GITHUB_OUTPUT
+            EXE=$(find src-tauri/target -name "*.exe" -path "*/bundle/nsis/*" | head -1)
+            if [ -z "$EXE" ]; then echo "ERROR: No NSIS installer found in build output" && find src-tauri/target -name "*.exe" 2>/dev/null; exit 1; fi
+            mv "$EXE" "Anya_${{ github.ref_name }}_${{ matrix.arch }}.exe"
+            echo "asset_path=Anya_${{ github.ref_name }}_${{ matrix.arch }}.exe" >> $GITHUB_OUTPUT
           else
             APPIMAGE=$(find src-tauri/target -name "*.AppImage" -path "*/bundle/appimage/*" | head -1)
+            if [ -z "$APPIMAGE" ]; then echo "ERROR: No AppImage found in build output" && find src-tauri/target -name "*.AppImage" 2>/dev/null; exit 1; fi
             mv "$APPIMAGE" "Anya_${{ github.ref_name }}_${{ matrix.arch }}.AppImage"
             echo "asset_path=Anya_${{ github.ref_name }}_${{ matrix.arch }}.AppImage" >> $GITHUB_OUTPUT
           fi
@@ -146,7 +164,7 @@ jobs:
           name: build-${{ matrix.target }}
           path: |
             Anya_${{ github.ref_name }}_*.dmg
-            Anya_${{ github.ref_name }}_*.msi
+            Anya_${{ github.ref_name }}_*.exe
             Anya_${{ github.ref_name }}_*.AppImage
 
   release:
@@ -171,7 +189,7 @@ jobs:
           ls -la ./release-assets/
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             ./release-assets/*
@@ -185,9 +203,9 @@ jobs:
             - **Intel Mac**: `Anya_${{ github.ref_name }}_x86_64.dmg`
 
             ### Windows
-            - **64-bit (x64)**: `Anya_${{ github.ref_name }}_x86_64.msi`
-            - **32-bit (x86)**: `Anya_${{ github.ref_name }}_x86.msi`
-            - **ARM64**: `Anya_${{ github.ref_name }}_aarch64.msi`
+            - **64-bit (x64)**: `Anya_${{ github.ref_name }}_x86_64.exe`
+            - **32-bit (x86)**: `Anya_${{ github.ref_name }}_x86.exe`
+            - **ARM64**: `Anya_${{ github.ref_name }}_aarch64.exe`
 
             ### Linux
             - **64-bit (x86_64)**: `Anya_${{ github.ref_name }}_x86_64.AppImage`
