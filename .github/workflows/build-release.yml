@@ -116,15 +116,20 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
+      - name: Set Linux aarch64 cross-compilation environment
+        if: runner.os == 'Linux' && matrix.arch == 'aarch64'
+        run: |
+          # Only set these when actually cross-compiling — setting PKG_CONFIG_LIBDIR
+          # to an empty string on x86_64 would wipe out all default search paths.
+          echo "PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig" >> $GITHUB_ENV
+          echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
+          echo "PKG_CONFIG_SYSROOT_DIR=/" >> $GITHUB_ENV
+          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+
       - name: Build Tauri application
-        run: pnpm tauri build -- --target ${{ matrix.target }}
+        run: pnpm tauri build --target ${{ matrix.target }}
         env:
-          RUSTFLAGS: ${{ runner.os == 'Windows' && '-C target-feature=+crt-static' || '' }} # Windows only — Linux GTK libs are dynamic
-          # Cross-compilation env vars for Linux aarch64 — scoped to this step only
-          PKG_CONFIG_LIBDIR: ${{ matrix.arch == 'aarch64' && runner.os == 'Linux' && '/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig' || '' }}
-          PKG_CONFIG_ALLOW_CROSS: ${{ matrix.arch == 'aarch64' && runner.os == 'Linux' && '1' || '' }}
-          PKG_CONFIG_SYSROOT_DIR: ${{ matrix.arch == 'aarch64' && runner.os == 'Linux' && '/' || '' }}
-          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: ${{ matrix.arch == 'aarch64' && runner.os == 'Linux' && 'aarch64-linux-gnu-gcc' || '' }}
+          RUSTFLAGS: ${{ runner.os == 'Windows' && '-C target-feature=+crt-static' || '' }}
 
       - name: Prepare release assets
         id: prepare_assets
@@ -177,7 +182,7 @@ jobs:
       - name: Prepare release assets
         run: |
           mkdir -p ./release-assets
-          find ./build-artifacts -type f \( -name "*.dmg" -o -name "*.msi" -o -name "*.AppImage" \) -exec mv {} ./release-assets/ \;
+          find ./build-artifacts -type f \( -name "*.dmg" -o -name "*.exe" -o -name "*.AppImage" \) -exec mv {} ./release-assets/ \;
           ls -la ./release-assets/
 
       - name: Create GitHub Release
