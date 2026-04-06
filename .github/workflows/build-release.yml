@@ -117,15 +117,7 @@ jobs:
         run: pnpm install
 
       - name: Build Tauri application
-        run: |
-          if [ "${{ runner.os }}" == "macOS" ]; then
-            pnpm tauri build -- --target ${{ matrix.target }} --bundles dmg
-          elif [ "${{ runner.os }}" == "Windows" ]; then
-            pnpm tauri build -- --target ${{ matrix.target }} --bundles nsis
-          else
-            pnpm tauri build -- --target ${{ matrix.target }} --bundles appimage
-          fi
-        shell: bash
+        run: pnpm tauri build -- --target ${{ matrix.target }}
         env:
           RUSTFLAGS: ${{ runner.os == 'Windows' && '-C target-feature=+crt-static' || '' }} # Windows only — Linux GTK libs are dynamic
           # Cross-compilation env vars for Linux aarch64 — scoped to this step only
