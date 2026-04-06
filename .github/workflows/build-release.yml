@@ -114,7 +114,7 @@ jobs:
             libsoup-3.0-dev:arm64
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Build Tauri application
         run: pnpm tauri build -- --target ${{ matrix.target }}
