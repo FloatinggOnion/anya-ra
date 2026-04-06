@@ -1,23 +1,24 @@
 title: Anya Research Assistant
 description: An open-source desktop app for managing academic papers, note-taking, and knowledge visualization
-logo: public/icons/icon-512x512.png
+logo: https://raw.githubusercontent.com/FloatinggOnion/anya-ra/main/public/icons/icon-512x512.png
 show_downloads: true
 theme: jekyll-theme-minimal
 
 # Site configuration
-url: "https://github.com/anya-ra/anya-ra"
-github_username: anya-ra
+url: "https://FloatinggOnion.github.io"
+baseurl: "/anya-ra"
+github_username: FloatinggOnion
 
 # Navigation
 nav_links:
   - text: Download
-    href: https://github.com/anya-ra/anya-ra/releases
-  - text: Docs
-    href: /anya-ra/docs/AI_SETUP.md
+    href: https://github.com/FloatinggOnion/anya-ra/releases
+  - text: AI Setup
+    href: /anya-ra/AI_SETUP
   - text: Contributing
-    href: https://github.com/anya-ra/anya-ra/blob/main/CONTRIBUTING.md
+    href: https://github.com/FloatinggOnion/anya-ra/blob/main/CONTRIBUTING.md
   - text: GitHub
-    href: https://github.com/anya-ra/anya-ra
+    href: https://github.com/FloatinggOnion/anya-ra
 
 # Markdown
 markdown: kramdown
