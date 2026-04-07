@@ -127,6 +127,8 @@ jobs:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
     name: Create Release
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
