@@ -34,7 +34,8 @@ jobs:
           - os: ubuntu-latest
             arch: x86_64
             target: x86_64-unknown-linux-gnu
-          - os: ubuntu-latest
+          # Native ARM64 runner — avoids QEMU for linuxdeploy AppImage bundling
+          - os: ubuntu-24.04-arm
             arch: aarch64
             target: aarch64-unknown-linux-gnu
 
@@ -71,76 +72,22 @@ jobs:
         with:
           arch: amd64_arm64
 
-      - name: Install Linux x86_64 dependencies
-        if: runner.os == 'Linux' && matrix.arch == 'x86_64'
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libglib2.0-dev libsoup-3.0-dev
 
-      - name: Set up QEMU for ARM64 binary execution
-        if: runner.os == 'Linux' && matrix.arch == 'aarch64'
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
-
-      - name: Install Linux aarch64 cross-compilation dependencies
-        if: runner.os == 'Linux' && matrix.arch == 'aarch64'
-        run: |
-          sudo dpkg --add-architecture arm64
-
-          # Restrict existing Ubuntu sources to amd64 only.
-          # Ubuntu 24.04 uses DEB822 format in ubuntu.sources; security.ubuntu.com
-          # does NOT host arm64 packages (those live on ports.ubuntu.com), so we
-          # must prevent apt from querying it for arm64 after adding the architecture.
-          if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
-            # Insert 'Architectures: amd64' before each 'Signed-By:' line (once per stanza)
-            sudo sed -i '/^Signed-By:/i Architectures: amd64' \
-              /etc/apt/sources.list.d/ubuntu.sources
-          fi
-          # Also handle legacy sources.list (Ubuntu 22.04 fallback)
-          if [ -f /etc/apt/sources.list ] && grep -q '^deb ' /etc/apt/sources.list; then
-            sudo sed -i 's|^deb \([^[]\)|deb [arch=amd64] \1|' /etc/apt/sources.list
-          fi
-
-          # Add arm64 packages from Ubuntu Ports
-          CODENAME=$(lsb_release -cs)
-          printf 'deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports %s main restricted universe multiverse\n' \
-            "$CODENAME" "${CODENAME}-updates" "${CODENAME}-security" \
-            | sudo tee /etc/apt/sources.list.d/ubuntu-arm64-ports.list
-
-          sudo apt-get update
-          sudo apt-get install -y \
-            gcc-aarch64-linux-gnu \
-            libwebkit2gtk-4.1-dev:arm64 \
-            libssl-dev:arm64 \
-            libgtk-3-dev:arm64 \
-            libayatana-appindicator3-dev:arm64 \
-            librsvg2-dev:arm64 \
-            libglib2.0-dev:arm64 \
-            libsoup-3.0-dev:arm64
-
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
-
-      - name: Set Linux aarch64 cross-compilation environment
-        if: runner.os == 'Linux' && matrix.arch == 'aarch64'
-        run: |
-          # Only set these when actually cross-compiling — setting PKG_CONFIG_LIBDIR
-          # to an empty string on x86_64 would wipe out all default search paths.
-          echo "PKG_CONFIG_LIBDIR=/usr/lib/aarch64-linux-gnu/pkgconfig:/usr/share/pkgconfig" >> $GITHUB_ENV
-          echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
-          echo "PKG_CONFIG_SYSROOT_DIR=/" >> $GITHUB_ENV
-          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
-          # linuxdeploy-aarch64.AppImage (and its plugin AppImages) run under QEMU.
-          # AppImages try to mount themselves via FUSE by default, but FUSE is not
-          # available in GitHub Actions runners. APPIMAGE_EXTRACT_AND_RUN=1 makes
-          # the AppImage runtime extract to a temp dir and run directly instead.
-          echo "APPIMAGE_EXTRACT_AND_RUN=1" >> $GITHUB_ENV
 
       - name: Build Tauri application
         run: pnpm tauri build --target ${{ matrix.target }}
         env:
           RUSTFLAGS: ${{ runner.os == 'Windows' && '-C target-feature=+crt-static' || '' }}
+          # AppImages try to FUSE-mount themselves; GitHub runners have no FUSE.
+          # This flag makes the AppImage runtime extract-and-run instead.
+          APPIMAGE_EXTRACT_AND_RUN: ${{ runner.os == 'Linux' && '1' || '' }}
 
       - name: Prepare release assets
         id: prepare_assets
