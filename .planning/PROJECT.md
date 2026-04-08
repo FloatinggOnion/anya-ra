@@ -8,7 +8,20 @@ A cross-platform desktop application (macOS, Windows, Linux) built with Tauri th
 
 Every step of the research loop — discover, read, annotate, map, write — happens in one fast, integrated application without switching tools.
 
-## Current State (v0.1.12)
+## Current Milestone: v0.2.0 Enhanced Interactive Writing
+
+**Goal:** Enable researchers to write standalone literature reviews with AI-assisted suggestions, paper references, and bidirectional linking between documents, papers, and notes.
+
+**Target features:**
+- Freeform literature review editor (standalone documents)
+- Paper references within documents with citation/linking
+- Obsidian-style bidirectional linking (papers ↔ documents, papers ↔ notes)
+- Inline AI suggestions while typing (context-aware from selected papers)
+- Chat pane with relevant paper context and suggestions
+
+---
+
+## Previous State (v0.1.12)
 
 **Shipped:**
 - Tauri + Svelte 5 foundation with workspace folder selection

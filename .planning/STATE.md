@@ -1,36 +1,35 @@
 ---
 gsd_state_version: 1.0
-milestone: v3.11.174
-milestone_name: milestone
-status: completed
-stopped_at: Phase 2 complete — 15 tasks, 3 commits, SUMMARY created
-last_updated: "2026-04-08T19:30:21.531Z"
+milestone: v0.2.0
+milestone_name: Enhanced Interactive Writing
+status: planning
+last_updated: "2026-04-08T20:35:00.000Z"
 last_activity: 2026-04-08
 progress:
-  total_phases: 7
-  completed_phases: 1
-  total_plans: 5
-  completed_plans: 5
-  percent: 57
+  total_phases: null
+  completed_phases: 0
+  total_plans: null
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-11)
+See: .planning/PROJECT.md (updated 2026-04-08)
 
 **Core value:** Every step of the research loop — discover, read, annotate, map, write — happens in one fast, integrated application without switching tools.
-**Current focus:** Phase 4 Complete — LLM chat with Ollama/OpenAI streaming, context selection, drafts, persistence
+**Current focus:** v0.2.0 — Standalone literature review editor with inline AI suggestions and paper/document linking
 
 ## Current Position
 
-Phase: 4 of 7 (LLM Integration)
-Plan: 5 of 5 ✅ Complete
-Status: Phase 4 Complete — Chat streaming, provider switching, context selection, drafts, persistence
-Last activity: 2026-04-08
+Phase: Not started (defining requirements)
+Plan: —
+Status: Gathering requirements for v0.2.0
+Last activity: 2026-04-08 — Milestone v0.2.0 started (Enhanced Interactive Writing)
 
-Progress: [██████░░░░] 57% (4 of 7 phases)
+Progress: [░░░░░░░░░░] 0% (requirements phase)
 
 ## Performance Metrics
 
