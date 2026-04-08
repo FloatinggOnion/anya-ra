@@ -50,6 +50,12 @@
 - [ ] **UX-03**: Paper references are styled distinctly (highlight color or underline)
 - [ ] **UX-04**: Chat context pane shows "Selected for suggestions" indicator (papers/notes being used)
 
+### Multi-Provider LLM Support (LLM-MULTI)
+
+- [ ] **LLM-MULTI-01**: LLM provider abstraction supports Ollama, OpenAI, and OpenRouter as interchangeable backends
+- [ ] **LLM-MULTI-02**: User can configure LLM provider via settings dialog with fallback chain (try primary → fallback → error)
+- [ ] **LLM-MULTI-03**: OpenRouter API key is securely stored in tauri-plugin-store and validated on startup
+
 ---
 
 ## Future Requirements (v0.3+)
@@ -77,13 +83,40 @@
 
 | REQ-ID | Category | Phase | Status |
 |--------|----------|-------|--------|
-| DOC-01 to DOC-06 | Document Management | 1 | Planned |
-| LINK-01 to LINK-06 | Paper References | 1 | Planned |
-| SUGG-01 to SUGG-08 | Inline Suggestions | 2 | Planned |
-| EXP-01 to EXP-03 | Export | 3 | Planned |
-| UX-01 to UX-04 | Editor Experience | 1 | Planned |
+| DOC-01 | Document Management | Phase 8 | Planned |
+| DOC-02 | Document Management | Phase 8 | Planned |
+| DOC-03 | Document Management | Phase 8 | Planned |
+| DOC-04 | Document Management | Phase 8 | Planned |
+| DOC-05 | Document Management | Phase 8 | Planned |
+| DOC-06 | Document Management | Phase 8 | Planned |
+| LINK-01 | Paper References & Linking | Phase 8 | Planned |
+| LINK-02 | Paper References & Linking | Phase 8 | Planned |
+| LINK-03 | Paper References & Linking | Phase 10 | Planned |
+| LINK-04 | Paper References & Linking | Phase 10 | Planned |
+| LINK-05 | Paper References & Linking | Phase 10 | Planned |
+| LINK-06 | Paper References & Linking | Phase 8 | Planned |
+| SUGG-01 | Inline Suggestions | Phase 9 | Planned |
+| SUGG-02 | Inline Suggestions | Phase 9 | Planned |
+| SUGG-03 | Inline Suggestions | Phase 9 | Planned |
+| SUGG-04 | Inline Suggestions | Phase 9 | Planned |
+| SUGG-05 | Inline Suggestions | Phase 9 | Planned |
+| SUGG-06 | Inline Suggestions | Phase 9 | Planned |
+| SUGG-07 | Inline Suggestions | Phase 9 | Planned |
+| SUGG-08 | Inline Suggestions | Phase 9 | Planned |
+| EXP-01 | Export | Phase 11 | Planned |
+| EXP-02 | Export | Phase 11 | Planned |
+| EXP-03 | Export | Phase 11 | Planned |
+| UX-01 | Editor Experience | Phase 8 | Planned |
+| UX-02 | Editor Experience | Phase 8 | Planned |
+| UX-03 | Editor Experience | Phase 8 | Planned |
+| UX-04 | Editor Experience | Phase 9 | Planned |
+| LLM-MULTI-01 | Multi-Provider LLM | Phase 9 | Planned |
+| LLM-MULTI-02 | Multi-Provider LLM | Phase 9 | Planned |
+| LLM-MULTI-03 | Multi-Provider LLM | Phase 9 | Planned |
 
 ---
 
-**Total v0.2.0 Requirements:** 27 REQ-IDs  
+**Total v0.2.0 Requirements:** 30 REQ-IDs  
+**Coverage:** 30/30 ✓ (100%)  
+**New Requirements:** LLM-MULTI-01 through LLM-MULTI-03 (Ollama + OpenAI + OpenRouter support)  
 **Last updated:** 2026-04-08
