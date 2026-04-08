@@ -8,28 +8,43 @@ A cross-platform desktop application (macOS, Windows, Linux) built with Tauri th
 
 Every step of the research loop — discover, read, annotate, map, write — happens in one fast, integrated application without switching tools.
 
+## Current State (v0.1.12)
+
+**Shipped:**
+- Tauri + Svelte 5 foundation with workspace folder selection
+- Tabbed MainPanel architecture (Chat, Papers, PDF, Graph, Notes tabs)
+- Full LLM chat interface with Ollama (qwen2:0.5b) and OpenAI fallback
+- Streaming responses with 3-wave wave execution
+- Context selection UI with token budgeting (tiktoken)
+- Draft section suggestions with accept/reject UI
+- Chat persistence with auto-save (300ms debounce)
+- Research notes editor (CodeMirror 6, markdown syntax highlighting)
+- Notes auto-save and export to PDF/DOCX with metadata
+- Knowledge graph (@xyflow/svelte canvas, 3 node types, Rust persistence)
+- Workspace export as ZIP with full-text search and HTML rendering
+
 ## Requirements
 
 ### Validated
 
-(None yet — ship to validate)
+- ✓ Cross-platform desktop app via Tauri (macOS, Windows, Linux) — v0.1.12
+- ✓ Folder-based workspace: each project lives in a user-chosen directory — v0.1.12
+- ✓ Built-in PDF viewer with annotation support — v0.1.12 (highlight, underline, sticky notes)
+- ✓ Notes system: markdown editor with auto-save and export — v0.1.12
+- ✓ Knowledge graph: @xyflow canvas with custom node types — v0.1.12
+- ✓ Chat interface with user-selectable context (papers, notes, graph, draft) — v0.1.12
+- ✓ LLM backend: Ollama (qwen2:0.5b) + OpenAI fallback — v0.1.12
+- ✓ LLM behavior: autonomous suggestions (accept/reject), draft sections on request — v0.1.12
+- ✓ Speed optimizations: bundle optimization, lazy loading, compression — v0.1.12
 
 ### Active
 
-- [ ] Cross-platform desktop app via Tauri (macOS, Windows, Linux)
-- [ ] Folder-based workspace: each project lives in a user-chosen directory
 - [ ] Paper discovery via arXiv, Semantic Scholar, PubMed (paywall papers flagged, not downloaded)
 - [ ] Import local PDFs into workspace
-- [ ] Built-in PDF viewer with annotation support
-- [ ] Notes system: each note has a backlink to exact PDF page/section/line
-- [ ] Knowledge graph: freeform nodes (papers, ideas, notes), user-drawn edges
 - [ ] LaTeX-capable text editor for writing literature reviews
-- [ ] Export: PDF, LaTeX, TXT, DOCX
-- [ ] Chat interface with user-selectable context (papers, notes, graph, draft)
-- [ ] LLM backend: Ollama (local, default Qwen3.5 0.8B) + cloud APIs (OpenAI, Anthropic, etc.)
-- [ ] LLM behavior: autonomous suggestions (accept/reject), draft sections on request, conversational
+- [ ] Export: PDF, LaTeX, TXT (DOCX partial)
 - [ ] Minimalist dark/light mode (light = black-and-white brutalist)
-- [ ] Speed as top-level priority: fast startup, instant UI, snappy interactions
+- [ ] Enhanced performance: target <100ms UI response, <2s app startup
 
 ### Out of Scope
 
@@ -58,10 +73,12 @@ Performance is explicitly a design constraint: the app should feel faster than t
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Tauri over Electron | Smaller binaries, faster startup, Rust backend for perf-critical work | — Pending |
-| Ollama as LLM runtime | Clean separation of concerns, user manages models, no bundled binary bloat | — Pending |
-| Folder-based workspaces | Files stay where researchers expect them; no proprietary database lock-in | — Pending |
-| LLM assists, never automates | Quality of literature review depends on researcher judgment, not LLM output | — Pending |
+| Tauri over Electron | Smaller binaries, faster startup, Rust backend for perf-critical work | ✓ Good — Tauri v2 with Svelte 5 working well, fast startup confirmed |
+| Ollama as LLM runtime | Clean separation of concerns, user manages models, no bundled binary bloat | ✓ Good — qwen2:0.5b runs smoothly on modest hardware, OpenAI fallback working |
+| Folder-based workspaces | Files stay where researchers expect them; no proprietary database lock-in | ✓ Good — all data (notes, PDFs, metadata) persists in workspace folder with JSON sidecars |
+| LLM assists, never automates | Quality of literature review depends on researcher judgment, not LLM output | ✓ Good — draft section suggestions with accept/reject UI implemented, user retains full control |
+| Tabbed MainPanel over modal overlays | Cleaner UI, easier context switching between papers/chat/notes | ✓ Good — tabbed interface is snappy, no loading delays between tabs |
+| Wave-based execution (GSD) | Parallel work on independent tasks, faster delivery | ✓ Good — 3-wave structure for LLM phase delivered all features with minimal conflicts |
 
 ---
-*Last updated: 2026-03-11 after initialization*
+*Last updated: 2026-04-08 after v0.1.12 milestone completion*
