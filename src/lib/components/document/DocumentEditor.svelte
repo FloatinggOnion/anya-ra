@@ -45,6 +45,7 @@
   {:else}
     <div class="editor-wrapper">
       {#if NotesEditorComponent}
+        <!-- svelte-ignore svelte_component_deprecated -->
         <svelte:component
           this={NotesEditorComponent}
           type="document"

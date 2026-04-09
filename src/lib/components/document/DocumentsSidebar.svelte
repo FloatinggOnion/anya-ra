@@ -7,10 +7,10 @@
 
   let searchQuery = $state('')
   let showCreateDialog = $state(false)
-  let selectedTemplateOnOpen: string | null = null
-  let editingDocId: string | null = $state(null)
-  let editingTitle: string = $state('')
-  let deleteConfirmDocId: string | null = $state(null)
+  let selectedTemplateOnOpen = $state<string | null>(null)
+  let editingDocId = $state<string | null>(null)
+  let editingTitle = $state('')
+  let deleteConfirmDocId = $state<string | null>(null)
 
   // Filtered list based on search
   const filteredDocuments = $derived.by(() => {
@@ -185,11 +185,10 @@
           <div
             class="document-item"
             class:selected={doc.id === $selectedDocumentId}
-            on:click={() => handleDocumentClick(doc.id)}
+            onclick={() => handleDocumentClick(doc.id)}
             onkeydown={(e) => e.key === 'Enter' && handleDocumentClick(doc.id)}
             role="button"
             tabindex="0"
-            aria-selected={doc.id === $selectedDocumentId}
           >
             <div class="document-content">
               {#if editingDocId === doc.id}
@@ -197,13 +196,12 @@
                 <input
                   type="text"
                   bind:value={editingTitle}
-                  on:blur={() => handleRenameBlur(doc.id)}
+                  onblur={() => handleRenameBlur(doc.id)}
                   onkeydown={(e) => handleRenameKeydown(e, doc.id)}
                   class="inline-edit"
                   placeholder="Document title"
                   onclick={(e) => e.stopPropagation()}
-                  on:click={(e) => e.stopPropagation()}
-                  autoFocus
+                  autofocus={true}
                 />
               {:else}
                 <span class="document-title">{doc.title}</span>
@@ -263,8 +261,10 @@
 
   <!-- Delete confirmation dialog -->
   {#if deleteConfirmDocId}
-    <div class="modal-overlay" onclick={handleDeleteCancel}>
-      <div class="modal" onclick={(e) => e.stopPropagation()}>
+    <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+    <div class="modal-overlay" onclick={handleDeleteCancel} role="presentation">
+      <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+      <div class="modal" onclick={(e) => e.stopPropagation()} role="dialog">
         <div class="modal-header">
           <h3 class="modal-title">Delete document?</h3>
         </div>
