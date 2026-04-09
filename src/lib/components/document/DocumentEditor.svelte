@@ -1,10 +1,15 @@
 <script lang="ts">
-  import { documents, selectedDocumentId, currentDocument } from '../../stores/documents'
+  import { documents, selectedDocumentId, currentDocument, documentLinks, updateLinks, saveDocumentWithLinks } from '../../stores/documents'
+  import { papers } from '../../stores/papers'
   import NotesEditor from '../editor/NotesEditor.svelte'
+  import { workspace } from '../../stores/workspace'
   import { onMount } from 'svelte'
+  import { validateAndGetLinks } from '../../services/document-validation'
 
   let NotesEditorComponent: any = $state(null)
   let content = $state('')
+  let currentLinks: any[] = $state([])
+  let validationTimeout: ReturnType<typeof setTimeout> | null = null
 
   // Load editor component on mount
   onMount(async () => {
@@ -21,13 +26,80 @@
     const doc = $currentDocument
     if (doc) {
       content = doc.content
+      // Restore links from documentLinks store
+      const storedLinks = $documentLinks.get(doc.id) ?? []
+      currentLinks = storedLinks
+      // Re-validate to update decorations (in case papers list changed)
+      runValidation(content, $papers)
     } else {
       content = ''
+      currentLinks = []
     }
+  })
+
+  /**
+   * Run validation with 100ms debounce.
+   * Parse citations, validate against papers store.
+   * Store links in memory but don't persist yet (will persist on auto-save).
+   */
+  function runValidation(newContent: string, papersList: any[]) {
+    // Clear pending validation
+    if (validationTimeout) clearTimeout(validationTimeout)
+
+    // Debounce validation to ~100ms
+    validationTimeout = setTimeout(() => {
+      const { links, suggestions } = validateAndGetLinks(newContent, papersList)
+      currentLinks = links
+
+      // Update documentLinks store (in-memory only, not persisted yet)
+      if ($selectedDocumentId) {
+        updateLinks($selectedDocumentId, links)
+      }
+
+      console.log(`[DocumentEditor] Validated ${links.length} citations (${links.filter(l => l.status === 'valid').length} valid, ${links.filter(l => l.status === 'missing').length} missing)`)
+    }, 100)
+  }
+
+  // Trigger validation on content change
+  $effect(() => {
+    runValidation(content, $papers)
+  })
+
+  // Trigger validation when papers store changes (new papers added, etc.)
+  $effect(() => {
+    const _ = $papers  // Depend on papers list
+    runValidation(content, $papers)
   })
 
   function handleChange(newContent: string) {
     content = newContent
+  }
+
+  /**
+   * Handle auto-save: persist both content and links to disk.
+   * Called from NotesEditor on blur or manual save (Cmd+S).
+   */
+  async function handleAutoSave(newContent: string) {
+    const ws = $workspace
+    const docId = $selectedDocumentId
+    const doc = $currentDocument
+
+    if (!ws || !docId || !doc) return
+
+    try {
+      // Save with links
+      await saveDocumentWithLinks(
+        ws.path,
+        docId,
+        doc.title,
+        newContent,
+        currentLinks,
+        doc.createdAt
+      )
+      console.log(`[DocumentEditor] Auto-saved ${docId} with ${currentLinks.length} links`)
+    } catch (error) {
+      console.error(`[DocumentEditor] Auto-save failed for ${docId}:`, error)
+    }
   }
 </script>
 
@@ -53,6 +125,7 @@
           title={$currentDocument.title}
           bind:content
           onChange={handleChange}
+          onBlur={() => handleAutoSave(content)}
         />
       {:else}
         <div class="loading-placeholder">

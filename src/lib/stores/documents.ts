@@ -8,10 +8,14 @@
 import { writable, derived } from 'svelte/store'
 import { saveDocument as ioSaveDocument, saveDocumentSidecar } from '../services/documents-io'
 import { workspace } from './workspace'
-import type { Document, DocumentSidecar } from '../types/document'
+import type { Document, DocumentSidecar, LinkMetadata } from '../types/document'
 
 // Key: docId, Value: Document from disk
 export const documents = writable<Map<string, Document>>(new Map())
+
+// Key: docId, Value: LinkMetadata[] from sidecar
+// Tracks all paper references found in each document
+export const documentLinks = writable<Map<string, LinkMetadata[]>>(new Map())
 
 // Optional: Derived store for current selected document
 // (will be used when document sidebar selection is implemented)
@@ -158,4 +162,127 @@ function getDocument(docId: string): Document | undefined {
     result = map.get(docId)
   })()
   return result
+}
+
+/**
+ * saveDocumentWithLinks - Save document content + link metadata atomically.
+ *
+ * Calls saveDocument() to write .md file, then saveDocumentSidecar() to write .links.json.
+ * Updates both documents and documentLinks stores.
+ * Called when validation has completed and user wants to persist.
+ */
+export async function saveDocumentWithLinks(
+  workspacePath: string,
+  docId: string,
+  title: string,
+  content: string,
+  links: LinkMetadata[],
+  createdAt?: string
+): Promise<void> {
+  if (!workspacePath || !docId || !title) return
+
+  // Clear any pending save
+  if (pendingSave) clearTimeout(pendingSave)
+
+  // Update both stores immediately (optimistic)
+  const now = new Date().toISOString()
+  const docCreatedAt = createdAt || now
+
+  const document: Document = {
+    id: docId,
+    title,
+    content,
+    createdAt: docCreatedAt,
+    updatedAt: now,
+  }
+
+  documents.update(map => {
+    map.set(docId, document)
+    return map
+  })
+
+  documentLinks.update(map => {
+    map.set(docId, links)
+    return map
+  })
+
+  // Schedule debounced disk write (300ms)
+  if (!isSaving) {
+    pendingSave = setTimeout(async () => {
+      isSaving = true
+      try {
+        // Save markdown content
+        await ioSaveDocument(workspacePath, docId, content)
+
+        // Save metadata sidecar with links
+        const sidecar: DocumentSidecar = {
+          version: 1,
+          docId,
+          title,
+          created: docCreatedAt,
+          modified: now,
+          links,
+        }
+        await saveDocumentSidecar(workspacePath, docId, sidecar)
+
+        console.log(`[documents] Auto-saved with ${links.length} links for ${docId} at ${new Date().toLocaleTimeString()}`)
+      } catch (error) {
+        console.error(`[documents] Auto-save with links failed for ${docId}:`, error)
+      } finally {
+        isSaving = false
+        pendingSave = null
+      }
+    }, 300)
+  }
+}
+
+/**
+ * updateLinks - Update link metadata for a document in-memory.
+ *
+ * Updates documentLinks store without persisting to disk immediately.
+ * Used during real-time validation (validation happens every keystroke,
+ * but disk write is debounced by saveDocument).
+ */
+export function updateLinks(docId: string, links: LinkMetadata[]): void {
+  documentLinks.update(map => {
+    map.set(docId, links)
+    return map
+  })
+}
+
+/**
+ * loadDocumentWithLinks - Load document content + links from disk.
+ *
+ * Calls loadDocument() + loadDocumentSidecar() in parallel.
+ * Populates both documents and documentLinks stores.
+ * Called when user opens a document to restore validation state.
+ */
+export async function loadDocumentWithLinks(
+  workspacePath: string,
+  docId: string
+): Promise<{ document: Document | null, links: LinkMetadata[] }> {
+  const { loadDocument, loadDocumentSidecar } = await import('../services/documents-io')
+
+  const [docResult, sidecarResult] = await Promise.all([
+    loadDocument(workspacePath, docId),
+    loadDocumentSidecar(workspacePath, docId),
+  ])
+
+  const document = docResult
+  const links = sidecarResult?.links ?? []
+
+  // Update stores
+  if (document) {
+    documents.update(map => {
+      map.set(docId, document)
+      return map
+    })
+  }
+
+  documentLinks.update(map => {
+    map.set(docId, links)
+    return map
+  })
+
+  return { document, links }
 }

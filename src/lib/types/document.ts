@@ -25,6 +25,7 @@ export interface LinkMetadata {
   paperId: string | null  // FK to papers store; null if paper not found (missing)
   position: number        // Character offset in document content (for highlighting/selection)
   status: 'valid' | 'missing'  // 'valid' if paper found, 'missing' if fuzzy match failed
+  content?: string        // Optional: full "[cite: ...]" text (populated during parsing)
 }
 
 /**

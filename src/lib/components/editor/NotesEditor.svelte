@@ -1,7 +1,7 @@
 <script lang="ts">
   import CodeMirror from 'svelte-codemirror-editor'
   import { markdown } from '@codemirror/lang-markdown'
-  import { EditorView } from 'codemirror'
+  import { EditorView } from '@codemirror/view'
   import { onMount } from 'svelte'
   import { saveDocument } from '../../stores/documents'
   import { saveNote } from '../../stores/notes'
@@ -13,10 +13,12 @@
     title?: string
     content: string
     onChange: (content: string) => void
+    onBlur?: () => void
   }
 
-  let { type = 'paper', id = '', title = '', content = $bindable(''), onChange } = $props()
+  let { type = 'paper', id = '', title = '', content = $bindable(''), onChange, onBlur } = $props()
   let editorElement: HTMLDivElement | undefined = $state()
+  let cmEditor: any = $state(null)  // Keep reference to CodeMirror editor
 
   const theme = EditorView.theme({
     '.cm-editor': {
@@ -35,20 +37,24 @@
 
   onMount(() => {
     if (!editorElement) return
-    
+
     // Find the CodeMirror editor element within the container
-    const cmEditor = editorElement.querySelector('.cm-editor')
-    const handleBlur = () => onChange(content)
-    if (cmEditor) {
-      cmEditor.addEventListener('blur', handleBlur)
+    const cmElement = editorElement.querySelector('.cm-editor')
+    const handleBlur = () => {
+      onChange(content)
+      if (onBlur) onBlur()
+    }
+    if (cmElement) {
+      cmElement.addEventListener('blur', handleBlur)
     }
 
     return () => {
-      if (cmEditor) {
-        cmEditor.removeEventListener('blur', handleBlur)
+      if (cmElement) {
+        cmElement.removeEventListener('blur', handleBlur)
       }
     }
   })
+
 
   function handleKeydown(e: KeyboardEvent) {
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -63,7 +69,8 @@
 
     try {
       if (type === 'document') {
-        // Save to documents store
+        // For documents, parent (DocumentEditor) handles saveDocumentWithLinks
+        // This is a fallback for manual Cmd+S
         await saveDocument(ws.path, id, title || 'Untitled', newContent)
       } else if (type === 'paper') {
         // Save to notes store
@@ -87,6 +94,7 @@
   {/if}
   <CodeMirror
     bind:value={content}
+    bind:this={cmEditor}
     lang={markdown()}
     {theme}
     editable={true}
@@ -138,5 +146,17 @@
 
   :global(.cm-line) {
     padding: 0 4px;
+  }
+
+  /* Citation validation feedback: red wavy underline for broken references */
+  :global(.citation-error) {
+    text-decoration: wavy underline #d63369;
+    text-underline-offset: 2px;
+    cursor: help;
+    opacity: 0.95;
+  }
+
+  :global(.citation-error:hover) {
+    opacity: 1;
   }
 </style>
