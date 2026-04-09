@@ -10,6 +10,7 @@
   let content = $state('')
   let currentLinks: any[] = $state([])
   let validationTimeout: ReturnType<typeof setTimeout> | null = null
+  let autoSaveTimeout: ReturnType<typeof setTimeout> | null = null
 
   // Load editor component on mount
   onMount(async () => {
@@ -73,11 +74,16 @@
 
   function handleChange(newContent: string) {
     content = newContent
+    // Trigger debounced auto-save on keystroke
+    if (autoSaveTimeout) clearTimeout(autoSaveTimeout)
+    autoSaveTimeout = setTimeout(() => {
+      handleAutoSave(newContent)
+    }, 300)
   }
 
   /**
    * Handle auto-save: persist both content and links to disk.
-   * Called from NotesEditor on blur or manual save (Cmd+S).
+   * Called from NotesEditor on blur, keystroke (debounced 300ms), or manual save (Cmd+S).
    */
   async function handleAutoSave(newContent: string) {
     const ws = $workspace
