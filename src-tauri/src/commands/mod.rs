@@ -1,5 +1,6 @@
 pub mod annotations;
 pub mod chat;
+pub mod documents;
 pub mod graph;
 pub mod keystore;
 pub mod migration;

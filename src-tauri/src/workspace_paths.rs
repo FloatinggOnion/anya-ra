@@ -91,3 +91,8 @@ pub fn get_annotations_dir(workspace_path: &str) -> PathBuf {
 pub fn get_ui_layout_file(workspace_path: &str) -> PathBuf {
     get_anya_path(workspace_path).join("ui-layout.json")
 }
+
+/// Get the documents directory path
+pub fn get_documents_dir(workspace_path: &str) -> PathBuf {
+    get_anya_path(workspace_path).join("documents")
+}
