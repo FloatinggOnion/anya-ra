@@ -7,7 +7,7 @@ start_phase: 8
 end_phase: 11
 status: ready_for_execution
 created: "2026-04-08T20:35:00.000Z"
-last_updated: "2026-04-08T21:30:00.000Z"
+last_updated: "2026-04-09T14:20:00.000Z"
 ---
 
 # ROADMAP.md - v0.2.0: Enhanced Interactive Writing with AI Assistance
@@ -24,7 +24,7 @@ last_updated: "2026-04-08T21:30:00.000Z"
 
 ## Phases Overview
 
-- [ ] **Phase 8: Document Editor + Paper References** - Create, persist, edit documents and implement `[[paper-id]]` reference syntax with validation
+- [ ] **Phase 8: Document Editor + Paper References** - Create, persist, edit documents and implement `[cite: Paper Title]` reference syntax with validation
 - [ ] **Phase 9: Conservative Inline Suggestions** - Context-aware AI writing assistance with 1-suggestion-max policy, <150ms latency SLA, multi-provider LLM support (Ollama + OpenAI + OpenRouter)
 - [ ] **Phase 10: Backlinks UI + Link Safeguards** - Backlink discovery, delete protection, visual density limits, measurement dashboards
 - [ ] **Phase 11: Export & Polish** - PDF export with metadata, references appendix, and final refinements
@@ -48,11 +48,14 @@ last_updated: "2026-04-08T21:30:00.000Z"
   4. User can see live list of all documents in sidebar (filterable by title)
   5. User can rename documents in-place and delete documents with confirmation dialog
   6. Document tab appears in MainPanel when user creates/opens a document, matching the existing notes/papers editor style
-  7. User can create paper references in document using `[[paper-id]]` syntax; references are parsed and validated
+  7. User can create paper references in document using `[cite: Paper Title]` syntax; references are parsed and validated
   8. If referenced paper doesn't exist, an alert/inline warning appears indicating the missing reference
   9. Referenced papers are stored in JSON sidecar file (`{docId}.links.json`), loaded on document open, and persisted with document
 
-**Plans:** TBD
+**Plans:** 3 plans (12 tasks total, 3 waves)
+  - [ ] 08-01-PLAN.md — Foundation (types, store, I/O service) — Wave 1
+  - [ ] 08-02-PLAN.md — UI integration (sidebar, editor, dialog, tabs) — Wave 2
+  - [ ] 08-03-PLAN.md — Validation & links (citation parsing, fuzzy match, decorations) — Wave 3
 
 **UI hint:** yes
 
@@ -182,7 +185,7 @@ last_updated: "2026-04-08T21:30:00.000Z"
 
 | Phase | Goal | Requirements | Success Criteria | Status |
 |-------|------|--------------|------------------|--------|
-| 8 | Document Editor + References | 9 | 9 | Not started |
+| 8 | Document Editor + References | 9 | 9 | Planning complete, 3 plans created |
 | 9 | Conservative Suggestions (Multi-LLM) | 10 | 12 | Not started |
 | 10 | Backlinks UI + Safeguards | 5 | 8 | Not started |
 | 11 | Export & Polish | 3 | 5 | Not started |
@@ -249,4 +252,4 @@ interface LLMProvider {
 
 ---
 
-*Last updated: 2026-04-08 (restructured based on pitfall analysis; added OpenRouter support)*
+*Last updated: 2026-04-09 (Phase 8 planning complete, 3 plans created with 12 tasks total across 3 waves)*
