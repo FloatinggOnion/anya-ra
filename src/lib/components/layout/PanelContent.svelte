@@ -53,6 +53,16 @@
       <p>Select a paper to open its notes.</p>
     </div>
   {/if}
+{:else if tab === 'document'}
+  {#await import('../document/DocumentEditor.svelte').then(m => m.default) then DocumentEditorComponent}
+    <svelte:component this={DocumentEditorComponent} />
+  {:catch error}
+    <div class="empty-state">
+      <div class="empty-icon">⚠️</div>
+      <h2>Error loading document editor</h2>
+      <p>Failed to load the document editor.</p>
+    </div>
+  {/await}
 {:else if tab === 'graph'}
   {#if GraphCanvasComponent}
     <GraphCanvasComponent />

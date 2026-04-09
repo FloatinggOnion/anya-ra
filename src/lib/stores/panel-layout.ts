@@ -12,11 +12,12 @@ export const tabLabels: Record<MovableTab, string> = {
     papers: "📄 Papers",
     pdf: "📖 PDF",
     notes: "📝 Notes",
+    document: "📄 Document",
     graph: "🕸 Graph",
 };
 
 // Ordered list of all tabs — defines display order within a column
-const TAB_ORDER: MovableTab[] = ["papers", "pdf", "notes", "chat", "graph"];
+const TAB_ORDER: MovableTab[] = ["papers", "pdf", "notes", "document", "chat", "graph"];
 
 // ─── Internal stores ──────────────────────────────────────────────────────────
 
@@ -25,6 +26,7 @@ export const tabPlacement = writable<Record<MovableTab, PanelId>>({
     papers: "center",
     pdf: "center",
     notes: "center",
+    document: "center",
     chat: "right",
     graph: "right",
 });
@@ -81,7 +83,7 @@ export async function initPanelLayout(workspacePath: string) {
     const layout = await loadUILayout(workspacePath);
 
     // Validate tab lists — ensure every MovableTab appears exactly once
-    const allTabs: MovableTab[] = ["papers", "pdf", "notes", "chat", "graph"];
+    const allTabs: MovableTab[] = ["papers", "pdf", "notes", "document", "chat", "graph"];
     const seenCenter = new Set(
         layout.centerTabs.filter((t) => allTabs.includes(t)),
     );

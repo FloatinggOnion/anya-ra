@@ -3,6 +3,7 @@
   import { showDownloadedOnly } from '../../stores/papers'
   import SearchBar from '../SearchBar.svelte'
   import PaperList from '../PaperList.svelte'
+  import DocumentsSidebar from '../document/DocumentsSidebar.svelte'
 
   function switchWorkspace() {
     workspace.set(null)
@@ -31,6 +32,8 @@
       </label>
     </div>
     <PaperList />
+    <div class="divider"></div>
+    <DocumentsSidebar />
     <div class="sidebar-footer">
       <button class="switch-btn" onclick={switchWorkspace} title="Switch workspace">
         ⇄ Switch Workspace

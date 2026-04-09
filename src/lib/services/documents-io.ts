@@ -179,3 +179,17 @@ export async function renameDocument(
     throw error
   }
 }
+
+/**
+ * Generate a unique document ID based on timestamp + random suffix.
+ * Format: doc-{timestamp}-{random}
+ * Example: doc-1712601600000-a7f3
+ *
+ * Called when creating a new document to ensure uniqueness.
+ */
+export async function generateDocumentId(workspacePath: string): Promise<string> {
+  const timestamp = Date.now()
+  const random = Math.random().toString(36).slice(2, 6)
+  const docId = `doc-${timestamp}-${random}`
+  return docId
+}

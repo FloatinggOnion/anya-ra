@@ -3,13 +3,19 @@
   import { markdown } from '@codemirror/lang-markdown'
   import { EditorView } from 'codemirror'
   import { onMount } from 'svelte'
+  import { saveDocument } from '../../stores/documents'
+  import { saveNote } from '../../stores/notes'
+  import { workspace } from '../../stores/workspace'
 
   interface Props {
+    type?: 'document' | 'paper'
+    id?: string
+    title?: string
     content: string
     onChange: (content: string) => void
   }
 
-  let { content = $bindable(''), onChange } = $props()
+  let { type = 'paper', id = '', title = '', content = $bindable(''), onChange } = $props()
   let editorElement: HTMLDivElement | undefined = $state()
 
   const theme = EditorView.theme({
@@ -47,12 +53,38 @@
   function handleKeydown(e: KeyboardEvent) {
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
       e.preventDefault()
-      onChange(content)
+      handleAutoSave(content)
+    }
+  }
+
+  async function handleAutoSave(newContent: string) {
+    const ws = $workspace
+    if (!ws || !id) return
+
+    try {
+      if (type === 'document') {
+        // Save to documents store
+        await saveDocument(ws.path, id, title || 'Untitled', newContent)
+      } else if (type === 'paper') {
+        // Save to notes store
+        await saveNote(ws.path, id, newContent)
+      }
+      console.log(`[NotesEditor] Auto-saved ${type} ${id}`)
+    } catch (error) {
+      console.error(`[NotesEditor] Auto-save failed for ${type} ${id}:`, error)
     }
   }
 </script>
 
 <div class="editor-container" bind:this={editorElement} onkeydown={handleKeydown} role="textbox" tabindex="0">
+  {#if type && id}
+    <div class="editor-context">
+      <span class="context-label">Editing: {type}</span>
+      {#if title}
+        <span class="context-title">— {title}</span>
+      {/if}
+    </div>
+  {/if}
   <CodeMirror
     bind:value={content}
     lang={markdown()}
@@ -69,6 +101,31 @@
     background: var(--color-surface-0);
     border-radius: 4px;
     overflow: hidden;
+  }
+
+  .editor-context {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--color-surface-1);
+    border-bottom: 1px solid var(--color-surface-2);
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+  }
+
+  .context-label {
+    font-weight: 500;
+    color: var(--color-text-secondary);
+  }
+
+  .context-title {
+    color: var(--color-text);
+    font-style: italic;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   :global(.cm-editor) {
