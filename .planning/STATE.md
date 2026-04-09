@@ -24,12 +24,12 @@ See: .planning/PROJECT.md (updated 2026-04-08)
 
 ## Current Position
 
-Phase: 8 (Document Editor Foundation) — Wave 1 complete
-Plan: 08-01 (Foundation: types, store, I/O service)
-Status: COMPLETE — 3/3 tasks delivered, 4 atomic commits
-Last activity: 2026-04-09 — Phase 8 Wave 1 executed (types, store, Tauri backend)
+Phase: 8 (Document Editor Foundation) — Wave 2 complete
+Plan: 08-02 (UI Components & Editor Integration)
+Status: COMPLETE — 5/5 tasks delivered, 2 atomic commits
+Last activity: 2026-04-09 — Phase 8 Wave 2 executed (DocumentsSidebar, DocumentCreateDialog, NotesEditor enhancement, MainPanel integration)
 
-Progress: [███░░░░░░░] 33% (1 of 3 plans complete)
+Progress: [██████░░░░] 67% (2 of 3 plans complete)
 
 ## Phase Structure (v0.2.0)
 
@@ -55,13 +55,20 @@ Progress: [███░░░░░░░] 33% (1 of 3 plans complete)
 
 ## Performance Metrics
 
-**Velocity (from v0.1.12):**
+**Velocity (v0.2.0 so far):**
 
-- Total plans completed: 3
-- Average duration: 27 min
-- Total execution time: 1.36 hours
+- Total plans completed: 2
+- Average duration: 30 min
+- Total execution time: 1 hour
 
-**By Phase (v0.1.12):**
+**By Phase (v0.2.0):**
+
+| Phase | Plans | Total | Avg/Plan |
+|-------|-------|-------|----------|
+| Phase 8 Wave 1 | 1 | 45 min | 45 min |
+| Phase 8 Wave 2 | 1 | 45 min | 45 min |
+
+**Previous (v0.1.12):**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
