@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v0.2.0
 milestone_name: Enhanced Interactive Writing
-status: in_progress
-last_updated: "2026-04-09T01:25:00.000Z"
+status: phase_8_complete
+last_updated: "2026-04-09T00:58:00.000Z"
 last_activity: 2026-04-09
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 1
-  percent: 33
+  completed_plans: 3
+  percent: 100
 ---
 
 # Project State
@@ -24,49 +24,51 @@ See: .planning/PROJECT.md (updated 2026-04-08)
 
 ## Current Position
 
-Phase: 8 (Document Editor Foundation) — Wave 2 complete
-Plan: 08-02 (UI Components & Editor Integration)
-Status: COMPLETE — 5/5 tasks delivered, 2 atomic commits
-Last activity: 2026-04-09 — Phase 8 Wave 2 executed (DocumentsSidebar, DocumentCreateDialog, NotesEditor enhancement, MainPanel integration)
+Phase: 8 (Document Editor Foundation) — ALL WAVES COMPLETE
+Plan: 08-03 (Citation Validation & Link Persistence)
+Status: COMPLETE — 4/4 tasks delivered, 2 atomic commits
+Last activity: 2026-04-09 — Phase 8 Wave 3 executed (validation service, decorations, DocumentEditor integration, link persistence)
 
-Progress: [██████░░░░] 67% (2 of 3 plans complete)
+Progress: [████████████] 100% (3 of 3 plans complete)
+Ready for: Phase 9 (Conservative Inline Suggestions)
 
 ## Phase Structure (v0.2.0)
 
 **Phase 8: Document Editor Foundation** — Create, persist, and edit standalone documents
-- Requirements: 8 (DOC-01 to DOC-06, UX-01, UX-02)
-- Success criteria: 6 observable behaviors
-- Status: Wave 1 COMPLETE (types, store, backend)
+- Requirements: 12 (DOC-01 to DOC-06, LINK-01, LINK-02, LINK-06, UX-01, UX-02, UX-03)
+- Success criteria: 9 observable behaviors
+- Status: ALL WAVES COMPLETE (Wave 1: types/store, Wave 2: UI/editor, Wave 3: validation/links)
 
-**Phase 9: Paper Linking System** — Reference syntax, backlinks, orphan handling
-- Requirements: 7 (LINK-01 to LINK-06, UX-03)
-- Success criteria: 6 observable behaviors
-- Status: Not started
+**Phase 9: Conservative Inline Suggestions** — AI writing assistance with context, multi-provider LLM
+- Requirements: 10 (SUGG-01 to SUGG-08, UX-04, LLM-MULTI-01 to LLM-MULTI-03)
+- Success criteria: 12 observable behaviors
+- Status: Not started (ready to begin)
 
-**Phase 10: Inline Suggestions** — AI writing assistance with ghost text, debounce, context selection
-- Requirements: 9 (SUGG-01 to SUGG-08, UX-04)
-- Success criteria: 6 observable behaviors
+**Phase 10: Backlinks UI + Link Safeguards** — Backlink discovery, delete protection, visual safeguards
+- Requirements: 5 (LINK-03, LINK-04, LINK-05, UX backlinks)
+- Success criteria: 8 observable behaviors
 - Status: Not started
 
 **Phase 11: Export & Polish** — PDF export with metadata and references appendix
 - Requirements: 3 (EXP-01 to EXP-03)
-- Success criteria: 4 observable behaviors
+- Success criteria: 5 observable behaviors
 - Status: Not started
 
 ## Performance Metrics
 
 **Velocity (v0.2.0 so far):**
 
-- Total plans completed: 2
-- Average duration: 30 min
-- Total execution time: 1 hour
+- Total plans completed: 3
+- Average duration: 28 min/plan
+- Total execution time: 1h 25m
 
 **By Phase (v0.2.0):**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| Phase 8 Wave 1 | 1 | 45 min | 45 min |
-| Phase 8 Wave 2 | 1 | 45 min | 45 min |
+| Phase 8 Wave 1 (Types/Store) | 1 | 45 min | 45 min |
+| Phase 8 Wave 2 (UI/Editor) | 1 | 45 min | 45 min |
+| Phase 8 Wave 3 (Validation/Links) | 1 | 28 min | 28 min |
 
 **Previous (v0.1.12):**
 

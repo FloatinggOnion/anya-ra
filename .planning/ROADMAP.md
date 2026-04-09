@@ -24,7 +24,7 @@ last_updated: "2026-04-09T14:20:00.000Z"
 
 ## Phases Overview
 
-- [ ] **Phase 8: Document Editor + Paper References** - Create, persist, edit documents and implement `[cite: Paper Title]` reference syntax with validation
+- [x] **Phase 8: Document Editor + Paper References** - Create, persist, edit documents and implement `[cite: Paper Title]` reference syntax with validation
 - [ ] **Phase 9: Conservative Inline Suggestions** - Context-aware AI writing assistance with 1-suggestion-max policy, <150ms latency SLA, multi-provider LLM support (Ollama + OpenAI + OpenRouter)
 - [ ] **Phase 10: Backlinks UI + Link Safeguards** - Backlink discovery, delete protection, visual density limits, measurement dashboards
 - [ ] **Phase 11: Export & Polish** - PDF export with metadata, references appendix, and final refinements
@@ -185,8 +185,8 @@ last_updated: "2026-04-09T14:20:00.000Z"
 
 | Phase | Goal | Requirements | Success Criteria | Status |
 |-------|------|--------------|------------------|--------|
-| 8 | Document Editor + References | 9 | 9 | Planning complete, 3 plans created |
-| 9 | Conservative Suggestions (Multi-LLM) | 10 | 12 | Not started |
+| 8 | Document Editor + References | 12 | 9 | COMPLETE — 3/3 plans executed, all 9 criteria met |
+| 9 | Conservative Suggestions (Multi-LLM) | 10 | 12 | Not started, ready to begin |
 | 10 | Backlinks UI + Safeguards | 5 | 8 | Not started |
 | 11 | Export & Polish | 3 | 5 | Not started |
 
