@@ -6,7 +6,7 @@ status: planning
 last_updated: "2026-04-08T20:35:00.000Z"
 last_activity: 2026-04-08
 progress:
-  total_phases: null
+  total_phases: 4
   completed_phases: 0
   total_plans: null
   completed_plans: 0
@@ -24,22 +24,44 @@ See: .planning/PROJECT.md (updated 2026-04-08)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 8 (Document Editor Foundation) — ready to plan
 Plan: —
-Status: Gathering requirements for v0.2.0
-Last activity: 2026-04-08 — Milestone v0.2.0 started (Enhanced Interactive Writing)
+Status: ROADMAP created, awaiting phase decomposition
+Last activity: 2026-04-08 — Roadmap v0.2.0 created (4 phases, 27 requirements mapped)
 
-Progress: [░░░░░░░░░░] 0% (requirements phase)
+Progress: [░░░░░░░░░░] 0% (planning complete, execution pending)
+
+## Phase Structure (v0.2.0)
+
+**Phase 8: Document Editor Foundation** — Create, persist, and edit standalone documents
+- Requirements: 8 (DOC-01 to DOC-06, UX-01, UX-02)
+- Success criteria: 6 observable behaviors
+- Status: Not started
+
+**Phase 9: Paper Linking System** — Reference syntax, backlinks, orphan handling
+- Requirements: 7 (LINK-01 to LINK-06, UX-03)
+- Success criteria: 6 observable behaviors
+- Status: Not started
+
+**Phase 10: Inline Suggestions** — AI writing assistance with ghost text, debounce, context selection
+- Requirements: 9 (SUGG-01 to SUGG-08, UX-04)
+- Success criteria: 6 observable behaviors
+- Status: Not started
+
+**Phase 11: Export & Polish** — PDF export with metadata and references appendix
+- Requirements: 3 (EXP-01 to EXP-03)
+- Success criteria: 4 observable behaviors
+- Status: Not started
 
 ## Performance Metrics
 
-**Velocity:**
+**Velocity (from v0.1.12):**
 
 - Total plans completed: 3
 - Average duration: 27 min
 - Total execution time: 1.36 hours
 
-**By Phase:**
+**By Phase (v0.1.12):**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
@@ -68,15 +90,25 @@ Recent decisions affecting current work:
 - [Phase 04-llm]: registerContextGetter pattern for circular dep prevention (chat ↔ context-selection)
 - [Phase 04-llm]: tabbed MainPanel (Chat/Papers) to preserve Phase 2 PaperDetail integration
 - [Phase 04-llm]: js-tiktoken uses encodingForModel (camelCase) not encoding_for_model
-- [Phase 04-llm]: lazy import('chat-persistence') in triggerAutoSave to prevent circular module dep
+- [Phase phase-3]: lazy import('chat-persistence') in triggerAutoSave to prevent circular module dep
 - [Phase phase-3]: pdfjs-dist@3.11 stable Vite worker pattern over v4 mjs API
 - [Phase phase-3]: SVG overlay for annotations: interactive elements, no hit-testing
 - [Phase phase-3]: Annotations stored in PDF coordinate space, canvas transform at render
 - [Phase phase-3]: JSON sidecar {pdf}.annotations.json co-located with PDF file
 
+### Key v0.2.0 Architecture Decisions
+
+- Document model: Markdown files in `{workspace}/documents/{docId}.md` with JSON sidecar for links
+- Linking system: Obsidian-style `[[paper-id]]` syntax with validation and orphan handling
+- Suggestions: TipTap extension with ghost text decoration, 500ms debounce, streaming from Ollama/OpenAI
+- Editor consistency: CodeMirror editor used for documents (same UX as notes/papers)
+- Link storage: JSON sidecars (`{docId}.links.json`) for bidirectional link tracking
+- Backlinks: In-memory Map loaded on document open (O(1) query performance)
+- Export: Leverage existing Tectonic pipeline for PDF generation
+
 ### Pending Todos
 
-None yet.
+None yet (roadmap creation complete).
 
 ### Blockers/Concerns
 
@@ -84,8 +116,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-11 (Phase 2 execution)
-Stopped at: Phase 2 complete — 15 tasks, 3 commits, SUMMARY created
+Last session: 2026-04-08 (v0.2.0 roadmap creation)
+Stopped at: Roadmap complete, 4 phases identified, 27/27 requirements mapped
 Resume file: None
 
 ## Tech Stack Reference
@@ -108,5 +140,10 @@ Comprehensive research completed for:
 - LLM integration (Ollama API, streaming, context management)
 - Paper discovery APIs (arXiv, Semantic Scholar, PubMed, CrossRef)
 - Knowledge graph (@xyflow/svelte) and editor (TipTap)
+- **v0.2.0 specific:**
+  - TipTap extension APIs for inline suggestions and decorations
+  - JSON sidecar pattern for bidirectional linking
+  - Obsidian-style backlink architecture
+  - Streaming suggestion integration with existing LLM infrastructure
 
 Research files available in research/ directory for reference during planning.
