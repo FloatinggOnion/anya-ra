@@ -32,7 +32,8 @@
   function handleDialogSubmit(event: CustomEvent<{ docId: string; title: string; content: string }>) {
     showCreateDialog = false
     selectedTemplateOnOpen = null
-    // The dialog will have already called saveDocument, so the document will appear in the list
+    // Auto-select the newly created document so it opens in the editor
+    selectedDocumentId.set(event.detail.docId)
   }
 
   function handleDocumentClick(docId: string) {
@@ -93,7 +94,9 @@
 
       // Update store
       documents.update(map => {
-        map.delete(deleteConfirmDocId)
+        if (deleteConfirmDocId) {
+          map.delete(deleteConfirmDocId)
+        }
         return map
       })
 

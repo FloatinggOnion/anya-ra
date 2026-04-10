@@ -4,6 +4,7 @@
   import { papers } from './lib/stores/papers'
   import { loadPapers } from './lib/services/papers'
   import { initializeNotes } from './lib/services/notes-io'
+  import { initializeDocuments } from './lib/stores/documents'
   import { initializeGraph } from './lib/stores/graph'
   import { initializeTheme } from './lib/stores/theme'
   import WelcomeScreen from './lib/components/WelcomeScreen.svelte'
@@ -32,6 +33,13 @@
         await initializeNotes($workspace.path)
       } catch (error) {
         console.error('Failed to initialize notes:', error)
+      }
+
+      // Load all documents from disk so the sidebar is populated on startup
+      try {
+        await initializeDocuments($workspace.path)
+      } catch (error) {
+        console.error('Failed to initialize documents:', error)
       }
 
       // Initialize graph AFTER papers — orphan filtering requires live paper list

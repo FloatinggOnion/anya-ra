@@ -10,18 +10,47 @@
   let validationTimeout: ReturnType<typeof setTimeout> | null = null
   let autoSaveTimeout: ReturnType<typeof setTimeout> | null = null
   let lastLoadedContent = ''
+  // Plain (non-reactive) variable — tracks which doc ID has been loaded into the editor.
+  // Used to distinguish "switching documents" from "store updated after auto-save".
+  let loadedDocId: string | null = null
 
-  // Load document content when selection changes
-  $effect(() => {
-    const doc = $currentDocument
-    if (doc) {
-      lastLoadedContent = doc.content
-      content = doc.content
-      currentLinks = $documentLinks.get(doc.id) ?? []
-    } else {
-      lastLoadedContent = ''
-      content = ''
-      currentLinks = []
+  // Load document content only when the selected document ID changes.
+  //
+  // MUST be $effect.pre() — runs BEFORE DOM update, which means `content` is
+  // set to the correct value before NotesEditor/CodeMirror mounts. Without this,
+  // the sequence is:
+  //   1. DOM updates → NotesEditor mounts with content=''
+  //   2. CodeMirror initializes with '' → first_update consumed on that empty call
+  //   3. $effect fires → content = doc.content → CodeMirror.$effect fires update()
+  //   4. first_update is ALREADY FALSE → would work... but see below
+  //
+  // With $effect.pre():
+  //   1. content = doc.content (before DOM update)
+  //   2. DOM update → NotesEditor mounts with content=doc.content
+  //   3. CodeMirror initializes with doc.content → correct from the start ✓
+  //
+  // The loadedDocId guard prevents auto-save (which updates store object's updatedAt)
+  // from re-triggering a content reload and causing cursor resets / flicker.
+  $effect.pre(() => {
+    const docId = $selectedDocumentId
+    const doc = $currentDocument  // Subscribe so we re-run if doc loads asynchronously
+
+    if (docId !== loadedDocId) {
+      if (doc) {
+        // New document available — load it
+        loadedDocId = docId
+        lastLoadedContent = doc.content
+        content = doc.content
+        currentLinks = $documentLinks.get(doc.id) ?? []
+      } else if (!docId) {
+        // Nothing selected
+        loadedDocId = null
+        lastLoadedContent = ''
+        content = ''
+        currentLinks = []
+      }
+      // If docId is set but doc is still null (async load), wait —
+      // the effect re-runs when $currentDocument becomes available
     }
   })
 

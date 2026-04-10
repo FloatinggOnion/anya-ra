@@ -6,7 +6,7 @@
  */
 
 import { writable, derived } from 'svelte/store'
-import { saveDocument as ioSaveDocument, saveDocumentSidecar } from '../services/documents-io'
+import { listDocuments, loadDocument, loadDocumentSidecar, saveDocument as ioSaveDocument, saveDocumentSidecar } from '../services/documents-io'
 import { workspace } from './workspace'
 import type { Document, DocumentSidecar, LinkMetadata } from '../types/document'
 
@@ -261,8 +261,6 @@ export async function loadDocumentWithLinks(
   workspacePath: string,
   docId: string
 ): Promise<{ document: Document | null, links: LinkMetadata[] }> {
-  const { loadDocument, loadDocumentSidecar } = await import('../services/documents-io')
-
   const [docResult, sidecarResult] = await Promise.all([
     loadDocument(workspacePath, docId),
     loadDocumentSidecar(workspacePath, docId),
@@ -285,4 +283,53 @@ export async function loadDocumentWithLinks(
   })
 
   return { document, links }
+}
+
+/**
+ * initializeDocuments — load all documents from disk into memory on startup.
+ *
+ * Called once from App.svelte after the workspace is confirmed available.
+ * Lists all document IDs, then loads each document + sidecar in parallel.
+ * Populates both `documents` and `documentLinks` stores so the sidebar is
+ * populated immediately without requiring the user to open each document.
+ */
+export async function initializeDocuments(workspacePath: string): Promise<void> {
+  try {
+    const docIds = await listDocuments(workspacePath)
+    if (docIds.length === 0) return
+
+    // Load all documents in parallel — small enough to be fast, avoids waterfall
+    const results = await Promise.allSettled(
+      docIds.map(docId => Promise.all([
+        loadDocument(workspacePath, docId),
+        loadDocumentSidecar(workspacePath, docId),
+      ]))
+    )
+
+    // Batch both store updates in a single pass
+    const docMap = new Map<string, Document>()
+    const linksMap = new Map<string, LinkMetadata[]>()
+
+    results.forEach((result, i) => {
+      if (result.status === 'rejected') {
+        console.error(`[documents] Failed to load ${docIds[i]}:`, result.reason)
+        return
+      }
+      const [doc, sidecar] = result.value
+      if (doc) {
+        docMap.set(doc.id, doc)
+        linksMap.set(doc.id, sidecar?.links ?? [])
+      }
+    })
+
+    documents.set(docMap)
+    documentLinks.update(map => {
+      linksMap.forEach((links, id) => map.set(id, links))
+      return map
+    })
+
+    console.log(`[documents] Loaded ${docMap.size} document(s) from workspace`)
+  } catch (error) {
+    console.error('[documents] Failed to initialize documents:', error)
+  }
 }
