@@ -28,14 +28,14 @@
 
 ### Inline Suggestions (SUGG)
 
-- [ ] **SUGG-01**: When user is idle (no keystroke for 500ms) while editing, generate writing suggestion
+- [x] **SUGG-01**: When user is idle (no keystroke for 500ms) while editing, generate writing suggestion
 - [ ] **SUGG-02**: Suggestions are context-aware: use selected papers + current document section
 - [ ] **SUGG-03**: Suggestion appears as ghost text (grayed out) inline without blocking text
 - [ ] **SUGG-04**: User can accept suggestion (Tab key), reject (Escape), or edit before accepting
 - [ ] **SUGG-05**: Accepted suggestion is committed to document; rejected suggestion is discarded
 - [ ] **SUGG-06**: Suggestion generation happens via Ollama/OpenAI (uses existing LLM integration)
 - [ ] **SUGG-07**: Show loading indicator if suggestion takes >1s to generate
-- [ ] **SUGG-08**: User can select papers/notes as context for suggestions (via chat context pane)
+- [x] **SUGG-08**: User can select papers/notes as context for suggestions (via chat context pane)
 
 ### Export (EXP)
 
@@ -48,13 +48,13 @@
 - [ ] **UX-01**: Literature review documents use same CodeMirror editor as notes (consistent UI)
 - [ ] **UX-02**: Document tab appears in MainPanel when user creates/opens a document
 - [ ] **UX-03**: Paper references are styled distinctly (highlight color or underline)
-- [ ] **UX-04**: Chat context pane shows "Selected for suggestions" indicator (papers/notes being used)
+- [x] **UX-04**: Chat context pane shows "Selected for suggestions" indicator (papers/notes being used)
 
 ### Multi-Provider LLM Support (LLM-MULTI)
 
-- [ ] **LLM-MULTI-01**: LLM provider abstraction supports Ollama, OpenAI, and OpenRouter as interchangeable backends
+- [x] **LLM-MULTI-01**: LLM provider abstraction supports Ollama, OpenAI, and OpenRouter as interchangeable backends
 - [ ] **LLM-MULTI-02**: User can configure LLM provider via settings dialog with fallback chain (try primary → fallback → error)
-- [ ] **LLM-MULTI-03**: OpenRouter API key is securely stored in tauri-plugin-store and validated on startup
+- [x] **LLM-MULTI-03**: OpenRouter API key is securely stored in tauri-plugin-store and validated on startup
 
 ---
 

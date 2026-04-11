@@ -25,7 +25,7 @@ last_updated: "2026-04-11T20:00:00.000Z"
 ## Phases Overview
 
 - [x] **Phase 8: Document Editor + Paper References** - Create, persist, edit documents and implement `[cite: Paper Title]` reference syntax with validation
-- [ ] **Phase 9: Conservative Inline Suggestions** - Context-aware AI writing assistance with 1-suggestion-max policy, <150ms latency SLA, multi-provider LLM support (Ollama + OpenAI + OpenRouter)
+- [x] **Phase 9: Conservative Inline Suggestions** - Context-aware AI writing assistance with 1-suggestion-max policy, <150ms latency SLA, multi-provider LLM support (Ollama + OpenAI + OpenRouter) (completed 2026-04-11)
 - [ ] **Phase 10: Backlinks UI + Link Safeguards** - Backlink discovery, delete protection, visual density limits, measurement dashboards
 - [ ] **Phase 11: Export & Polish** - PDF export with metadata, references appendix, and final refinements
 
@@ -85,7 +85,7 @@ last_updated: "2026-04-11T20:00:00.000Z"
   11. OpenRouter API key is securely stored and fetched (use existing tauri-plugin-store pattern)
   12. Suggestion acceptance rate tracked (target: >50%)
 
-**Plans:** 4 plans (16 tasks total, 4 waves)
+**Plans:** 4/4 plans complete
   - [ ] 09-00-PLAN.md — Wave 0: Test infrastructure + fixtures — Wave 0
   - [ ] 09-01-PLAN.md — Wave 1: Core services (Suggestion, ProviderChain, Settings) — Wave 1
   - [ ] 09-02-PLAN.md — Wave 2: Editor integration + decorations — Wave 2
@@ -191,7 +191,7 @@ last_updated: "2026-04-11T20:00:00.000Z"
 | Phase | Goal | Requirements | Success Criteria | Status |
 |-------|------|--------------|------------------|--------|
 | 8 | Document Editor + References | 12 | 9 | COMPLETE — 3/3 plans executed, all 9 criteria met |
-| 9 | Conservative Suggestions (Multi-LLM) | 10 | 12 | Planning revision 1/3 (addressing checker feedback) |
+| 9 | Conservative Suggestions (Multi-LLM) | 10 | Complete    | 2026-04-11 |
 | 10 | Backlinks UI + Safeguards | 5 | 8 | Not started |
 | 11 | Export & Polish | 3 | 5 | Not started |
 
