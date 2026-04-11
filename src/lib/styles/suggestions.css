@@ -1,0 +1,60 @@
+/**
+ * Inline suggestion ghost text styling.
+ * Per 09-CONTEXT.md Area 2: "Ghost text (faint/grayed)"
+ */
+
+:global(.suggestion-ghost-text) {
+  /* Faint appearance: lower opacity, secondary text color */
+  color: var(--color-text-secondary, #999);
+  opacity: 0.6;
+
+  /* Italic + dashed underline to distinguish from document content */
+  font-style: italic;
+  text-decoration: underline dashed var(--color-suggestion, #4a8eff);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+
+  /* Non-selectable (user shouldn't copy it) */
+  user-select: none;
+  pointer-events: none;
+
+  /* Slightly smaller font for subtle appearance */
+  font-size: 0.95em;
+  line-height: 1.5;
+}
+
+/**
+ * Loading indicator for suggestion generation >1s.
+ * Per SUGG-07: "Show loading indicator if suggestion takes >1s"
+ */
+:global(.suggestion-loading) {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+  margin-left: 0.25em;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/**
+ * Display mode: block highlight (alternative to ghost text).
+ * Per 09-CONTEXT.md Area 2: configurable display (ghost, block, both).
+ * Applied when settings.suggestions.displayMode === 'block' or 'both'.
+ */
+:global(.suggestion-block-highlight) {
+  background-color: rgba(74, 142, 255, 0.15);  /* Light blue highlight */
+  border-left: 3px solid var(--color-suggestion, #4a8eff);
+  padding-left: 0.5em;
+  border-radius: 2px;
+}
+
+/**
+ * Combined: both ghost text + block highlight.
+ * Applied when settings.suggestions.displayMode === 'both'.
+ */
+:global(.suggestion-ghost-text.suggestion-combined) {
+  background-color: rgba(74, 142, 255, 0.1);
+  border-bottom: 1px solid var(--color-suggestion, #4a8eff);
+}

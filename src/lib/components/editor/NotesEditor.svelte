@@ -6,6 +6,8 @@
   import { saveDocument } from '../../stores/documents'
   import { saveNote } from '../../stores/notes'
   import { workspace } from '../../stores/workspace'
+  import { suggestionField } from './SuggestionDecorations'
+  import '../../styles/suggestions.css'
 
   interface Props {
     type?: 'document' | 'paper'
@@ -98,6 +100,7 @@
     lang={markdown()}
     {theme}
     editable={true}
+    extensions={[suggestionField]}
   />
 </div>
 
