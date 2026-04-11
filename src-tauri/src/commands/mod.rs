@@ -6,5 +6,6 @@ pub mod keystore;
 pub mod migration;
 pub mod notes;
 pub mod papers;
+pub mod settings;
 pub mod ui_layout;
 pub mod workspace;
