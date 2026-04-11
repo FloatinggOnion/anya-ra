@@ -7,7 +7,7 @@ start_phase: 8
 end_phase: 11
 status: ready_for_execution
 created: "2026-04-08T20:35:00.000Z"
-last_updated: "2026-04-09T14:20:00.000Z"
+last_updated: "2026-04-11T20:00:00.000Z"
 ---
 
 # ROADMAP.md - v0.2.0: Enhanced Interactive Writing with AI Assistance
@@ -74,7 +74,7 @@ last_updated: "2026-04-09T14:20:00.000Z"
 **Success Criteria** (what must be TRUE when phase completes):
   1. LLM provider abstraction supports Ollama, OpenAI, and OpenRouter as interchangeable backends
   2. User can configure LLM provider via settings dialog (with fallback chain: try primary → fallback → error)
-  3. When user stops typing for 500ms while editing a document, ONE suggestion (max) is generated using selected papers and document section as context
+  3. When user stops typing for 300ms while editing a document, ONE suggestion (max) is generated using selected papers and document section as context
   4. Suggestion context budget limited to 500 tokens (papers + document section); use js-tiktoken to validate before LLM call
   5. Suggestion appears as ghost text (grayed out, inline) at cursor position without blocking text input
   6. Suggestion latency p95 < 300ms; p50 < 150ms target. If p95 > 300ms after Week 1 tuning, flag for v0.2.1 optimization
@@ -85,7 +85,11 @@ last_updated: "2026-04-09T14:20:00.000Z"
   11. OpenRouter API key is securely stored and fetched (use existing tauri-plugin-store pattern)
   12. Suggestion acceptance rate tracked (target: >50%)
 
-**Plans:** TBD
+**Plans:** 4 plans (16 tasks total, 4 waves)
+  - [ ] 09-00-PLAN.md — Wave 0: Test infrastructure + fixtures — Wave 0
+  - [ ] 09-01-PLAN.md — Wave 1: Core services (Suggestion, ProviderChain, Settings) — Wave 1
+  - [ ] 09-02-PLAN.md — Wave 2: Editor integration + decorations — Wave 2
+  - [ ] 09-03-PLAN.md — Wave 3: Settings UI + Telemetry + Chat integration — Wave 3
 
 **UI hint:** yes
 
@@ -94,6 +98,7 @@ last_updated: "2026-04-09T14:20:00.000Z"
 - All three share same streaming interface (AsyncIterable<string>)
 - Suggestion service reads from context-selection store (shared with chat)
 - Use debounce + abort pattern to cancel pending suggestions on keystroke
+- **Debounce timing is 300ms** (locked decision from 09-CONTEXT.md Area 1)
 
 ---
 
@@ -186,7 +191,7 @@ last_updated: "2026-04-09T14:20:00.000Z"
 | Phase | Goal | Requirements | Success Criteria | Status |
 |-------|------|--------------|------------------|--------|
 | 8 | Document Editor + References | 12 | 9 | COMPLETE — 3/3 plans executed, all 9 criteria met |
-| 9 | Conservative Suggestions (Multi-LLM) | 10 | 12 | Not started, ready to begin |
+| 9 | Conservative Suggestions (Multi-LLM) | 10 | 12 | Planning revision 1/3 (addressing checker feedback) |
 | 10 | Backlinks UI + Safeguards | 5 | 8 | Not started |
 | 11 | Export & Polish | 3 | 5 | Not started |
 
@@ -198,6 +203,10 @@ last_updated: "2026-04-09T14:20:00.000Z"
 Phase 8: Document Editor + Paper References (foundation)
     ↓
 Phase 9: Conservative Inline Suggestions (with multi-provider LLM)
+    ├─ Wave 0: Test infrastructure (baseline tests before implementation)
+    ├─ Wave 1: Core services (Suggestion, ProviderChain, Settings)
+    ├─ Wave 2: Editor integration (decorations, acceptance)
+    └─ Wave 3: UI + Telemetry (settings, dashboards, chat context)
     ↓
 Phase 10: Backlinks UI + Link Safeguards
     ↓
@@ -252,4 +261,4 @@ interface LLMProvider {
 
 ---
 
-*Last updated: 2026-04-09 (Phase 8 planning complete, 3 plans created with 12 tasks total across 3 waves)*
+*Last updated: 2026-04-11 (Phase 9 revision 1: added Wave 0 test infrastructure plan, fixed timing conflict 500ms→300ms)*
