@@ -5,7 +5,9 @@
   import { workspace } from '../../stores/workspace'
   import { validateAndGetLinks } from '../../services/document-validation'
   import { SuggestionService } from '../../services/suggestions'
+  import { SuggestionProviderChain } from '../../services/suggestion-provider-chain'
   import { settings } from '../../stores/settings'
+  import { providerState } from '../../stores/llm-provider'
 
   let content = $state('')
   let currentLinks: any[] = $state([])
@@ -15,8 +17,19 @@
   let lastLoadedContent = ''
   let currentSuggestion: string | null = $state(null)
   let isGeneratingSuggestion = $state(false)
+  let suggestionService: SuggestionService | null = null
 
-  const suggestionService = new SuggestionService()
+  // Initialize suggestion service when provider is available
+  $effect(() => {
+    const provider = $providerState.provider
+    if (provider && !suggestionService) {
+      console.log('[DocumentEditor] Initializing SuggestionService with provider:', $providerState.type)
+      const chain = new SuggestionProviderChain(provider, (msg) => {
+        console.log('[SuggestionProviderChain] Fallback:', msg)
+      })
+      suggestionService = new SuggestionService(chain)
+    }
+  })
 
   // Plain (non-reactive) variable — tracks which doc ID has been loaded into the editor.
   // Used to distinguish "switching documents" from "store updated after auto-save".
@@ -95,20 +108,35 @@
     const enabled = $settings.suggestions.enabled
 
     if (!enabled || !newContent || !$selectedDocumentId) {
-      currentSuggestion = null
+      if (currentSuggestion !== null) {
+        console.log('[DocumentEditor] Clearing suggestion (disabled or no content)')
+        currentSuggestion = null
+      }
+      return
+    }
+
+    if (!suggestionService) {
+      console.log('[DocumentEditor] SuggestionService not initialized yet')
       return
     }
 
     if (suggestionTimeout) clearTimeout(suggestionTimeout)
     suggestionTimeout = setTimeout(async () => {
       try {
+        console.log('[DocumentEditor] Triggering suggestion for docId:', $selectedDocumentId, 'content length:', newContent.length)
         isGeneratingSuggestion = true
-        const suggestion = await suggestionService.triggerSuggestion(
+        const suggestion = await suggestionService!.triggerSuggestion(
           $selectedDocumentId!,
           newContent,
           newContent.length
         )
-        currentSuggestion = suggestion?.text ?? null
+        if (suggestion) {
+          console.log('[DocumentEditor] Got suggestion:', suggestion.text.substring(0, 100))
+          currentSuggestion = suggestion.text
+        } else {
+          console.log('[DocumentEditor] No suggestion returned')
+          currentSuggestion = null
+        }
       } catch (err) {
         console.error('[DocumentEditor] Suggestion failed:', err)
         currentSuggestion = null
