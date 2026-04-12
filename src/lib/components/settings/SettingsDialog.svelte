@@ -64,7 +64,38 @@
         {:else if activeTab === 'provider'}
           <div class="provider-group">
             <h3>Primary Provider</h3>
-            <p>Current: <strong>{$settings.suggestions.llmProvider}</strong></p>
+            <p class="provider-description">Select which LLM provider to use for suggestions. If the primary provider fails, suggestions will automatically fall back to the other provider.</p>
+
+            <div class="provider-buttons">
+              <button
+                class="provider-button"
+                class:active={$settings.suggestions.llmProvider === 'ollama'}
+                onclick={() => {
+                  $settings.suggestions.llmProvider = 'ollama'
+                }}
+              >
+                <span class="provider-name">🐳 Ollama</span>
+                <span class="provider-note">Local LLM (fast, private)</span>
+              </button>
+
+              <button
+                class="provider-button"
+                class:active={$settings.suggestions.llmProvider === 'openrouter'}
+                onclick={() => {
+                  $settings.suggestions.llmProvider = 'openrouter'
+                }}
+              >
+                <span class="provider-name">🔗 OpenRouter</span>
+                <span class="provider-note">Cloud LLM (requires API key)</span>
+              </button>
+            </div>
+
+            {#if $settings.suggestions.llmProvider === 'openrouter'}
+              <div class="api-key-section">
+                <h4>OpenRouter API Key</h4>
+                <p class="api-key-note">Your API key is stored securely in your workspace</p>
+              </div>
+            {/if}
           </div>
         {:else if activeTab === 'telemetry'}
           <div class="telemetry-group">
@@ -222,5 +253,71 @@
 
   .button-primary:hover {
     opacity: 0.9;
+  }
+
+  .provider-description {
+    color: var(--color-text-secondary);
+    font-size: 0.85rem;
+    line-height: 1.4;
+  }
+
+  .provider-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 16px 0;
+  }
+
+  .provider-button {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px;
+    background: var(--color-surface-2);
+    border: 2px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+  }
+
+  .provider-button:hover {
+    background: var(--color-surface-3);
+    border-color: var(--color-accent);
+  }
+
+  .provider-button.active {
+    background: var(--color-surface-3);
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 1px var(--color-accent);
+  }
+
+  .provider-name {
+    font-weight: 600;
+    color: var(--color-text);
+    font-size: 0.95rem;
+  }
+
+  .provider-note {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+  }
+
+  .api-key-section {
+    margin-top: 16px;
+    padding: 12px;
+    background: var(--color-surface-2);
+    border-radius: 4px;
+  }
+
+  .api-key-section h4 {
+    margin: 0 0 8px 0;
+    font-size: 0.9rem;
+  }
+
+  .api-key-note {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    margin: 0;
   }
 </style>
