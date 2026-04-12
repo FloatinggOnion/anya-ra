@@ -6,7 +6,7 @@
   import { saveDocument } from '../../stores/documents'
   import { saveNote } from '../../stores/notes'
   import { workspace } from '../../stores/workspace'
-  import { suggestionField } from './SuggestionDecorations'
+  import { suggestionField, setSuggestion } from './SuggestionDecorations'
   import '../../styles/suggestions.css'
 
   interface Props {
@@ -16,9 +16,11 @@
     content: string
     onChange: (content: string) => void
     onBlur?: () => void
+    suggestion?: string | null
+    isGeneratingSuggestion?: boolean
   }
 
-  let { type = 'paper', id = '', title = '', content = $bindable(''), onChange, onBlur } = $props()
+  let { type = 'paper', id = '', title = '', content = $bindable(''), onChange, onBlur, suggestion = null, isGeneratingSuggestion = false } = $props()
   let editorElement: HTMLDivElement | undefined = $state()
   let cmEditor: any = $state(null)  // Keep reference to CodeMirror editor
 
@@ -57,6 +59,39 @@
     }
   })
 
+  // Update suggestion in CodeMirror when suggestion prop changes
+  $effect(() => {
+    if (!cmEditor || !cmEditor.view) return
+
+    // Only update if suggestion actually changed
+    if (suggestion !== null) {
+      const suggestionObj = {
+        id: `suggestion-${Date.now()}`,
+        docId: id,
+        text: suggestion,
+        lines: suggestion.split('\n'),
+        provider: 'suggestion',
+        position: content.length,
+        state: 'pending' as const,
+        acceptedLines: new Set<number>()
+      }
+
+      cmEditor.view.dispatch({
+        effects: setSuggestion.of({
+          suggestion: suggestionObj,
+          cursorPos: content.length
+        })
+      })
+    } else {
+      // Clear suggestion
+      cmEditor.view.dispatch({
+        effects: setSuggestion.of({
+          suggestion: null,
+          cursorPos: content.length
+        })
+      })
+    }
+  })
 
   function handleKeydown(e: KeyboardEvent) {
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {

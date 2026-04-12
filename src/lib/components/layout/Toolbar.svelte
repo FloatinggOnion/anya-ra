@@ -2,6 +2,9 @@
   import { workspace } from '../../stores/workspace'
   import FullTextSearch from '../FullTextSearch.svelte'
   import ThemeToggle from '../ThemeToggle.svelte'
+  import { createEventDispatcher } from 'svelte'
+
+  const dispatch = createEventDispatcher()
 </script>
 
 <header class="toolbar">
@@ -15,7 +18,15 @@
   <div class="right">
     <FullTextSearch />
     <ThemeToggle />
-    <span class="phase-badge">Phase 8</span>
+    <button
+      class="settings-button"
+      title="Settings"
+      onclick={() => dispatch('open-settings')}
+      aria-label="Open settings"
+    >
+      ⚙️
+    </button>
+    <span class="phase-badge">Phase 9</span>
   </div>
 </header>
 
@@ -77,5 +88,26 @@
     padding: 0.1875rem 0.5rem;
     letter-spacing: 0.06em;
     text-transform: uppercase;
+  }
+
+  .settings-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-muted);
+    transition: color 0.2s ease;
+  }
+
+  .settings-button:hover {
+    color: var(--color-text);
+  }
+
+  .settings-button:active {
+    opacity: 0.7;
   }
 </style>

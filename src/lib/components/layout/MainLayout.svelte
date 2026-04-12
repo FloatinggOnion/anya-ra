@@ -1,11 +1,12 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
+  import { onMount, createEventDispatcher } from 'svelte'
   import Toolbar from './Toolbar.svelte'
   import Sidebar from './Sidebar.svelte'
   import MainPanel from './MainPanel.svelte'
   import KeyboardShortcutsPanel from '../KeyboardShortcutsPanel.svelte'
   import { createKeyboardHandlers } from '../../services/keyboard-handler'
 
+  const dispatch = createEventDispatcher()
   let showShortcuts = $state(false)
 
   onMount(() => {
@@ -31,7 +32,7 @@
 </script>
 
 <div class="main-layout">
-  <Toolbar />
+  <Toolbar on:open-settings={() => dispatch('open-settings')} />
   <div class="content-area">
     <aside class="sidebar-container">
       <Sidebar />

@@ -4,12 +4,20 @@
   import NotesEditor from '../editor/NotesEditor.svelte'
   import { workspace } from '../../stores/workspace'
   import { validateAndGetLinks } from '../../services/document-validation'
+  import { SuggestionService } from '../../services/suggestions'
+  import { settings } from '../../stores/settings'
 
   let content = $state('')
   let currentLinks: any[] = $state([])
   let validationTimeout: ReturnType<typeof setTimeout> | null = null
   let autoSaveTimeout: ReturnType<typeof setTimeout> | null = null
+  let suggestionTimeout: ReturnType<typeof setTimeout> | null = null
   let lastLoadedContent = ''
+  let currentSuggestion: string | null = $state(null)
+  let isGeneratingSuggestion = $state(false)
+
+  const suggestionService = new SuggestionService()
+
   // Plain (non-reactive) variable — tracks which doc ID has been loaded into the editor.
   // Used to distinguish "switching documents" from "store updated after auto-save".
   let loadedDocId: string | null = null
@@ -81,6 +89,35 @@
     }, 100)
   })
 
+  // Trigger suggestions with 300ms debounce (when enabled)
+  $effect(() => {
+    const newContent = content
+    const enabled = $settings.suggestions.enabled
+
+    if (!enabled || !newContent || !$selectedDocumentId) {
+      currentSuggestion = null
+      return
+    }
+
+    if (suggestionTimeout) clearTimeout(suggestionTimeout)
+    suggestionTimeout = setTimeout(async () => {
+      try {
+        isGeneratingSuggestion = true
+        const suggestion = await suggestionService.triggerSuggestion(
+          $selectedDocumentId!,
+          newContent,
+          newContent.length
+        )
+        currentSuggestion = suggestion?.text ?? null
+      } catch (err) {
+        console.error('[DocumentEditor] Suggestion failed:', err)
+        currentSuggestion = null
+      } finally {
+        isGeneratingSuggestion = false
+      }
+    }, 300)
+  })
+
   async function handleAutoSave(newContent: string) {
     const ws = $workspace
     const docId = $selectedDocumentId
@@ -117,6 +154,8 @@
         bind:content
         onChange={() => {}}
         onBlur={() => handleAutoSave(content)}
+        suggestion={currentSuggestion}
+        isGeneratingSuggestion={isGeneratingSuggestion}
       />
     </div>
   {/if}

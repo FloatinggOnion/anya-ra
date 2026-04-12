@@ -10,8 +10,10 @@
   import WelcomeScreen from './lib/components/WelcomeScreen.svelte'
   import MainLayout from './lib/components/layout/MainLayout.svelte'
   import Toast from './lib/components/Toast.svelte'
+  import SettingsDialog from './lib/components/settings/SettingsDialog.svelte'
 
   let isLoading = $state(true)
+  let settingsDialog: SettingsDialog
 
   onMount(async () => {
     // Initialize theme first (before other UI)
@@ -60,11 +62,12 @@
     <div class="loading-spinner"></div>
   </div>
 {:else if $hasWorkspace}
-  <MainLayout />
+  <MainLayout on:open-settings={() => settingsDialog?.open()} />
 {:else}
   <WelcomeScreen />
 {/if}
 
+<SettingsDialog bind:this={settingsDialog} />
 <Toast />
 
 <style>
