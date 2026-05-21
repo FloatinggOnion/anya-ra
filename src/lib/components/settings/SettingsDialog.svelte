@@ -21,11 +21,18 @@
 
   export function open() {
     isOpen = true
-    // Fetch models when dialog opens and Ollama is selected
+    // Fetch models when dialog opens
     if ($settings.suggestions.llmProvider === 'ollama') {
       fetchOllamaModels()
     }
   }
+
+  // React to provider changes within the dialog
+  $effect(() => {
+    if (isOpen && $settings.suggestions.llmProvider === 'ollama' && ollamaModels.length === 0 && !loadingModels) {
+      fetchOllamaModels()
+    }
+  })
 
   export function close() {
     isOpen = false
@@ -366,7 +373,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.7);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -377,12 +384,13 @@
     background: var(--color-surface-0);
     border: 1px solid var(--color-surface-2);
     border-radius: 8px;
-    width: 90%;
-    max-width: 600px;
-    max-height: 80vh;
+    width: 92%;
+    max-width: 900px;
+    max-height: 85vh;
     overflow: auto;
     display: flex;
     flex-direction: column;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
   }
 
   .settings-header {
