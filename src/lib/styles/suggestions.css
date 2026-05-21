@@ -4,23 +4,24 @@
  */
 
 :global(.suggestion-ghost-text) {
-  /* Faint appearance: lower opacity, secondary text color */
+  /* Visible but clearly different from actual text - 15-20% opacity */
   color: var(--color-text-secondary, #999);
-  opacity: 0.6;
+  opacity: 0.18;
 
-  /* Italic + dashed underline to distinguish from document content */
-  font-style: italic;
-  text-decoration: underline dashed var(--color-suggestion, #4a8eff);
-  text-decoration-thickness: 1px;
-  text-underline-offset: 2px;
-
-  /* Non-selectable (user shouldn't copy it) */
+  /* Non-selectable and non-interactive */
   user-select: none;
   pointer-events: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
 
-  /* Slightly smaller font for subtle appearance */
-  font-size: 0.95em;
-  line-height: 1.5;
+  /* Match the editor's font exactly */
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+
+  /* Ensure it doesn't affect layout */
+  display: inline;
+  white-space: pre-wrap;
 }
 
 /**
@@ -36,6 +37,58 @@
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/**
+ * Block suggestion widget - displays as a highlighted box.
+ * Used when displayMode === 'block' or 'both'.
+ * Designed to be obviously distinct from actual editor content.
+ */
+:global(.suggestion-block-widget) {
+  display: block;
+  width: 100%;
+  margin: 8px 0;
+  pointer-events: none;
+}
+
+:global(.suggestion-block-content) {
+  /* More obvious background to distinguish from editor text */
+  background: linear-gradient(90deg, rgba(74, 142, 255, 0.08), rgba(74, 142, 255, 0.04));
+  border: 1px solid rgba(74, 142, 255, 0.3);
+  border-left: 4px solid var(--color-suggestion, #4a8eff);
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin-left: -16px;
+  margin-right: -16px;
+  padding-left: 16px;
+  padding-right: 16px;
+
+  /* Typography */
+  font-size: 0.93em;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+
+  /* Clearly not selectable/interactive */
+  user-select: none;
+  pointer-events: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+
+  /* Visual spacing from editor content */
+  max-width: 100%;
+  position: relative;
+}
+
+:global(.suggestion-block-content::before) {
+  content: '✨ Suggestion';
+  display: block;
+  font-size: 0.8em;
+  color: var(--color-text-secondary);
+  margin-bottom: 6px;
+  opacity: 0.7;
+  font-weight: 500;
 }
 
 /**

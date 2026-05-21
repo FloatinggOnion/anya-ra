@@ -8,6 +8,7 @@ import type { Settings, SuggestionSettings } from '../types/suggestion'
  * Area 2: displayMode = ghost, acceptKeybinding = tab
  * Area 6: primaryProvider = ollama, fallbackChain = [ollama, openrouter]
  * Area 8: telemetryOptIn = false (opt-in only)
+ * Model config: ollamaModel = null (auto-select), openrouterModel = 'openai/gpt-4o-mini'
  */
 const defaultSettings: Settings = {
   suggestions: {
@@ -16,7 +17,11 @@ const defaultSettings: Settings = {
     acceptKeybinding: 'tab',
     llmProvider: 'ollama',
     fallbackChain: ['ollama', 'openrouter'],
-    telemetryOptIn: false
+    telemetryOptIn: false,
+    ollamaModel: null,
+    openrouterModel: 'openai/gpt-4o-mini',
+    ollamaHost: 'localhost',
+    ollamaPort: 11434
   }
 }
 
@@ -49,6 +54,7 @@ settings.subscribe(async (value) => {
 
 /**
  * Load settings from workspace on startup.
+ * Merge with defaults to handle migration (new fields not in old saved settings).
  * Called from App.svelte during workspace initialization.
  */
 export async function loadSettings(workspacePath: string): Promise<void> {
@@ -58,8 +64,17 @@ export async function loadSettings(workspacePath: string): Promise<void> {
     })
     if (content) {
       const loaded = JSON.parse(content) as Settings
-      settings.set(loaded)
-      console.log('[settings] Loaded from workspace')
+      // Merge with defaults: fill in any missing fields from defaultSettings
+      const merged: Settings = {
+        ...defaultSettings,
+        ...loaded,
+        suggestions: {
+          ...defaultSettings.suggestions,
+          ...(loaded.suggestions || {})
+        }
+      }
+      settings.set(merged)
+      console.log('[settings] Loaded from workspace (merged with defaults)')
     }
   } catch (err) {
     console.error('[settings] Load failed:', err)

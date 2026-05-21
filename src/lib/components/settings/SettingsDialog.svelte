@@ -1,15 +1,64 @@
 <script lang="ts">
   import { settings } from '../../stores/settings'
+  import { OllamaProvider } from '../../services/llm/ollama'
+  import type { Model } from '../../types/llm'
 
   let isOpen = $state(false)
   let activeTab = $state<'suggestions' | 'provider' | 'telemetry'>('suggestions')
 
+  // Ollama model selection state
+  let ollamaModels = $state<Model[]>([])
+  let loadingModels = $state(false)
+  let ollamaConnectionError = $state<string | null>(null)
+  let ollamaHostError = $state<string | null>(null)
+  let ollamaPortError = $state<string | null>(null)
+
   export function open() {
     isOpen = true
+    // Fetch models when dialog opens and Ollama is selected
+    if ($settings.suggestions.llmProvider === 'ollama') {
+      fetchOllamaModels()
+    }
   }
 
   export function close() {
     isOpen = false
+  }
+
+  async function fetchOllamaModels() {
+    loadingModels = true
+    ollamaConnectionError = null
+    try {
+      const provider = new OllamaProvider($settings.suggestions.ollamaHost, $settings.suggestions.ollamaPort)
+      const models = await provider.models()
+      ollamaModels = models
+
+      // Auto-select first model if ollamaModel is null
+      if (!$settings.suggestions.ollamaModel && models.length > 0) {
+        $settings.suggestions.ollamaModel = models[0].id
+      }
+    } catch (err) {
+      ollamaConnectionError = 'Ollama not reachable — start it to load models'
+      ollamaModels = []
+    } finally {
+      loadingModels = false
+    }
+  }
+
+  async function validateOllamaConnection() {
+    ollamaHostError = null
+    ollamaPortError = null
+    try {
+      const provider = new OllamaProvider($settings.suggestions.ollamaHost, $settings.suggestions.ollamaPort)
+      const available = await provider.isAvailable()
+      if (!available) {
+        ollamaConnectionError = 'Ollama not running at this address'
+      } else {
+        ollamaConnectionError = null
+      }
+    } catch (err) {
+      ollamaConnectionError = 'Connection failed'
+    }
   }
 </script>
 
@@ -60,6 +109,55 @@
               />
               <span>Enable inline suggestions</span>
             </label>
+
+            {#if $settings.suggestions.enabled}
+              <div class="display-mode-group">
+                <h4>Display Mode</h4>
+                <div class="mode-options">
+                  <label>
+                    <input
+                      type="radio"
+                      name="displayMode"
+                      value="ghost"
+                      checked={$settings.suggestions.displayMode === 'ghost'}
+                      onchange={() => {
+                        $settings.suggestions.displayMode = 'ghost'
+                      }}
+                    />
+                    <span>Ghost Text</span>
+                    <span class="mode-desc">Faint text that disappears as you type</span>
+                  </label>
+
+                  <label>
+                    <input
+                      type="radio"
+                      name="displayMode"
+                      value="block"
+                      checked={$settings.suggestions.displayMode === 'block'}
+                      onchange={() => {
+                        $settings.suggestions.displayMode = 'block'
+                      }}
+                    />
+                    <span>Block Highlight</span>
+                    <span class="mode-desc">Highlighted block below your text</span>
+                  </label>
+
+                  <label>
+                    <input
+                      type="radio"
+                      name="displayMode"
+                      value="both"
+                      checked={$settings.suggestions.displayMode === 'both'}
+                      onchange={() => {
+                        $settings.suggestions.displayMode = 'both'
+                      }}
+                    />
+                    <span>Both</span>
+                    <span class="mode-desc">Ghost text + block highlight</span>
+                  </label>
+                </div>
+              </div>
+            {/if}
           </div>
         {:else if activeTab === 'provider'}
           <div class="provider-group">
@@ -89,6 +187,82 @@
                 <span class="provider-note">Cloud LLM (requires API key)</span>
               </button>
             </div>
+
+            {#if $settings.suggestions.llmProvider === 'ollama'}
+              <div class="ollama-section">
+                <h4>Ollama Configuration</h4>
+
+                <div class="config-row">
+                  <label>
+                    <span>Host:</span>
+                    <input
+                      type="text"
+                      value={$settings.suggestions.ollamaHost}
+                      onchange={(e) => {
+                        $settings.suggestions.ollamaHost = e.currentTarget.value
+                        validateOllamaConnection()
+                      }}
+                      placeholder="localhost"
+                    />
+                  </label>
+                </div>
+
+                <div class="config-row">
+                  <label>
+                    <span>Port:</span>
+                    <input
+                      type="number"
+                      value={$settings.suggestions.ollamaPort}
+                      onchange={(e) => {
+                        $settings.suggestions.ollamaPort = parseInt(e.currentTarget.value) || 11434
+                        validateOllamaConnection()
+                      }}
+                      placeholder="11434"
+                    />
+                  </label>
+                </div>
+
+                {#if ollamaConnectionError}
+                  <p class="error-message">{ollamaConnectionError}</p>
+                {:else if ollamaModels.length > 0}
+                  <p class="success-message">✓ Connected</p>
+                {/if}
+
+                <div class="model-select">
+                  <label>
+                    <span>Model:</span>
+                    {#if loadingModels}
+                      <select disabled>
+                        <option>Loading models...</option>
+                      </select>
+                    {:else if ollamaModels.length > 0}
+                      <select
+                        value={$settings.suggestions.ollamaModel || ''}
+                        onchange={(e) => {
+                          $settings.suggestions.ollamaModel = e.currentTarget.value
+                        }}
+                      >
+                        {#each ollamaModels as model}
+                          <option value={model.id}>{model.name}</option>
+                        {/each}
+                      </select>
+                    {:else}
+                      <select disabled>
+                        <option>No models (start Ollama)</option>
+                      </select>
+                    {/if}
+                  </label>
+                </div>
+
+                <button
+                  class="refresh-button"
+                  onclick={() => fetchOllamaModels()}
+                  disabled={loadingModels}
+                >
+                  {loadingModels ? '⟳ Refreshing...' : '⟳ Refresh Models'}
+                </button>
+              </div>
+            {/if}
 
             {#if $settings.suggestions.llmProvider === 'openrouter'}
               <div class="api-key-section">
@@ -318,6 +492,161 @@
   .api-key-note {
     font-size: 0.8rem;
     color: var(--color-text-secondary);
+    margin: 0;
+  }
+
+  .display-mode-group {
+    margin-top: 16px;
+    padding: 12px;
+    background: var(--color-surface-2);
+    border-radius: 4px;
+  }
+
+  .display-mode-group h4 {
+    margin: 0 0 12px 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .mode-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .mode-options label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px;
+    background: var(--color-surface-1);
+    border-radius: 3px;
+    cursor: pointer;
+  }
+
+  .mode-options input[type="radio"] {
+    cursor: pointer;
+  }
+
+  .mode-options span:first-child {
+    font-weight: 500;
+    color: var(--color-text);
+    font-size: 0.9rem;
+  }
+
+  .mode-desc {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    margin-left: 0;
+  }
+
+  .ollama-section {
+    margin-top: 16px;
+    padding: 12px;
+    background: var(--color-surface-2);
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .ollama-section h4 {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .config-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .config-row label {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex: 1;
+  }
+
+  .config-row label span {
+    min-width: 60px;
+    font-size: 0.85rem;
+  }
+
+  .config-row input[type="text"],
+  .config-row input[type="number"] {
+    flex: 1;
+    padding: 6px 8px;
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-surface-3);
+    border-radius: 3px;
+    color: var(--color-text);
+    font-size: 0.85rem;
+  }
+
+  .model-select {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .model-select label {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex: 1;
+  }
+
+  .model-select label span {
+    min-width: 60px;
+    font-size: 0.85rem;
+  }
+
+  .model-select select {
+    flex: 1;
+    padding: 6px 8px;
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-surface-3);
+    border-radius: 3px;
+    color: var(--color-text);
+    font-size: 0.85rem;
+  }
+
+  .model-select select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .refresh-button {
+    padding: 6px 12px;
+    background: var(--color-surface-3);
+    border: 1px solid var(--color-surface-2);
+    border-radius: 3px;
+    color: var(--color-text);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .refresh-button:hover:not(:disabled) {
+    background: var(--color-accent);
+    color: white;
+  }
+
+  .refresh-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .error-message {
+    color: var(--color-error, #ef4444);
+    font-size: 0.8rem;
+    margin: 0;
+  }
+
+  .success-message {
+    color: var(--color-success, #22c55e);
+    font-size: 0.8rem;
     margin: 0;
   }
 </style>

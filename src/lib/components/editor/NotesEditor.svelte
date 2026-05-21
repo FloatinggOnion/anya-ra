@@ -23,6 +23,7 @@
   let { type = 'paper', id = '', title = '', content = $bindable(''), onChange, onBlur, suggestion = null, isGeneratingSuggestion = false } = $props()
   let editorElement: HTMLDivElement | undefined = $state()
   let cmEditor: any = $state(null)  // Keep reference to CodeMirror editor
+  let editorView: EditorView | null = $state(null)  // Direct reference to CodeMirror EditorView
 
   const theme = EditorView.theme({
     '.cm-editor': {
@@ -44,6 +45,13 @@
 
     // Find the CodeMirror editor element within the container
     const cmElement = editorElement.querySelector('.cm-editor')
+
+    // Get the CodeMirror view from the DOM element
+    if (cmElement) {
+      editorView = EditorView.findFromDOM(cmElement)
+      console.log('[NotesEditor] CodeMirror view obtained:', !!editorView)
+    }
+
     const handleBlur = () => {
       onChange(content)
       if (onBlur) onBlur()
@@ -61,10 +69,15 @@
 
   // Update suggestion in CodeMirror when suggestion prop changes
   $effect(() => {
-    if (!cmEditor || !cmEditor.view) return
+    console.log('[NotesEditor] Suggestion effect running, suggestion:', suggestion ? suggestion.substring(0, 50) : null, 'editorView:', !!editorView)
+    if (!editorView) {
+      console.log('[NotesEditor] CodeMirror view not ready, skipping suggestion update')
+      return
+    }
 
     // Only update if suggestion actually changed
     if (suggestion !== null) {
+      console.log('[NotesEditor] Setting suggestion in CodeMirror, text:', suggestion.substring(0, 50))
       const suggestionObj = {
         id: `suggestion-${Date.now()}`,
         docId: id,
@@ -76,15 +89,18 @@
         acceptedLines: new Set<number>()
       }
 
-      cmEditor.view.dispatch({
+      console.log('[NotesEditor] Dispatching setSuggestion effect...')
+      editorView.dispatch({
         effects: setSuggestion.of({
           suggestion: suggestionObj,
           cursorPos: content.length
         })
       })
+      console.log('[NotesEditor] setSuggestion effect dispatched')
     } else {
       // Clear suggestion
-      cmEditor.view.dispatch({
+      console.log('[NotesEditor] Clearing suggestion in CodeMirror')
+      editorView.dispatch({
         effects: setSuggestion.of({
           suggestion: null,
           cursorPos: content.length

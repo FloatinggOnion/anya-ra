@@ -2,6 +2,8 @@ import { StateField, StateEffect, type Transaction } from '@codemirror/state'
 import { Decoration, EditorView, WidgetType } from '@codemirror/view'
 import type { Text } from '@codemirror/state'
 import type { Suggestion } from '../../types/suggestion'
+import { get } from 'svelte/store'
+import { settings } from '../../stores/settings'
 
 /**
  * StateEffect to update suggestion text in editor.
@@ -23,7 +25,9 @@ export const toggleLineAcceptance = StateEffect.define<number>()
  * Displays as faint, grayed-out text that doesn't interfere with editing.
  */
 export class GhostTextWidget extends WidgetType {
-  constructor(readonly text: string) {}
+  constructor(readonly text: string) {
+    super()
+  }
 
   toDOM(): HTMLElement {
     const span = document.createElement('span')
@@ -34,11 +38,41 @@ export class GhostTextWidget extends WidgetType {
   }
 
   ignoreEvent(): boolean {
-    return false  // Allow events through
+    return false
   }
 
   get estimatedHeight(): number {
-    // Return -1 to let CodeMirror measure
+    return -1
+  }
+}
+
+/**
+ * CodeMirror WidgetType for rendering suggestion as a highlighted block.
+ * Displays as a highlighted box below the current line.
+ */
+export class BlockSuggestionWidget extends WidgetType {
+  constructor(readonly text: string) {
+    super()
+  }
+
+  toDOM(): HTMLElement {
+    const div = document.createElement('div')
+    div.className = 'suggestion-block-widget'
+
+    const content = document.createElement('div')
+    content.className = 'suggestion-block-content'
+    content.textContent = this.text
+
+    div.appendChild(content)
+    div.setAttribute('aria-label', 'Suggestion block - press Tab to accept, Escape to reject')
+    return div
+  }
+
+  ignoreEvent(): boolean {
+    return false
+  }
+
+  get estimatedHeight(): number {
     return -1
   }
 }
@@ -72,6 +106,7 @@ export const suggestionField = StateField.define<SuggestionState>({
     for (const effect of tr.effects) {
       if (effect.is(setSuggestion)) {
         // New suggestion received (or cleared if null)
+        console.log('[SuggestionDecorations] Received setSuggestion effect:', effect.value.suggestion ? effect.value.suggestion.text.substring(0, 50) : null)
         newState.suggestion = effect.value.suggestion
         newState.cursorPos = effect.value.cursorPos
         newState.acceptedLines = new Set<number>()  // Reset accepted lines
@@ -98,37 +133,61 @@ export const suggestionField = StateField.define<SuggestionState>({
   },
 
   /**
-   * Provide decorations for rendering ghost text.
-   * Only create decoration for non-accepted lines.
+   * Provide decorations for rendering suggestions based on display mode.
+   * Supports: ghost text, block highlight, or both.
    */
   provide: (f) =>
     EditorView.decorations.compute([f], (state) => {
       const { suggestion, acceptedLines, cursorPos } = state.field(f)
 
       if (!suggestion) {
+        console.log('[SuggestionDecorations] No suggestion, returning Decoration.none')
         return Decoration.none
       }
 
-      const decorations = []
+      const displayMode = get(settings).suggestions.displayMode
+      console.log('[SuggestionDecorations] Display mode:', displayMode)
+
+      const decorations: any[] = []
       const lines = suggestion.lines
+      console.log('[SuggestionDecorations] Creating decorations for', lines.length, 'lines, mode:', displayMode)
 
-      for (let i = 0; i < lines.length; i++) {
-        if (!acceptedLines.has(i)) {
-          // Create decoration for non-accepted line
-          // Insert after cursor position (or at end of current line)
-          const pos = state.doc.length > cursorPos ? cursorPos : state.doc.length
+      // Always render suggestion at the very end of the current document
+      const insertPos = state.doc.length
 
-          const decoration = Decoration.widget({
-            widget: new GhostTextWidget(
-              i === 0 ? lines[i] : '\n' + lines[i]
-            ),
-            side: 1  // Insert after cursor (positive side)
-          }).range(pos)
-
-          decorations.push(decoration)
+      // Render ghost text (if displayMode is 'ghost' or 'both')
+      if (displayMode === 'ghost' || displayMode === 'both') {
+        for (let i = 0; i < lines.length; i++) {
+          if (!acceptedLines.has(i)) {
+            console.log(`[SuggestionDecorations] Ghost line ${i}: "${lines[i]}" at pos ${insertPos}`)
+            const decoration = Decoration.widget({
+              widget: new GhostTextWidget(
+                i === 0 ? lines[i] : '\n' + lines[i]
+              ),
+              side: 1
+            }).range(insertPos)
+            decorations.push(decoration)
+          }
         }
       }
 
+      // Render block highlight (if displayMode is 'block' or 'both')
+      if (displayMode === 'block' || displayMode === 'both') {
+        // Create a block decoration spanning the entire suggestion
+        const fullSuggestion = lines.join('\n')
+        console.log(`[SuggestionDecorations] Block decoration: "${fullSuggestion.substring(0, 50)}" at pos ${insertPos}`)
+
+        // Block widget displayed below the cursor
+        const blockWidget = Decoration.widget({
+          widget: new BlockSuggestionWidget(fullSuggestion),
+          side: 1,
+          block: true
+        }).range(insertPos)
+
+        decorations.push(blockWidget)
+      }
+
+      console.log('[SuggestionDecorations] Created', decorations.length, 'decorations')
       return Decoration.set(decorations)
     })
 })

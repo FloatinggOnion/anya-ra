@@ -27,6 +27,10 @@ export interface SuggestionSettings {
   llmProvider: 'ollama' | 'openrouter'  // Area 6: user-selected primary
   fallbackChain: Array<'ollama' | 'openrouter'>  // Area 6: fallback order
   telemetryOptIn: boolean  // Area 8: local-only opt-in toggle
+  ollamaModel: string | null  // User-selected model from installed; null = auto-select on next dialog open
+  openrouterModel: string  // Free-text model ID; defaults to 'openai/gpt-4o-mini'
+  ollamaHost: string  // Host for Ollama API; defaults to 'localhost'
+  ollamaPort: number  // Port for Ollama API; defaults to 11434
 }
 
 export interface Settings {

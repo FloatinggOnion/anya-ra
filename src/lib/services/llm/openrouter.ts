@@ -12,6 +12,10 @@ export class OpenRouterProvider implements LLMProvider {
   constructor(private readonly apiKey: string) {}
 
   async *chat(messages: Message[], options: ChatOptions = {}): AsyncIterable<string> {
+    if (!options.model) {
+      throw new Error('OpenRouter requires a model to be specified in ChatOptions')
+    }
+
     const response = await fetch(`${OPENROUTER_BASE}/chat/completions`, {
       method: 'POST',
       headers: {
@@ -21,7 +25,7 @@ export class OpenRouterProvider implements LLMProvider {
         'X-Title': 'Anya-RA'
       },
       body: JSON.stringify({
-        model: options.model || 'openai/gpt-4o-mini',
+        model: options.model,
         messages,
         stream: true,
         temperature: options.temperature ?? 0.7,
@@ -124,5 +128,66 @@ export class OpenRouterProvider implements LLMProvider {
 
   async isAvailable(): Promise<boolean> {
     return !!this.apiKey && this.apiKey.trim().length > 0
+  }
+
+  /**
+   * Validate a model ID by testing it against the OpenRouter API.
+   * Returns { valid: true } on success, or { valid: false, error, status, details } on failure.
+   */
+  async validateModel(modelId: string): Promise<{
+    valid: boolean
+    error?: string
+    status?: number
+    details?: string
+  }> {
+    try {
+      // Make a minimal test call to verify the model exists and user has access
+      const response = await fetch(`${OPENROUTER_BASE}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://github.com/anya-ra',
+          'X-Title': 'Anya-RA'
+        },
+        body: JSON.stringify({
+          model: modelId,
+          messages: [{ role: 'user', content: 'test' }],
+          stream: false,
+          max_tokens: 1
+        })
+      })
+
+      if (response.ok) {
+        return { valid: true }
+      }
+
+      const errText = await response.text().catch(() => response.statusText)
+
+      // Map HTTP status to user-friendly error messages
+      let error = `Validation failed (${response.status})`
+      if (response.status === 401) {
+        error = 'API key invalid'
+      } else if (response.status === 402) {
+        error = 'Insufficient credits'
+      } else if (response.status === 403) {
+        error = 'Model not in your subscription'
+      } else if (response.status === 404) {
+        error = 'Model ID not found — check openrouter.ai/models'
+      }
+
+      return {
+        valid: false,
+        error,
+        status: response.status,
+        details: errText
+      }
+    } catch (err) {
+      return {
+        valid: false,
+        error: `Validation error: ${err instanceof Error ? err.message : 'unknown error'}`,
+        details: String(err)
+      }
+    }
   }
 }

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte'
   import { selectedDocumentId, currentDocument, documentLinks, updateLinks, saveDocumentWithLinks } from '../../stores/documents'
   import { papers } from '../../stores/papers'
   import NotesEditor from '../editor/NotesEditor.svelte'
@@ -7,7 +8,7 @@
   import { SuggestionService } from '../../services/suggestions'
   import { SuggestionProviderChain } from '../../services/suggestion-provider-chain'
   import { settings } from '../../stores/settings'
-  import { providerState } from '../../stores/llm-provider'
+  import { providerState, initializeProvider, switchProvider } from '../../stores/llm-provider'
 
   let content = $state('')
   let currentLinks: any[] = $state([])
@@ -19,15 +20,42 @@
   let isGeneratingSuggestion = $state(false)
   let suggestionService: SuggestionService | null = null
 
+  // Initialize provider on mount
+  onMount(async () => {
+    console.log('[DocumentEditor] Initializing LLM provider...')
+    await initializeProvider()
+    console.log('[DocumentEditor] Provider initialized:', {
+      type: $providerState.type,
+      hasProvider: !!$providerState.provider,
+      error: $providerState.error
+    })
+  })
+
   // Initialize suggestion service when provider is available
   $effect(() => {
     const provider = $providerState.provider
+    const type = $providerState.type
+    const error = $providerState.error
+
+    console.log('[DocumentEditor] Provider state changed:', { type, hasProvider: !!provider, error })
+
     if (provider && !suggestionService) {
-      console.log('[DocumentEditor] Initializing SuggestionService with provider:', $providerState.type)
-      const chain = new SuggestionProviderChain(provider, (msg) => {
-        console.log('[SuggestionProviderChain] Fallback:', msg)
-      })
+      console.log('[DocumentEditor] ✓ Initializing SuggestionService with provider:', type)
+      const chain = new SuggestionProviderChain(
+        provider,
+        [],  // No fallback providers for now
+        (msg) => {
+          console.log('[SuggestionProviderChain] Fallback:', msg)
+        }
+      )
       suggestionService = new SuggestionService(chain)
+    } else if (!provider && error) {
+      console.warn('[DocumentEditor] Provider error:', error)
+      // Try to fallback to OpenRouter if available
+      if (type === 'ollama' && $providerState.apiKey) {
+        console.log('[DocumentEditor] Attempting fallback to OpenRouter...')
+        switchProvider('openrouter', $providerState.apiKey)
+      }
     }
   })
 

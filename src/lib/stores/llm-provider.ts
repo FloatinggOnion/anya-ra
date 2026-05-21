@@ -1,7 +1,8 @@
-import { writable } from 'svelte/store'
+import { writable, get } from 'svelte/store'
 import type { LLMProvider } from '../types/llm'
 import { OllamaProvider } from '../services/llm/ollama'
 import { invoke } from '@tauri-apps/api/core'
+import { settings } from './settings'
 
 export interface ProviderState {
   type: 'ollama' | 'openrouter'
@@ -28,7 +29,8 @@ export async function initializeProvider(): Promise<void> {
       // Keystore may not be available yet — ignore
     }
 
-    const provider = new OllamaProvider()
+    const settingsVal = get(settings)
+    const provider = new OllamaProvider(settingsVal.suggestions.ollamaHost, settingsVal.suggestions.ollamaPort)
     const available = await provider.isAvailable()
 
     if (available) {
@@ -57,7 +59,8 @@ export async function switchProvider(
     let provider: LLMProvider
 
     if (type === 'ollama') {
-      provider = new OllamaProvider()
+      const settingsVal = get(settings)
+      provider = new OllamaProvider(settingsVal.suggestions.ollamaHost, settingsVal.suggestions.ollamaPort)
       const available = await provider.isAvailable()
       if (!available) throw new Error('Ollama is not running. Start Ollama and try again.')
     } else {

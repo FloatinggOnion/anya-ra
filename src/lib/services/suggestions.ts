@@ -1,5 +1,6 @@
 import { get } from 'svelte/store'
 import { selectedItems } from '../stores/context-selection'
+import { settings } from '../stores/settings'
 import type { Suggestion, SuggestionRequest } from '../types/suggestion'
 import type { LLMProvider, Message, ChatOptions } from '../types/llm'
 import type { SuggestionProviderChain } from './suggestion-provider-chain'
@@ -68,6 +69,7 @@ export class SuggestionService {
 
     // 10s timeout (per 09-CONTEXT.md Area 1)
     const timeoutHandle = setTimeout(() => {
+      console.log('[SuggestionService] Request timed out after 10s')
       abortController.abort()
       // Toast notification handled upstream in editor integration
     }, 10000)
@@ -78,13 +80,16 @@ export class SuggestionService {
     try {
       // Build context: selected papers/notes + current document section
       const context = this._buildContext(currentContent, cursorPos)
+      console.log('[SuggestionService] Built context, length:', context.length)
 
       // Validate token budget (500 tokens max per 09-CONTEXT.md + ROADMAP)
       const contextTokens = await this._countTokens(context)
+      console.log('[SuggestionService] Context tokens:', contextTokens)
       if (contextTokens > this.tokenCountLimit) {
         // Truncate context to fit budget
         // For simplicity: take top N papers by selection order
         // Production: implement sliding window or importance sampling
+        console.log('[SuggestionService] Truncating context to fit budget')
       }
 
       // Build LLM messages
@@ -93,10 +98,22 @@ export class SuggestionService {
         { role: 'user', content: context }
       ]
 
-      // Generate via provider chain (handles fallback + cancellation)
-      const suggestionText = await this._streamSuggestion(messages, abortController.signal)
+      console.log('[SuggestionService] Calling providerChain.generateSuggestion...')
+      // Get selected model from settings based on primary provider
+      const settingsVal = get(settings)
+      const model = settingsVal.suggestions.llmProvider === 'ollama'
+        ? settingsVal.suggestions.ollamaModel
+        : settingsVal.suggestions.openrouterModel
 
-      if (!suggestionText) return null
+      // Generate via provider chain (handles fallback + cancellation)
+      const suggestionText = await this._streamSuggestion(messages, abortController.signal, model)
+
+      console.log('[SuggestionService] Provider returned:', suggestionText ? `"${suggestionText.substring(0, 100)}"` : 'empty/null')
+
+      if (!suggestionText) {
+        console.log('[SuggestionService] No suggestion text from provider, returning null')
+        return null
+      }
 
       const lines = suggestionText.split('\n')
       const suggestion: Suggestion = {
@@ -111,6 +128,7 @@ export class SuggestionService {
         acceptedLines: new Set()
       }
 
+      console.log('[SuggestionService] Returning suggestion:', suggestion.text.substring(0, 50))
       return suggestion
     } finally {
       clearTimeout(timeoutHandle)
@@ -156,14 +174,22 @@ export class SuggestionService {
 
   private async _streamSuggestion(
     messages: Message[],
-    signal: AbortSignal
+    signal: AbortSignal,
+    model?: string | null
   ): Promise<string> {
     let result = ''
+    let chunkCount = 0
     try {
-      for await (const chunk of this.providerChain.generateSuggestion(messages, {}, signal)) {
+      console.log('[SuggestionService._streamSuggestion] Starting stream with model:', model)
+      const options: ChatOptions = model ? { model } : {}
+      for await (const chunk of this.providerChain.generateSuggestion(messages, options, signal)) {
+        console.log('[SuggestionService._streamSuggestion] Got chunk:', chunk.substring(0, 50))
         result += chunk
+        chunkCount++
       }
+      console.log('[SuggestionService._streamSuggestion] Stream complete, chunks:', chunkCount, 'total length:', result.length)
     } catch (err) {
+      console.error('[SuggestionService._streamSuggestion] Error:', err)
       if (signal.aborted) throw err  // Re-throw abort
       // Fallback chain errors logged upstream
       throw err

@@ -5,10 +5,12 @@ export type ProviderType = 'ollama' | 'openrouter'
 
 export interface ProviderConfig {
   apiKey?: string
+  ollamaHost?: string
+  ollamaPort?: number
 }
 
 export function createProvider(type: ProviderType, config?: ProviderConfig): LLMProvider {
-  if (type === 'ollama') return new OllamaProvider()
+  if (type === 'ollama') return new OllamaProvider(config?.ollamaHost, config?.ollamaPort)
   throw new Error('OpenRouter provider requires async import. Use createProviderAsync().')
 }
 
@@ -16,7 +18,7 @@ export async function createProviderAsync(
   type: ProviderType,
   config?: ProviderConfig
 ): Promise<LLMProvider> {
-  if (type === 'ollama') return new OllamaProvider()
+  if (type === 'ollama') return new OllamaProvider(config?.ollamaHost, config?.ollamaPort)
   if (type === 'openrouter') {
     if (!config?.apiKey) throw new Error('OpenRouter requires an API key')
     const { OpenRouterProvider } = await import('./openrouter')

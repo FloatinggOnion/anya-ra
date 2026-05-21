@@ -70,29 +70,41 @@ export class SuggestionProviderChain {
     const providers = [this.primaryProvider, ...this.fallbackChain]
     let lastError: ProviderError | null = null
 
+    console.log('[SuggestionProviderChain] Starting suggestion generation with', providers.length, 'providers')
+
     for (let i = 0; i < providers.length; i++) {
       const provider = providers[i]
       const isPrimary = i === 0
+      const providerName = provider.constructor.name
 
       try {
         // Check provider availability first
+        console.log(`[SuggestionProviderChain] Checking if ${providerName} is available...`)
         const available = await provider.isAvailable()
+        console.log(`[SuggestionProviderChain] ${providerName} available:`, available)
+
         if (!available) {
           if (!isPrimary && this.onFallback) {
             this.onFallback(`Provider unavailable, trying next...`)
           }
+          console.log(`[SuggestionProviderChain] ${providerName} unavailable, trying next...`)
           continue
         }
 
         // Stream response
+        console.log(`[SuggestionProviderChain] Calling provider.chat() on ${providerName}...`)
         yield* provider.chat(messages, options)
+        console.log(`[SuggestionProviderChain] Successfully generated suggestion with ${providerName}`)
         return  // Success!
       } catch (err) {
         const error = classifyError(err)
         lastError = error
 
+        console.error(`[SuggestionProviderChain] ${providerName} error:`, error)
+
         if (!error.recoverable) {
           // Terminal error (auth, etc.) — don't try fallback, propagate immediately
+          console.error(`[SuggestionProviderChain] Terminal error, not falling back`)
           throw err
         }
 
@@ -103,6 +115,7 @@ export class SuggestionProviderChain {
         // Try next provider
         if (i === providers.length - 1) {
           // All providers exhausted
+          console.error(`[SuggestionProviderChain] All ${providers.length} providers exhausted`)
           throw new Error(
             lastError
               ? `All suggestion providers failed: ${lastError.message}`

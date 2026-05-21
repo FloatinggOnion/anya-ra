@@ -1,23 +1,32 @@
 import type { LLMProvider, Message, Model, ChatOptions } from '../../types/llm'
 
-const OLLAMA_BASE = 'http://localhost:11434'
-
 /**
  * Ollama local LLM provider.
  * Uses browser fetch + ReadableStream for streaming responses.
  * JSON-per-line format: each chunk is a complete JSON object followed by newline.
  */
 export class OllamaProvider implements LLMProvider {
+  private baseUrl: string
+  private model: string | null
+
+  constructor(host: string = 'localhost', port: number = 11434, model?: string | null) {
+    this.baseUrl = `http://${host}:${port}`
+    this.model = model || null
+  }
   /**
    * Stream a chat response from Ollama.
    * Handles partial-line buffering for robust JSON-per-line parsing.
    */
   async *chat(messages: Message[], options: ChatOptions = {}): AsyncIterable<string> {
-    const response = await fetch(`${OLLAMA_BASE}/api/chat`, {
+    if (!options.model) {
+      throw new Error('Ollama requires a model to be specified in ChatOptions')
+    }
+
+    const response = await fetch(`${this.baseUrl}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: options.model || 'qwen2:0.5b',
+        model: options.model,
         messages,
         stream: true,
         options: {
@@ -31,7 +40,7 @@ export class OllamaProvider implements LLMProvider {
       const errText = await response.text().catch(() => response.statusText)
       if (response.status === 404) {
         throw new Error(
-          `Model not found. Run: ollama pull ${options.model || 'qwen2:0.5b'}\n${errText}`
+          `Model not found: ${options.model}. Run: ollama pull ${options.model}\n${errText}`
         )
       }
       throw new Error(`Ollama request failed (${response.status}): ${errText}`)
@@ -94,7 +103,7 @@ export class OllamaProvider implements LLMProvider {
    * List installed Ollama models.
    */
   async models(): Promise<Model[]> {
-    const response = await fetch(`${OLLAMA_BASE}/api/tags`, {
+    const response = await fetch(`${this.baseUrl}/api/tags`, {
       signal: AbortSignal.timeout(5000)
     })
 
@@ -113,12 +122,17 @@ export class OllamaProvider implements LLMProvider {
 
   /**
    * Count tokens using Ollama's tokenize endpoint.
+   * Requires a model to be set (passed to constructor or via chat call).
    */
   async tokenCount(text: string): Promise<number> {
-    const response = await fetch(`${OLLAMA_BASE}/api/tokenize`, {
+    if (!this.model) {
+      throw new Error('Ollama tokenize requires a model to be set')
+    }
+
+    const response = await fetch(`${this.baseUrl}/api/tokenize`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'qwen2:0.5b', prompt: text }),
+      body: JSON.stringify({ model: this.model, prompt: text }),
       signal: AbortSignal.timeout(5000)
     })
 
@@ -135,7 +149,7 @@ export class OllamaProvider implements LLMProvider {
    */
   async isAvailable(): Promise<boolean> {
     try {
-      const response = await fetch(`${OLLAMA_BASE}/api/tags`, {
+      const response = await fetch(`${this.baseUrl}/api/tags`, {
         signal: AbortSignal.timeout(2000)
       })
       return response.ok
@@ -149,7 +163,7 @@ export class OllamaProvider implements LLMProvider {
    * Yields progress strings as the model downloads.
    */
   async *pullModel(modelName: string): AsyncIterable<string> {
-    const response = await fetch(`${OLLAMA_BASE}/api/pull`, {
+    const response = await fetch(`${this.baseUrl}/api/pull`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: modelName, stream: true })
