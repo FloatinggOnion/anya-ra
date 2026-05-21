@@ -63,15 +63,28 @@ export async function loadSettings(workspacePath: string): Promise<void> {
       workspacePath
     })
     if (content) {
-      const loaded = JSON.parse(content) as Settings
+      const loaded = JSON.parse(content) as Partial<Settings>
       // Merge with defaults: fill in any missing fields from defaultSettings
+      const mergedSuggestions = {
+        ...defaultSettings.suggestions,
+        ...(loaded.suggestions || {})
+      }
+
+      // Validate all required fields exist in merged suggestions
+      const requiredFields: (keyof typeof defaultSettings.suggestions)[] = [
+        'enabled', 'displayMode', 'acceptKeybinding', 'llmProvider', 'fallbackChain',
+        'telemetryOptIn', 'ollamaModel', 'openrouterModel', 'ollamaHost', 'ollamaPort'
+      ]
+      for (const field of requiredFields) {
+        if (!(field in mergedSuggestions)) {
+          mergedSuggestions[field] = defaultSettings.suggestions[field]
+        }
+      }
+
       const merged: Settings = {
         ...defaultSettings,
         ...loaded,
-        suggestions: {
-          ...defaultSettings.suggestions,
-          ...(loaded.suggestions || {})
-        }
+        suggestions: mergedSuggestions
       }
       settings.set(merged)
       console.log('[settings] Loaded from workspace (merged with defaults)')
