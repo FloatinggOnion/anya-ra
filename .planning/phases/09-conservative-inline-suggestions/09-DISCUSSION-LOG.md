@@ -1,120 +1,120 @@
-# Phase 9 Discussion Log
+# Phase 9: Conservative Inline Suggestions - Discussion Log
 
-**Date:** 2026-04-11  
-**Facilitator:** Claude  
-**Participant:** User (paul)
+> **Audit trail only.** Do not use as input to planning, research, or execution agents.
+> Decisions are captured in CONTEXT.md — this log preserves the alternatives considered.
 
----
-
-## Overview
-
-User selected 4 of 8 gray areas for focused discussion:
-1. Suggestion Trigger Behavior — Cancellation Handling
-2. Suggestion Display — Positioning & Multi-line Handling
-3. (skipped) Suggestion Content Filtering
-4. (skipped) Token Budget Awareness
-5. (skipped) Validation Integration
-6. Provider Fallback Chain — Default Priority & Configuration
-7. (skipped) Analytics Dashboard
-8. Acceptance Rate Tracking — Telemetry Approach
-
-Each area was explored with focused questions to lock implementation decisions.
+**Date:** 2026-05-21
+**Phase:** 09-conservative-inline-suggestions
+**Areas discussed:** How suggestions appear, Reference insertion, Agent role boundary
 
 ---
 
-## Area 1: Suggestion Trigger Behavior
+## How Suggestions Appear
 
-**Question 1.1: Cancellation Model?**
-- Option A: Auto-cancel ← **SELECTED**
-- Option B: Queue
-- Option C: Ignore new
-- Option D: User choice
+### Where should suggestions live in the UI?
 
-**Question 1.2: Debounce before new request?**
-- **YES** — 300ms idle (matching save debounce pattern)
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Right sidebar pane | Docked pane to the right of the editor, always visible | ✓ |
+| Floating popover | Small floating panel near cursor | |
+| Bottom status bar / drawer | Slim horizontal panel below editor | |
 
-**Question 1.3: Timeout for in-flight requests?**
-- **YES** — **10 seconds** (abandoned if longer)
+**User's choice:** Right sidebar pane, always visible and docked.
 
-**Rationale:** Industry standard (Copilot, Cursor); responsive feedback; prevents hammering; prevents UI hang.
+### What kind of suggestions?
 
----
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Paper references | Papers from library that relate to current writing | ✓ |
+| Ideas & questions | Concepts, counterarguments, follow-up questions | ✓ |
+| Text continuations | Sentence/phrase completions user can insert | ✓ |
 
-## Area 2: Suggestion Display
+**User's choice:** All three — paper references, ideas & questions, and text continuations.
 
-**Question 2.1: Multi-line acceptance?**
-- **Line-by-line partial** (user can accept 1st line, skip 2nd, accept 3rd)
-- Not all-or-nothing
+### When should suggestions appear?
 
-**Question 2.2: Insertion behavior?**
-- **Insert and let user see it flowing through text**
-- (Not: hover preview or modal)
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Continuous refresh | Pane updates on every keystroke (debounced) | |
+| On pause only | Only when user explicitly clicks Suggest or presses shortcut | |
+| Hybrid | Papers continuous (local search, cheap); ideas+completions via section-boundary auto-detect AND manual button (LLM, expensive) | ✓ |
 
-**Question 2.3: Visual styling?**
-- **Ghost text + highlighted block, both configurable**
-- User can choose preference in Settings
+**User's choice:** Hybrid. Two tiers — paper references refresh continuously via local keyword search (no LLM cost). Ideas and text completions trigger at section boundaries (auto-detect) and via a manual "Suggest" button.
 
-**Question 2.4: Keybinding for accept?**
-- **Tab (default) but configurable**
-- User can map to Ctrl+Enter or other binding in Settings
+**Notes:** The user asked to check the code to identify the right approach. The existing code already has a debounce/abort pattern (SuggestionService) and a separate citation validation system (DocumentEditor 100ms debounce). The hybrid model maps cleanly to these existing systems.
 
-**Scope Addition:** Create Settings page to house suggestion display preferences + future UX toggles. User approved gradual infill of settings as features are added.
+### How should the three types be presented?
 
----
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Sectioned | Papers / Ideas / Completions as collapsible sections | ✓ |
+| Unified feed | One stream mixing all three | |
+| Tabbed | Three tabs, one visible at a time | |
 
-## Area 6: Provider Fallback Chain
-
-**Question 6.1: Ranked list by default?**
-- **NO** — User selects from the start; no hardcoded ranking
-- Both OllamaProvider and OpenRouterProvider equally valid
-
-**Question 6.2: Silent or visible fallback?**
-- **Visible** — Notify user when fallback occurs (toast: "OpenRouter unavailable, using Ollama")
-
-**Question 6.3: Fallback chain configuration?**
-- **YES — in Settings** — User defines priority order (e.g., Primary: OpenRouter, Fallback: Ollama)
-
-**Question 6.4: Retry behavior?**
-- **Retry on next suggestion** — Don't abandon primary provider for the session; next request tries it again
-
-**Rationale:** User control + graceful degradation; transparent; maintains session continuity.
+**User's choice:** Sectioned by default with option to switch to unified feed. Not tabbed — all sections visible simultaneously.
 
 ---
 
-## Area 8: Acceptance Rate Tracking
+## Reference Insertion
 
-**Question 8.1: What to track?**
-- **All of it**: Accept count, Reject count, Partial acceptance (line-by-line), Provider used
+### How should the agent match papers to what you're writing?
 
-**Question 8.2: Storage location?**
-- **Local only** — JSON file in workspace `/.anya/telemetry.json`
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Semantic match | LLM reads paragraph, finds topically relevant papers | |
+| Keyword match | Extract key terms, match against papers store locally | |
+| Both — tiered | Keyword continuous (free), semantic re-rank on-demand (LLM) | ✓ |
 
-**Question 8.3: Opt-in or opt-out?**
-- **Opt-in** — Off by default; user must explicitly enable in Settings
+**User's choice:** Both, tiered. Keyword match runs continuously for free. Semantic match re-ranks results on-demand or at section boundaries.
 
-**Question 8.4: Privacy boundary?**
-- **Strictly local** — No network transmission, no cloud sync, no external analytics
+### How does clicking a suggested paper insert into the document?
 
-**Rationale:** Privacy-first; transparent; useful for product dev without compromise.
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Insert citation at cursor | Drops [cite: Title] at cursor position | |
+| Preview then insert | Shows paper card, user confirms insertion | |
+| Smart insert | Contextual citation with surrounding framing text | ✓ |
+
+**User's choice:** Smart insert. Clicking inserts a full contextual citation with framing text (e.g., "As demonstrated by Vaswani et al. [cite: Attention Is All You Need], ..."). User can edit the framing after insertion.
+
+### Citation format?
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Keep [cite: Title] | Existing syntax, already validated | |
+| Author-year inline | (Author et al., Year) linked format | |
+| Footnote style | Superscript number + footnote section | |
+
+**User's choice:** User-configurable. Users can choose their preferred citation style, and changing the preference updates all citations in the document.
+
+**Notes:** This introduces a citation style system not present in the original v0.2.0 scope. It's captured as D-07 in CONTEXT.md — planner decides whether it's per-document or global.
 
 ---
 
-## Deferred Areas
+## Agent Role Boundary
 
-Areas 3, 4, 5, 7 deferred:
-- Not enough urgency to constrain Phase 9 scope
-- Will revisit when implementation reveals dependencies or later phases need them
+### What does the agent never do?
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Never insert text | Nothing enters the document without user click. Agent can auto-generate into sidebar freely. | ✓ |
+| Never auto-generate | Agent only responds to explicit triggers (button, shortcut, section pause). No background generation. | |
+| Never auto-generate nor insert | Both rules: no background generation AND nothing inserts automatically. | |
+
+**User's choice:** Never insert text. The cardinal rule: the sidebar can auto-populate freely, but nothing appears in the document without an explicit user click/action. The document is sacred.
+
+### Should the sidebar pane be visible by default?
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Always visible | Part of the default editor layout, always docked | ✓ |
+| Collapsible — closed by default | Hidden until user opens it | |
+| Collapsible — open by default | Open by default, toggle to collapse | |
+
+**User's choice:** Always visible. The suggestions pane is a permanent part of the editor layout. No toggle needed — it's a companion, not a tool the user summons.
 
 ---
 
-## User Preferences Summary
+## Deferred Ideas
 
-- **Philosophy**: Conservative (user-controlled), transparent (user-visible), local-first (no telemetry leakage)
-- **UX principle**: Configurable > opinionated (let user set preferences, don't force behaviors)
-- **Scope**: Settings page scaffolding now, fill as needed
-
----
-
-**Decision Lock Time:** ~15 min (4 focused areas, 2-4 questions each)  
-**Confidence Level:** High (clear, specific answers; no hedging)  
-**Next Phase:** Planning (Jan. 2026-ready; architecture + task breakdown)
+None — discussion stayed within phase scope. The document creation flow (dialog) was not discussed per user's selection.

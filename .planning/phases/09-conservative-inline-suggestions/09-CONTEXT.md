@@ -1,152 +1,118 @@
-# Phase 9 Context — Conservative Inline Suggestions
+# Phase 9: Conservative Inline Suggestions - Context
 
-**Phase Goal:** Implement real-time inline LLM suggestions in the document editor with conservative (user-controllable) presentation, multi-provider support, and local-only telemetry.
+**Gathered:** 2026-05-21
+**Status:** Ready for planning
 
-**Locked Decisions** (user-approved, not to be re-discussed):
+<domain>
+## Phase Boundary
 
-## 1. Suggestion Trigger Behavior — Auto-Cancel Model
+This phase delivers a non-invasive AI writing assistant that lives in a sidebar pane alongside the document editor. The agent suggests paper references, ideas/questions, and text completions — but NEVER inserts text into the document without explicit user action. The user writes; the agent assists from the sidelines.
 
-**Decision:** Use auto-cancel with debounce and timeout.
+This is a fundamental UX rethink from the prior 09-CONTEXT.md (2026-04-11) which defined a ghost-text auto-completion model. The new model replaces ghost text entirely with a sidebar companion.
+</domain>
 
-- **Cancellation**: When user edits document while suggestion is in-flight, immediately abort the request and queue a new one based on new content
-- **Debounce**: 300ms idle (no further edits) before triggering the new suggestion request
-- **Timeout**: Abandon any suggestion request that exceeds 10 seconds
-- **Rationale**: Keeps suggestions always current and responsive; matches industry standard (GitHub Copilot, Cursor); 300ms debounce prevents thrashing; 10s timeout prevents UI hang
+<decisions>
+## Implementation Decisions
 
-**Implementation Guidance:**
-- Use `AbortController` for request cancellation
-- Reuse debounce timer logic (same pattern as document save)
-- Track in-flight request ID to prevent race conditions
-- Toast notification if request times out ("Suggestion timed out")
+### Suggestion Display (overrides old Areas 1 & 2)
 
-**Canonical References:**
-- `src/lib/stores/documents.ts:76-102` — debounce pattern for save (reuse this structure)
-- `src/lib/types/llm.ts` — LLMProvider interface has chat() method signature
+- **D-01: Right sidebar pane, always visible.** Suggestions live in a docked pane to the right of the editor. Always present, never blocks the document. User can ignore it or engage with it.
+- **D-02: Three suggestion types.** The pane shows three categories: (1) Paper references — papers from the user's library that relate to the current writing; (2) Ideas & questions — concepts, counterarguments, follow-up questions based on context; (3) Text completions — sentence/phrase continuations the user can pull in.
+- **D-03: Sectioned layout, user-switchable.** Sections (Papers / Ideas / Completions) are the default view, each collapsible. User can switch to a unified feed mixing all three. Not tabbed — all three sections visible simultaneously in default mode.
+- **D-04: Hybrid timing.** Paper references update continuously via local keyword search (no LLM cost). Ideas and text completions trigger in two ways: (a) the agent detects section boundaries (e.g., two line breaks, paragraph end) and auto-generates into the sidebar; (b) a "Suggest" button in the sidebar lets the user manually trigger generation. No background LLM calls without either a boundary detection or user intent.
 
----
+### Reference Insertion
 
-## 2. Suggestion Display — Inline with Configurable UX
+- **D-05: Two-tier paper matching.** Tier 1: continuous keyword match against the papers store (title, authors, abstract) — fast and free. Tier 2: on-demand or section-boundary semantic match via LLM re-ranks keyword results for deeper relevance.
+- **D-06: Smart insert on user click.** Clicking a suggested paper in the sidebar inserts a contextual citation with surrounding framing text into the document at cursor position. Example: "As demonstrated by Vaswani et al. [cite: Attention Is All You Need], ..." The user can edit the framing text after insertion.
+- **D-07: User-configurable citation style.** User chooses preferred citation format (author-year inline, [cite: Title], footnote/superscript). Changing the style preference updates all citations in the current document. This is a per-document or global setting — planner decides.
 
-**Decision:** Display suggestions as inline decorations with line-by-line partial acceptance.
+### Agent Role Boundary
 
-- **Insertion**: Insert suggestion directly into editor; user sees it flow through their text
-- **Multi-line acceptance**: Line-by-line granularity — user can accept 1st line, skip 2nd, accept 3rd (not all-or-nothing)
-- **Visual styling**: Ghost text (faint/grayed) + optional highlighted block; both configurable by user
-- **Keybinding**: Tab to accept (default); configurable in Settings
-- **Settings page**: Create new `/settings` route or `SuggestionsSettings` component with toggles for:
-  - Styling preference (ghost text, block highlight, both)
-  - Accept keybinding (Tab, Ctrl+Enter, etc.)
-  - Enable/disable suggestions globally
-  - Opt-in to telemetry
-- **Rationale**: Line-by-line gives user fine control; ghost text is non-intrusive; configurable UX reduces friction for different preferences
+- **D-08: Never insert text automatically.** The agent's cardinal rule: nothing ever appears in the document without an explicit user click/action. The sidebar can auto-populate freely. The document is sacred.
+- **D-09: Sidebar always visible.** The suggestions pane is part of the default editor layout. No need to open/close it. It's a companion, not a tool you summon.
 
-**Implementation Guidance:**
-- Use CodeMirror 6 decorations (same pattern as DocumentEditor validation UI)
-- Partial acceptance requires tracking which lines of multi-line suggestion user accepted
-- Settings stored in workspace `.anya/settings.json` or Svelte store with persistence
-- Keybinding configurable via keyboard event listener (not hardcoded)
+### Preserved from Prior 09-CONTEXT.md (2026-04-11)
 
-**Canonical References:**
-- `src/lib/components/document/DocumentEditor.svelte` — CodeMirror integration and decoration pattern
-- Phase 8 CONTEXT.md — citation validation decoration pattern (reuse similar approach)
+- **D-10: Multi-provider fallback chain.** User selects primary provider (Ollama or OpenRouter). If the primary fails with a recoverable error, auto-fallback to the other provider. Toast notification on fallback. Retry primary on next request. (Old Area 3 — preserved)
+- **D-11: Local-only opt-in telemetry.** Track suggestion acceptance rate locally in `.anya/telemetry.json`. Disabled by default. Opt-in via Settings toggle. No network transmission. (Old Area 4 — preserved)
 
----
+### Agent's Discretion
 
-## 3. Multi-Provider Support with Fallback & Visibility
+The planner can decide:
+- Exact sidebar pane component architecture (new component vs. extending existing)
+- Section boundary detection heuristics (what constitutes a "section boundary")
+- Keyword matching algorithm for Tier 1 paper suggestions
+- Settings page structure for citation style and suggestion preferences
+- Whether citation style is per-document or global
+</decisions>
 
-**Decision:** User selects provider; auto-fallback if selected fails; chain configurable in Settings.
+<canonical_refs>
+## Canonical References
 
-- **Provider selection**: User chooses primary provider upfront (no hardcoded ranking; both providers equally valid)
-- **Fallback behavior**: If selected provider fails (connection error, auth error, timeout), automatically try other available providers in user-defined priority order
-- **User notification**: Toast or banner when fallback occurs (e.g., "OpenRouter unavailable, using Ollama")
-- **Fallback chain configuration**: Settings page allows user to define priority order of providers (e.g., "Primary: OpenRouter, Fallback: Ollama")
-- **Retry behavior**: On next suggestion request, retry the primary provider (don't abandon it for the session)
-- **Error visibility**: If all providers fail, show user an error toast with actionable message (e.g., "Check API key" or "Check Ollama connection")
-- **Rationale**: User control + graceful degradation; transparent fallback prevents silent failures; retry on next request maintains session continuity
+**Downstream agents MUST read these before planning or implementing.**
 
-**Implementation Guidance:**
-- Extend `src/lib/stores/llm-provider.ts` with fallback chain logic
-- Update provider initialization to load user-defined fallback order from Settings
-- Catch provider errors in suggestion request handler; attempt fallback chain
-- Toast notifications for fallback and all-providers-failed states
-- Test matrix: OpenRouter available, Ollama unavailable; vice versa; both unavailable
+### Phase Context & Requirements
+- `.planning/ROADMAP.md` §Phase 9 — Success criteria, requirements, architecture notes
+- `.planning/REQUIREMENTS.md` §SUGG, UX-04, LLM-MULTI — Requirements for suggestions, multi-provider
+- `.planning/PROJECT.md` — Core value, constraints (LLM assists never automates)
+- `.planning/phases/08-CONTEXT.md` — Phase 8 decisions: document storage pattern, CodeMirror editor, `[cite: Title]` syntax, sidebar list pattern
+- `.planning/phases/09-conservative-inline-suggestions/09-CONTEXT.md` — Old context (2026-04-11): preserved decisions D-10, D-11; everything else is SUPERSEDED by this document
 
-**Canonical References:**
-- `src/lib/stores/llm-provider.ts` — ProviderState, switchProvider(), setApiKey()
-- `src/lib/types/llm.ts:13-20` — LLMProvider interface with isAvailable() method
-- `src/lib/services/ollama.ts` and `src/lib/services/openrouter.ts` — provider implementations
+### Codebase (existing implementation)
+- `src/lib/components/document/DocumentEditor.svelte` — Current editor with suggestion integration, auto-save, citation validation
+- `src/lib/components/editor/NotesEditor.svelte` — CodeMirror 6 wrapper, suggestion decoration rendering
+- `src/lib/components/editor/SuggestionDecorations.ts` — Ghost text and block suggestion widgets (will be REPLACED by sidebar approach)
+- `src/lib/services/suggestions.ts` — SuggestionService: debounce, auto-cancel, context building, streaming
+- `src/lib/services/suggestion-provider-chain.ts` — Multi-provider fallback chain (PRESERVED — D-10)
+- `src/lib/types/suggestion.ts` — Suggestion, SuggestionSettings, TelemetryRecord types
+- `src/lib/components/document/DocumentsSidebar.svelte` — Document list sidebar (reference pattern for new suggestion sidebar)
+- `src/lib/components/document/DocumentCreateDialog.svelte` — Document creation dialog (PRESERVED — not changed in this phase)
+- `src/lib/stores/documents.ts` — Document store, selectedDocumentId, currentDocument
+- `src/lib/stores/telemetry.ts` — Local telemetry store (PRESERVED — D-11)
+- `src/lib/stores/llm-provider.ts` — Provider state, switchProvider, initializeProvider
 
----
+### Styles
+- `src/lib/styles/suggestions.css` — Ghost text and block suggestion CSS (will be EXTENDED/REPLACED with sidebar styles)
+</canonical_refs>
 
-## 4. Acceptance Rate Tracking — Local-Only Opt-In Telemetry
+<code_context>
+## Existing Code Insights
 
-**Decision:** Track suggestion acceptance locally, off by default, user opts in.
+### Reusable Assets
+- **DocumentsSidebar.svelte** — Existing sidebar pattern with search, list, create button. The new suggestion sidebar can follow a similar component structure but for suggestion items instead of document list items.
+- **SuggestionService + SuggestionProviderChain** — The streaming, debounce, abort, and fallback infrastructure is built and tested. The new sidebar model changes WHERE suggestions render, not HOW they're generated. The service layer is largely reusable.
+- **SuggestionDecorations state field** — CodeMirror StateField pattern for managing suggestion state can be adapted to manage the suggestion sidebar data model, or replaced with a Svelte 5 $state-based approach.
+- **ContextSelection.svelte** — Existing chat context selection UI already lets users pick papers/notes for context. The sidebar suggestion system reuses this same context pipeline (selectedItems store).
 
-- **Metrics tracked**:
-  - Accept: Count of suggestions fully accepted
-  - Reject: Count of suggestions ignored/rejected
-  - Partial: Count of partial acceptances (per line, or per suggestion if multi-line)
-  - Provider: Track which provider was used for each suggestion
-- **Storage**: JSON file in workspace `/.anya/telemetry.json` (or equivalent local store)
-- **Opt-in**: Telemetry disabled by default; user must explicitly enable in Settings → "Help improve Anya" toggle
-- **Privacy**: Strictly local — no network transmission, no cloud sync, no external analytics
-- **Retention**: User can clear telemetry history from Settings
-- **Rationale**: Local-only respects privacy; opt-in is transparent and non-creepy; helps development without privacy cost
+### Established Patterns
+- **Debounced auto-save (300ms)** — DocumentEditor.svelte:131-142. Same debounce pattern used for suggestions. Reuse for sidebar refresh timing.
+- **JSON sidecar pattern** — `.links.json` files alongside `.md` documents. Same pattern for `.telemetry.json`.
+- **Svelte 5 $state + $effect** — DocumentEditor uses runes for reactive content, auto-save, and suggestion triggering. Sidebar pane should follow the same approach.
+- **Provider initialization pattern** — onMount → initializeProvider → $effect watches providerState → initialize SuggestionService. This chain should be preserved.
 
-**Implementation Guidance:**
-- Create `src/lib/stores/telemetry.ts` with:
-  - `recordAcceptance(docId, lineCount, provider)` — full or partial acceptance
-  - `recordRejection(docId, provider)` — user rejected suggestion
-  - `getTelemetryStats()` — aggregate counts by provider
-  - `clearTelemetry()` — user-initiated cleanup
-- Store in workspace under `.anya/telemetry.json` (reuse workspace store pattern)
-- Settings toggle to enable/disable (does not clear history, just stops recording)
-- Display summary stats in Settings (optional): "Suggested: 42 times | Accepted: 28 (66%)"
+### Integration Points
+- **DocumentEditor.svelte** — The suggestion sidebar replaces the existing `suggestion={currentSuggestion}` prop passed to NotesEditor. The sidebar is a sibling component to NotesEditor, not a child.
+- **NotesEditor.svelte** — Remove the suggestion prop entirely. NotesEditor goes back to being a pure editor.
+- **SuggestionDecorations.ts** — The entire file (ghost text, block widgets) is superseded. Suggestions no longer render as CodeMirror decorations.
+- **DocumentsSidebar.svelte** — Unchanged document management sidebar (left). New suggestion pane (right) is a separate component.
+</code_context>
 
-**Canonical References:**
-- `src/lib/stores/workspace.ts` — workspace path pattern; reuse for telemetry file location
-- `src/lib/stores/documents.ts` — save pattern to persist telemetry
+<specifics>
+## Specific Ideas
 
----
+- The sidebar should feel like an "AI companion" — not a tool panel, not a debug console. Think: a thoughtful colleague reading over your shoulder who occasionally says "have you considered citing X here?" or "what about the counterargument?"
+- Section boundary detection for auto-trigger: when the user types two consecutive newlines (paragraph break) and pauses briefly, the agent refreshes ideas and text completions. This should feel ambient, not like an interruption.
+- The "Suggest" button in the sidebar should be visible but understated — not a primary CTA. The agent's value is in being available, not in demanding attention.
+</specifics>
 
-## Deferred Gray Areas (Not Discussed — Revisit Later)
+<deferred>
+## Deferred Ideas
 
-- **Area 3**: Suggestion content filtering / instruction tuning
-- **Area 4**: Token budget awareness in suggestions (avoid exceeding context window)
-- **Area 5**: Real-time validation integration (how suggestions interact with existing citation validation)
-- **Area 7**: Analytics dashboard (future: visualize acceptance rates over time)
-
-These will be revisited in later phases or when implementation reveals dependencies.
+None — discussion stayed within phase scope. The document creation flow (dialog) was not changed; that remains as implemented in Phase 8.
+</deferred>
 
 ---
 
-## Settings Page Scope (Phased)
-
-**Phase 9 should create the Settings structure** with toggles for:
-1. Suggestion display (styling, keybinding) — locked in Area 2
-2. Provider fallback order — locked in Area 3
-3. Telemetry opt-in — locked in Area 4
-
-**Future phases can add**:
-- Theme toggle (already exists elsewhere, may consolidate)
-- More suggestion tuning options (Areas 3, 4)
-- Telemetry dashboard / stats view
-
----
-
-## Next Steps (for Planning Phase)
-
-1. **Confirm CodeMirror decoration strategy** for line-by-line partial acceptance (may require custom widget)
-2. **Design Settings page layout** (settings.json schema, Svelte component)
-3. **Outline provider fallback chain logic** (error handling, retry timing)
-4. **Implement telemetry store** (local JSON persistence, opt-in toggle)
-5. **Integration points**: 
-   - Hook suggestion trigger into DocumentEditor keystroke events
-   - Connect Settings toggles to suggestion display behavior
-   - Wire up provider selection/fallback in LLM store
-
----
-
-**Document Version:** 1.0  
-**Last Updated:** 2026-04-11  
-**Status:** Ready for Planning Phase
+*Phase: 09-conservative-inline-suggestions*
+*Context gathered: 2026-05-21*
