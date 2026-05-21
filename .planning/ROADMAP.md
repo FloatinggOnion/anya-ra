@@ -7,7 +7,7 @@ start_phase: 8
 end_phase: 11
 status: ready_for_execution
 created: "2026-04-08T20:35:00.000Z"
-last_updated: "2026-04-11T20:00:00.000Z"
+last_updated: "2026-05-22T00:00:00.000Z"
 ---
 
 # ROADMAP.md - v0.2.0: Enhanced Interactive Writing with AI Assistance
@@ -84,12 +84,17 @@ last_updated: "2026-04-11T20:00:00.000Z"
   10. Telemetry tracks sidebar click-to-insert engagement (opt-in, local-only, D-11 preserved)
   11. OpenRouter API key is securely stored and fetched (preserved from old model)
 
-**Plans:** 3 plans (UX rethink — May 2026)
+**Plans:** 6 plans (3 original UX rethink + 3 gap-closure — May 2026)
 
-Plans:
+Original UX rethink plans (describe correct architecture, not yet executed):
   - [ ] 09-01-PLAN.md — Wave 1: Types + PaperKeywordMatcher + SectionBoundaryDetector + SuggestionService sidebar methods
   - [ ] 09-02-PLAN.md — Wave 2: NotesEditor cleanup + SuggestionsSidebar component + DocumentEditor split layout
   - [ ] 09-03-PLAN.md — Wave 3: SmartCitationInsert + Citation style settings + Click-to-insert telemetry + polish
+
+Gap-closure plans (implement what the originals describe — address 8 VERIFICATION failures + 2 partials):
+  - [ ] 09-04-PLAN.md — Wave 1 (gap-closure): Types + PaperKeywordMatcher + SectionBoundaryDetector + SuggestionSidebarStore + SuggestionService extensions
+  - [ ] 09-05-PLAN.md — Wave 1 (gap-closure): SmartCitationInsert + Settings (citationStyle/sidebarLayout) + Telemetry (recordInsertion)
+  - [ ] 09-06-PLAN.md — Wave 2 (gap-closure): NotesEditor cleanup + SuggestionsSidebar + DocumentEditor split layout + CSS + fallback toast + wiring
 
 **UI hint:** yes
 
@@ -191,7 +196,7 @@ Plans:
 | Phase | Goal | Requirements | Success Criteria | Status |
 |-------|------|--------------|------------------|--------|
 | 8 | Document Editor + References | 12 | 9 | COMPLETE — 3/3 plans executed, all 9 criteria met |
-| 9 | Sidebar Companion Suggestions | 10 | Planned (UX rethink) | 2026-05-21 |
+| 9 | Sidebar Companion Suggestions | 10 | Gaps found — 3 gap-closure plans created | 2026-05-22 |
 | 10 | Backlinks UI + Safeguards | 5 | 8 | Not started |
 | 11 | Export & Polish | 3 | 5 | Not started |
 
@@ -260,4 +265,4 @@ interface LLMProvider {
 
 ---
 
-*Last updated: 2026-04-11 (Phase 9 revision 1: added Wave 0 test infrastructure plan, fixed timing conflict 500ms→300ms)*
+*Last updated: 2026-05-22 (Phase 9 gap-closure plans 09-04, 09-05, 09-06 added — addresses 8 VERIFICATION failures + 2 partials)*
