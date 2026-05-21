@@ -1,5 +1,6 @@
 <script lang="ts">
   import { settings } from '../../stores/settings'
+  import { providerState } from '../../stores/llm-provider'
   import { OllamaProvider } from '../../services/llm/ollama'
   import type { Model } from '../../types/llm'
 
@@ -76,8 +77,8 @@
     openrouterValidating = true
     try {
       const { OpenRouterProvider } = await import('../../services/llm/openrouter')
-      // Get API key from storage - for now assume it's in settings (would need to fetch from keychain in real impl)
-      const apiKey = localStorage.getItem('openrouter_api_key') || ''
+      // Get API key from providerState (passed via props or store)
+      const apiKey = $providerState.apiKey || ''
       if (!apiKey) {
         openrouterValidationError = 'API key not found. Set it in chat settings.'
         return
