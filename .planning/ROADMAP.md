@@ -25,7 +25,7 @@ last_updated: "2026-04-11T20:00:00.000Z"
 ## Phases Overview
 
 - [x] **Phase 8: Document Editor + Paper References** - Create, persist, edit documents and implement `[cite: Paper Title]` reference syntax with validation
-- [x] **Phase 9: Conservative Inline Suggestions** - Context-aware AI writing assistance with 1-suggestion-max policy, <150ms latency SLA, multi-provider LLM support (Ollama + OpenAI + OpenRouter) (completed 2026-04-11)
+- [ ] **Phase 9: Sidebar Companion Suggestions** - Non-invasive AI writing assistant via a docked right sidebar. Three suggestion types (paper references, ideas/questions, text completions). Never inserts text without user click. Multi-provider LLM fallback (Ollama + OpenRouter). (replanned 2026-05-21 — UX rethink)
 - [ ] **Phase 10: Backlinks UI + Link Safeguards** - Backlink discovery, delete protection, visual density limits, measurement dashboards
 - [ ] **Phase 11: Export & Polish** - PDF export with metadata, references appendix, and final refinements
 
@@ -61,44 +61,44 @@ last_updated: "2026-04-11T20:00:00.000Z"
 
 ---
 
-### Phase 9: Conservative Inline Suggestions
+### Phase 9: Sidebar Companion Suggestions (UX Rethink)
 
-**Goal:** Users receive real-time, context-aware writing suggestions with high quality, low latency, and multi-provider LLM support (Ollama + OpenAI + OpenRouter).
+**Goal:** Users receive context-aware writing suggestions via a sidebar companion pane — paper references, ideas/questions, and text completions — displayed in a docked right sidebar that never inserts text automatically.
 
 **Depends on:** Phase 8
 
 **Requirements:** SUGG-01 through SUGG-08, UX-04, plus NEW LLM-MULTI-01 through LLM-MULTI-03
 
-**Critical Constraint:** Suggestion latency p95 < 300ms (p50 < 150ms preferred). If latency exceeds 300ms in Week 1 benchmark, defer to v0.2.1.
+**UX Rethink (May 2026):** The original ghost-text auto-completion model (April 2026) is superseded. The new model is a SIDEBAR COMPANION — suggestions live in a right pane, users click to insert. The editor is sacred; nothing enters without explicit user action.
 
 **Success Criteria** (what must be TRUE when phase completes):
-  1. LLM provider abstraction supports Ollama, OpenAI, and OpenRouter as interchangeable backends
-  2. User can configure LLM provider via settings dialog (with fallback chain: try primary → fallback → error)
-  3. When user stops typing for 300ms while editing a document, ONE suggestion (max) is generated using selected papers and document section as context
-  4. Suggestion context budget limited to 500 tokens (papers + document section); use js-tiktoken to validate before LLM call
-  5. Suggestion appears as ghost text (grayed out, inline) at cursor position without blocking text input
-  6. Suggestion latency p95 < 300ms; p50 < 150ms target. If p95 > 300ms after Week 1 tuning, flag for v0.2.1 optimization
-  7. User can accept suggestion with Tab key (committed to document), reject with Escape key (discarded), or edit suggestion text before accepting
-  8. If suggestion takes >1s to generate, a loading indicator appears
-  9. Chat context pane shows "Selected for suggestions" indicator listing which papers/notes are being used as context
-  10. User can select/deselect papers and notes from chat context pane to control which documents inform suggestion generation
-  11. OpenRouter API key is securely stored and fetched (use existing tauri-plugin-store pattern)
-  12. Suggestion acceptance rate tracked (target: >50%)
+  1. Suggestion sidebar pane (280px) appears to the right of the document editor when a document is open
+  2. Paper suggestions update continuously via local keyword matching against the papers store (no LLM cost)
+  3. Ideas & text completions generate on section boundary detection (two newlines + 500ms pause) and via manual "Suggest" button
+  4. Clicking a paper suggestion inserts contextual citation with framing text at cursor (e.g., "As demonstrated by Vaswani et al. [cite: Attention Is All You Need], ")
+  5. Citation style is user-configurable (author-year, [cite: Title], footnote) via Settings
+  6. Sidebar can be toggled between sectioned layout (Papers/Ideas/Completions) and unified feed
+  7. Multi-provider LLM fallback chain works (Ollama → OpenRouter) with toast on fallback (D-10 preserved)
+  8. Loading spinners appear in sidebar sections during LLM generation (>1s)
+  9. Context selection (papers/notes) controls which documents inform suggestion generation
+  10. Telemetry tracks sidebar click-to-insert engagement (opt-in, local-only, D-11 preserved)
+  11. OpenRouter API key is securely stored and fetched (preserved from old model)
 
-**Plans:** 4/4 plans complete
-  - [ ] 09-00-PLAN.md — Wave 0: Test infrastructure + fixtures — Wave 0
-  - [ ] 09-01-PLAN.md — Wave 1: Core services (Suggestion, ProviderChain, Settings) — Wave 1
-  - [ ] 09-02-PLAN.md — Wave 2: Editor integration + decorations — Wave 2
-  - [ ] 09-03-PLAN.md — Wave 3: Settings UI + Telemetry + Chat integration — Wave 3
+**Plans:** 3 plans (UX rethink — May 2026)
+
+Plans:
+  - [ ] 09-01-PLAN.md — Wave 1: Types + PaperKeywordMatcher + SectionBoundaryDetector + SuggestionService sidebar methods
+  - [ ] 09-02-PLAN.md — Wave 2: NotesEditor cleanup + SuggestionsSidebar component + DocumentEditor split layout
+  - [ ] 09-03-PLAN.md — Wave 3: SmartCitationInsert + Citation style settings + Click-to-insert telemetry + polish
 
 **UI hint:** yes
 
 **Architecture notes:** 
-- Extend existing LLM provider abstraction (OllamaProvider, OpenAIProvider) with OpenRouterProvider
-- All three share same streaming interface (AsyncIterable<string>)
-- Suggestion service reads from context-selection store (shared with chat)
-- Use debounce + abort pattern to cancel pending suggestions on keystroke
-- **Debounce timing is 300ms** (locked decision from 09-CONTEXT.md Area 1)
+- PRESERVED: SuggestionService (debounce, abort, context building), SuggestionProviderChain (multi-provider fallback), settings store, telemetry store
+- REMOVED: GhostTextWidget, BlockSuggestionWidget, suggestion prop on NotesEditor, Tab/Escape suggestion handlers
+- NEW: SuggestionSidebar.svelte (right pane), PaperKeywordMatcher (local, no LLM), SectionBoundaryDetector, CitationInsertService
+- Existing SuggestionService is reused by sidebar for LLM ideas+completions generation
+- Section boundary detection: two consecutive newlines + 500ms pause → triggers ideas+completions
 
 ---
 
@@ -191,7 +191,7 @@ last_updated: "2026-04-11T20:00:00.000Z"
 | Phase | Goal | Requirements | Success Criteria | Status |
 |-------|------|--------------|------------------|--------|
 | 8 | Document Editor + References | 12 | 9 | COMPLETE — 3/3 plans executed, all 9 criteria met |
-| 9 | Conservative Suggestions (Multi-LLM) | 10 | Complete    | 2026-04-11 |
+| 9 | Sidebar Companion Suggestions | 10 | Planned (UX rethink) | 2026-05-21 |
 | 10 | Backlinks UI + Safeguards | 5 | 8 | Not started |
 | 11 | Export & Polish | 3 | 5 | Not started |
 
@@ -202,11 +202,10 @@ last_updated: "2026-04-11T20:00:00.000Z"
 ```
 Phase 8: Document Editor + Paper References (foundation)
     ↓
-Phase 9: Conservative Inline Suggestions (with multi-provider LLM)
-    ├─ Wave 0: Test infrastructure (baseline tests before implementation)
-    ├─ Wave 1: Core services (Suggestion, ProviderChain, Settings)
-    ├─ Wave 2: Editor integration (decorations, acceptance)
-    └─ Wave 3: UI + Telemetry (settings, dashboards, chat context)
+Phase 9: Sidebar Companion Suggestions (with multi-provider LLM)
+    ├─ Wave 1: Service layer (PaperKeywordMatcher, SectionBoundaryDetector, SuggestionService extensions)
+    ├─ Wave 2: UI (SuggestionsSidebar, DocumentEditor split layout, NotesEditor cleanup)
+    └─ Wave 3: Citation insert + Settings + Telemetry + Polish
     ↓
 Phase 10: Backlinks UI + Link Safeguards
     ↓
