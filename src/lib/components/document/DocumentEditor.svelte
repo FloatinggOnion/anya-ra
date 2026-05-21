@@ -41,14 +41,39 @@
 
     if (provider && !suggestionService) {
       console.log('[DocumentEditor] ✓ Initializing SuggestionService with provider:', type)
-      const chain = new SuggestionProviderChain(
-        provider,
-        [],  // No fallback providers for now
-        (msg) => {
-          console.log('[SuggestionProviderChain] Fallback:', msg)
+
+      // Construct fallback providers based on primary provider type
+      const initChain = async () => {
+        const fallbackProviders = []
+        const settingsVal = $settings
+
+        if (type === 'ollama' && $providerState.apiKey) {
+          // If primary is Ollama, fallback to OpenRouter
+          try {
+            const { OpenRouterProvider } = await import('../../services/llm/openrouter')
+            fallbackProviders.push(new OpenRouterProvider($providerState.apiKey))
+          } catch (e) {
+            console.warn('[DocumentEditor] Could not load OpenRouter fallback:', e)
+          }
+        } else if (type === 'openrouter') {
+          // If primary is OpenRouter, fallback to Ollama
+          const { OllamaProvider } = await import('../../services/llm/ollama')
+          fallbackProviders.push(new OllamaProvider(settingsVal.suggestions.ollamaHost, settingsVal.suggestions.ollamaPort))
         }
-      )
-      suggestionService = new SuggestionService(chain)
+
+        const chain = new SuggestionProviderChain(
+          provider,
+          fallbackProviders,
+          (msg) => {
+            console.log('[SuggestionProviderChain] Fallback:', msg)
+          }
+        )
+        suggestionService = new SuggestionService(chain, (isGenerating) => {
+          isGeneratingSuggestion = isGenerating
+        })
+      }
+
+      initChain()
     } else if (!provider && error) {
       console.warn('[DocumentEditor] Provider error:', error)
       // Try to fallback to OpenRouter if available
