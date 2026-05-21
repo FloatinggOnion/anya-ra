@@ -105,6 +105,11 @@ export class SuggestionService {
         ? settingsVal.suggestions.ollamaModel
         : settingsVal.suggestions.openrouterModel
 
+      // Validate model is configured before passing to provider
+      if (!model) {
+        throw new Error(`Model not configured for ${settingsVal.suggestions.llmProvider}`)
+      }
+
       // Generate via provider chain (handles fallback + cancellation)
       const suggestionText = await this._streamSuggestion(messages, abortController.signal, model)
 
@@ -116,12 +121,13 @@ export class SuggestionService {
       }
 
       const lines = suggestionText.split('\n')
+      const providerType = settingsVal.suggestions.llmProvider
       const suggestion: Suggestion = {
         id: requestId,
         docId,
         text: suggestionText,
         lines,
-        provider: 'ollama', // Will be determined by provider chain
+        provider: providerType,
         position: { line: currentContent.substring(0, cursorPos).split('\n').length - 1, col: cursorPos },
         generatedAt: startTime,
         state: 'pending',
