@@ -1,5 +1,6 @@
 <!-- ContextSelection.svelte — Context item picker with token usage meter -->
 <script lang="ts">
+  import { get } from 'svelte/store'
   import {
     contextState,
     selectedItems,
@@ -9,9 +10,12 @@
     selectAll
   } from '../../stores/context-selection'
   import { getModelContextWindow, getTokenUsageLevel } from '../../services/tokenizer'
+  import { settings } from '../../stores/settings'
 
-  // Hardcode qwen2:0.5b for Phase 4 — model selection UI comes later
-  const contextWindow = getModelContextWindow('qwen2:0.5b')
+  // Get context window from configured model (use ollama model with fallback)
+  const settingsVal = get(settings)
+  const modelId = settingsVal.suggestions.ollamaModel || 'qwen2:0.5b'
+  const contextWindow = getModelContextWindow(modelId)
 
   let showContextPanel = $state(false)
 

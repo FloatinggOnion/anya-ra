@@ -13,6 +13,11 @@
   let ollamaHostError = $state<string | null>(null)
   let ollamaPortError = $state<string | null>(null)
 
+  // OpenRouter model validation state
+  let openrouterValidating = $state(false)
+  let openrouterValidationError = $state<string | null>(null)
+  let openrouterValidationSuccess = $state(false)
+
   export function open() {
     isOpen = true
     // Fetch models when dialog opens and Ollama is selected
@@ -58,6 +63,37 @@
       }
     } catch (err) {
       ollamaConnectionError = 'Connection failed'
+    }
+  }
+
+  async function validateOpenRouterModel() {
+    openrouterValidationError = null
+    openrouterValidationSuccess = false
+    if (!$settings.suggestions.openrouterModel.trim()) {
+      return
+    }
+
+    openrouterValidating = true
+    try {
+      const { OpenRouterProvider } = await import('../../services/llm/openrouter')
+      // Get API key from storage - for now assume it's in settings (would need to fetch from keychain in real impl)
+      const apiKey = localStorage.getItem('openrouter_api_key') || ''
+      if (!apiKey) {
+        openrouterValidationError = 'API key not found. Set it in chat settings.'
+        return
+      }
+
+      const provider = new OpenRouterProvider(apiKey)
+      const result = await provider.validateModel($settings.suggestions.openrouterModel)
+      if (result.valid) {
+        openrouterValidationSuccess = true
+      } else {
+        openrouterValidationError = result.error || 'Validation failed'
+      }
+    } catch (err) {
+      openrouterValidationError = 'Validation error'
+    } finally {
+      openrouterValidating = false
     }
   }
 </script>
@@ -265,8 +301,36 @@
             {/if}
 
             {#if $settings.suggestions.llmProvider === 'openrouter'}
-              <div class="api-key-section">
-                <h4>OpenRouter API Key</h4>
+              <div class="openrouter-section">
+                <h4>OpenRouter Configuration</h4>
+
+                <div class="model-id-input">
+                  <label>
+                    <span>Model ID:</span>
+                    <input
+                      type="text"
+                      value={$settings.suggestions.openrouterModel}
+                      onchange={(e) => {
+                        $settings.suggestions.openrouterModel = e.currentTarget.value
+                        validateOpenRouterModel()
+                      }}
+                      placeholder="openai/gpt-4o-mini"
+                    />
+                  </label>
+                  {#if openrouterValidating}
+                    <span class="validating">⟳ Validating...</span>
+                  {:else if openrouterValidationSuccess}
+                    <span class="valid-icon">✓</span>
+                  {:else if openrouterValidationError}
+                    <span class="invalid-icon">✗</span>
+                  {/if}
+                </div>
+
+                {#if openrouterValidationError}
+                  <p class="error-message">{openrouterValidationError}</p>
+                {/if}
+
+                <p class="openrouter-note">Paste a model ID from <a href="https://openrouter.ai/models" target="_blank">openrouter.ai/models</a></p>
                 <p class="api-key-note">Your API key is stored securely in your workspace</p>
               </div>
             {/if}
@@ -648,5 +712,86 @@
     color: var(--color-success, #22c55e);
     font-size: 0.8rem;
     margin: 0;
+  }
+
+  .openrouter-section {
+    margin-top: 16px;
+    padding: 12px;
+    background: var(--color-surface-2);
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .openrouter-section h4 {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .model-id-input {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .model-id-input label {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex: 1;
+  }
+
+  .model-id-input label span {
+    min-width: 70px;
+    font-size: 0.85rem;
+  }
+
+  .model-id-input input {
+    flex: 1;
+    padding: 6px 8px;
+    background: var(--color-surface-1);
+    border: 1px solid var(--color-surface-3);
+    border-radius: 3px;
+    color: var(--color-text);
+    font-size: 0.85rem;
+  }
+
+  .validating,
+  .valid-icon,
+  .invalid-icon {
+    font-size: 0.85rem;
+    min-width: 30px;
+    text-align: right;
+  }
+
+  .valid-icon {
+    color: var(--color-success, #22c55e);
+    font-weight: bold;
+  }
+
+  .invalid-icon {
+    color: var(--color-error, #ef4444);
+    font-weight: bold;
+  }
+
+  .validating {
+    color: var(--color-text-secondary);
+  }
+
+  .openrouter-note {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    margin: 0;
+  }
+
+  .openrouter-note a {
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+
+  .openrouter-note a:hover {
+    text-decoration: underline;
   }
 </style>
