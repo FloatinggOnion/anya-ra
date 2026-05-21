@@ -968,32 +968,34 @@ const suggestion = await streamSuggestion(
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED — Superseded by May 2026 UX Rethink)
 
-1. **CodeMirror 6 StateField Custom Widget Styling**
+> **Note:** The questions below pertain to the original April 2026 ghost-text inline model (CodeMirror decorations, Tab/Escape keybindings, partial acceptance state machine). This model was superseded by the May 2026 UX Rethink (sidebar companion model). These questions are preserved for historical reference only — they are no longer relevant to the current phase implementation.
+
+1. **CodeMirror 6 StateField Custom Widget Styling** (RESOLVED — not applicable to sidebar model)
    - What we know: Decoration.replace() can use WidgetType.toDOM() to return custom HTML
    - What's unclear: How to style ghost text so it's visibly "not real" (grayed out, italic, dashed underline) without CSS being overridden by editor theme?
-   - Recommendation: Test CSS specificity; use !important sparingly; check svelte-codemirror-editor theme prop if it applies global styles
+   - Resolution: Ghost text is REMOVED entirely per UX Rethink. Suggestions render in a sidebar pane, not as CodeMirror decorations.
 
-2. **Transaction-Based Suggestion Acceptance + Cursor Position**
+2. **Transaction-Based Suggestion Acceptance + Cursor Position** (RESOLVED — not applicable to sidebar model)
    - What we know: state.update({ changes: { insert } }) creates transaction
    - What's unclear: Does cursor position update correctly after insertion? Or does user's cursor jump?
-   - Recommendation: Test with real editor; if cursor jumps, use setSelection() in same transaction to move cursor to end of inserted text
+   - Resolution: Click-to-insert replaces Tab/Escape model. Simple text insertion at cursor position, no CodeMirror transactions needed.
 
-3. **Partial Acceptance UI / Keybinding**
+3. **Partial Acceptance UI / Keybinding** (RESOLVED — not applicable to sidebar model)
    - What we know: User should be able to accept line-by-line
    - What's unclear: How does user interact? (Shift+Tab for per-line? Hover to highlight line? Up/Down arrows to navigate lines?)
-   - Recommendation: Keep Tab for "accept all"; Shift+Tab for "reject current line"; no per-line preview (too complex for MVP). Test with users.
+   - Resolution: Partial acceptance is REMOVED. Sidebar model uses click-to-insert (full acceptance per card). No line-by-line acceptance.
 
-4. **Token Budget Enforcement**
+4. **Token Budget Enforcement** (RESOLVED — adapted for sidebar model)
    - What we know: Phase 9 ROADMAP says "limit to 500 tokens"
-   - What's unclear: Should Phase 9 validate this before every request? Or let LLM timeout and treat as user feedback that context is too large?
-   - Recommendation: Validate in Suggestion service (quiet check, no toast); log if context exceeds 500T; let user adjust context selection if needed. Don't block request on token count (just inform).
+   - What's unclear: Should Phase 9 validate this before every request? Or let LLM timeout and treat as user feedback?
+   - Resolution: Per May 2026 CONTEXT.md D-04: ideas/completions trigger on section boundary or manual button. Token budget enforced in _buildContext (existing). Tier 2 paper re-rank capped at 5 papers + 1500 char context.
 
-5. **Ollama + Qwen2 Instruction Following**
+5. **Ollama + Qwen2 Instruction Following** (RESOLVED — unchanged)
    - What we know: Default Ollama model is qwen2:0.5b (small, local)
    - What's unclear: Does qwen2:0.5b produce good suggestions for writing? Or is it too "noisy" / low quality?
-   - Recommendation: User can switch models via Settings (future refinement). For MVP, use qwen2:0.5b and measure acceptance rate; if <30%, consider defaulting to OpenRouter instead.
+   - Resolution: User can switch models via Settings. Acceptance rate measurement via telemetry (D-11). No change from original plan.
 
 ---
 
@@ -1017,7 +1019,11 @@ const suggestion = await streamSuggestion(
 
 ---
 
-## Validation Architecture
+## Validation Architecture (Superseded — see updated section at end of document)
+
+> **Superseded:** This section described test infrastructure for the April 2026 ghost-text inline model (CodeMirror decorations, Tab/Escape, SUGG-03/04). Replaced by the sidebar companion model May 2026 UX Rethink. See `## Validation Architecture (Sidebar Model)` at the end of this document for the current validation strategy.
+>
+> The old test files (suggestion-debounce, suggestion-context, suggestion-decoration, suggestion-acceptance, suggestion-commit, suggestion-provider, suggestion-timeout, fallback-chain, settings-persistence, api-key-storage, context-selection-suggestion) are superseded and should NOT be implemented. The new sidebar model requires different tests.
 
 ### Test Framework
 | Property | Value |
@@ -1119,5 +1125,108 @@ const suggestion = await streamSuggestion(
 
 6. **Token Budget Validation:** Validate in suggestion service (log but don't block). Cache token counts to avoid repeated js-tiktoken calls. Not a hard blocker for suggestion, but monitor latency p95.
 
-7. **Keybinding:** Tab to accept all lines; Escape to reject. Shift+Tab optional for per-line rejection (complexity vs. UX trade-off; can defer if MVP timeline pressures). Default keybindings; make configurable via Settings.
+7. **Keybinding:** Click-to-insert replaces Tab/Escape model entirely. Sidebar companion model: user clicks a suggestion card to insert text at cursor. No keyboard shortcuts for acceptance/rejection needed.
+
+---
+
+## Validation Architecture (Sidebar Model — May 2026 UX Rethink)
+
+### What to Validate
+
+The Phase 9 sidebar companion model has the following observable truths that require validation:
+
+| # | Truth | Priority | Validation Method |
+|---|-------|----------|-------------------|
+| V1 | PaperKeywordMatcher Tier 1 returns results in <50ms without LLM calls | P0 | Unit (vitest performance test) |
+| V2 | PaperKeywordMatcher Tier 2 LLM re-rank enriches results with semantic scores | P0 | Unit (vitest with mock provider chain) |
+| V3 | SectionBoundaryDetector fires on \n\n + 500ms pause | P0 | Unit (vitest fake timers) |
+| V4 | SuggestionService.generateIdeas() calls provider chain with correct prompt | P1 | Unit (vitest with mock provider chain) |
+| V5 | SuggestionService.generateCompletions() calls provider chain with correct prompt | P1 | Unit (vitest with mock provider chain) |
+| V6 | SmartCitationInsert.generateCitation() formats all three styles correctly | P0 | Unit (vitest) |
+| V7 | SmartCitationInsert.reformatDocumentCitations() updates all existing citations on style change | P0 | Unit (vitest) |
+| V8 | suggestion-sidebar store exposes reactive state via Svelte 5 runes | P1 | Unit (vitest with $state assertions) |
+| V9 | Settings store persists citationStyle and sidebarLayout | P1 | Unit (vitest with mock invoke) |
+| V10 | Telemetry recordInsertion respects opt-in toggle | P1 | Unit (vitest) |
+| V11 | SuggestionsSidebar renders at 280px with three collapsible sections | P0 | Manual (visual verification) |
+| V12 | Click-to-insert fires suggestion-insert CustomEvent on card click | P0 | Integration (vitest + jsdom) |
+| V13 | Fallback toast appears on provider switch | P1 | Manual (requires provider state control) |
+| V14 | NotesEditor contains zero suggestion-related code | P0 | Static analysis (grep assertions) |
+
+### How to Validate Each Truth
+
+#### Automated Tests
+
+| Truth | Test File | Automated Command | Framework |
+|-------|-----------|-------------------|-----------|
+| V1 | `src/lib/services/paper-keyword-matcher.test.ts` | `npx vitest run src/lib/services/paper-keyword-matcher.test.ts --reporter=verbose` | vitest |
+| V2 | `src/lib/services/paper-keyword-matcher.test.ts` (Tests 7-11) | `npx vitest run src/lib/services/paper-keyword-matcher.test.ts --reporter=verbose` | vitest + mock SuggestionProviderChain |
+| V3 | `src/lib/services/section-boundary-detector.test.ts` | `npx vitest run src/lib/services/section-boundary-detector.test.ts --reporter=verbose` | vitest + fake timers |
+| V4 | `src/lib/services/suggestions.test.ts` (Wave 0: create) | `npx vitest run src/lib/services/suggestions.test.ts --reporter=verbose` | vitest + mock SuggestionProviderChain |
+| V5 | `src/lib/services/suggestions.test.ts` (Wave 0: create) | `npx vitest run src/lib/services/suggestions.test.ts --reporter=verbose` | vitest + mock SuggestionProviderChain |
+| V6 | `src/lib/services/smart-citation-insert.test.ts` (Tests 1-11) | `npx vitest run src/lib/services/smart-citation-insert.test.ts --reporter=verbose` | vitest |
+| V7 | `src/lib/services/smart-citation-insert.test.ts` (Tests 12-17) | `npx vitest run src/lib/services/smart-citation-insert.test.ts --reporter=verbose` | vitest |
+| V8 | `src/lib/stores/suggestion-sidebar.test.ts` (Wave 0: create) | `npx vitest run src/lib/stores/suggestion-sidebar.test.ts --reporter=verbose` | vitest + Svelte 5 runes |
+| V9 | `src/lib/stores/settings.test.ts` (Wave 0: create) | `npx vitest run src/lib/stores/settings.test.ts --reporter=verbose` | vitest + mock Tauri invoke |
+| V10 | `src/lib/stores/telemetry.test.ts` (Wave 0: extend) | `npx vitest run src/lib/stores/telemetry.test.ts --reporter=verbose` | vitest |
+| V12 | `src/lib/components/suggestion/SuggestionsSidebar.test.ts` (Wave 0: create) | `npx vitest run src/lib/components/suggestion/SuggestionsSidebar.test.ts --reporter=verbose` | vitest + jsdom + @testing-library/svelte |
+
+#### Manual Verifications
+
+| Truth | Why Manual | Test Instructions |
+|-------|------------|-------------------|
+| V11 | Visual rendering requires a running browser with theme/context | Open a document, verify 280px sidebar appears to the right of the editor with three collapsible sections (Papers, Ideas, Completions). Click section headers to toggle collapse. |
+| V13 | Requires controlled provider state (make Ollama unavailable) | Configure Ollama as primary. Stop Ollama service. Trigger suggestion generation. Verify toast appears showing fallback to OpenRouter. |
+
+#### Static Analysis Checks
+
+| Truth | Command | Expected |
+|-------|---------|----------|
+| V14 | `grep -c "suggestion" src/lib/components/editor/NotesEditor.svelte` | returns 0 |
+| V14 | `grep -c "SuggestionDecorations" src/lib/components/editor/NotesEditor.svelte` | returns 0 |
+| V14 | `grep -c "GhostTextWidget\|BlockSuggestionWidget" src/lib/components/editor/SuggestionDecorations.ts` | returns 0 |
+
+### Coverage Mapping: Truths → Validation Methods
+
+```
+V1  ─── vitest (paper-keyword-matcher.test.ts)
+V2  ─── vitest (paper-keyword-matcher.test.ts, mock providerChain)
+V3  ─── vitest (section-boundary-detector.test.ts, fake timers)
+V4  ─── vitest (suggestions.test.ts, mock providerChain)          ← Wave 0
+V5  ─── vitest (suggestions.test.ts, mock providerChain)          ← Wave 0
+V6  ─── vitest (smart-citation-insert.test.ts)
+V7  ─── vitest (smart-citation-insert.test.ts)
+V8  ─── vitest (suggestion-sidebar.test.ts)                       ← Wave 0
+V9  ─── vitest (settings.test.ts, mock invoke)                    ← Wave 0
+V10 ─── vitest (telemetry.test.ts)                                ← Wave 0 (extend)
+V11 ─── Manual (browser visual)
+V12 ─── vitest (SuggestionsSidebar.test.ts, jsdom)                ← Wave 0
+V13 ─── Manual (provider state control)
+V14 ─── Static (grep assertions)
+```
+
+### Sampling Rate
+
+- **Per task commit:** `npx vitest run --reporter=verbose` on the specific test file for that task
+- **Per wave merge:** `npx vitest run` (full suite)
+- **Phase gate:** Full suite green + V11 manual visual + V13 manual fallback toast
+
+### Wave 0 Requirements
+
+Test files that don't exist yet and must be created before or alongside implementation:
+
+- [ ] `src/lib/services/suggestions.test.ts` — generateIdeas() and generateCompletions() behavior (V4, V5)
+- [ ] `src/lib/stores/suggestion-sidebar.test.ts` — Reactive runes store behavior (V8)
+- [ ] `src/lib/stores/settings.test.ts` — citationStyle/sidebarLayout persistence (V9)
+- [ ] `src/lib/stores/telemetry.test.ts` — Extend with recordInsertion tests (V10)
+- [ ] `src/lib/components/suggestion/SuggestionsSidebar.test.ts` — CustomEvent dispatch on click (V12)
+
+**Already exist (created by plan tasks):**
+- [x] `src/lib/services/paper-keyword-matcher.test.ts` — Created in 09-04 Task 2 + Task 4
+- [x] `src/lib/services/section-boundary-detector.test.ts` — Created in 09-04 Task 3
+- [x] `src/lib/services/smart-citation-insert.test.ts` — Created in 09-05 Task 1 + Task 4
+
+**Test infrastructure already present:**
+- vitest 4.0.18 configured in `vitest.config.ts` with jsdom environment
+- Mock patterns for Svelte stores established in existing tests
+- Mock patterns for Tauri invoke established in existing tests
 
