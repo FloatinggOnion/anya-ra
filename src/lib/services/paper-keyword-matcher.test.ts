@@ -185,4 +185,139 @@ describe('PaperKeywordMatcher', () => {
       }
     })
   })
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Tier 2: LLM Semantic Re-rank Tests (Tests 7-11)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  describe('rerank() - Tier 2 LLM semantic re-rank', () => {
+    const tier1Matches = [
+      {
+        paperId: 'p1',
+        title: 'Attention Is All You Need',
+        authors: ['Vaswani', 'Shazeer'],
+        year: 2017,
+        relevanceScore: 0.85,
+        matchedKeywords: ['attention', 'transformer']
+      },
+      {
+        paperId: 'p2',
+        title: 'BERT: Pre-training of Deep Bidirectional Transformers',
+        authors: ['Devlin', 'Chang'],
+        year: 2019,
+        relevanceScore: 0.6,
+        matchedKeywords: ['transformer']
+      }
+    ]
+
+    it('Test 7: should call providerChain.generateSuggestion exactly once', async () => {
+      const mockProviderChain = {
+        generateSuggestion: vi.fn().mockImplementation(async function* () {
+          yield '{"index":1,"score":0.95,"rationale":"directly relevant"}'
+          yield '\n{"index":2,"score":0.3,"rationale":"tangential"}'
+        })
+      }
+
+      const content = 'transformers and attention mechanisms in deep learning'
+      const signal = new AbortController().signal
+
+      await matcher.rerank(mockProviderChain as any, content, tier1Matches, signal)
+
+      expect(mockProviderChain.generateSuggestion).toHaveBeenCalledTimes(1)
+    })
+
+    it('Test 8: should return re-ordered PaperMatch[] with llmRelevanceScore and llmRationale', async () => {
+      const mockProviderChain = {
+        generateSuggestion: vi.fn().mockImplementation(async function* () {
+          yield '{"index":1,"score":0.95,"rationale":"directly relevant to attention mechanisms"}'
+          yield '\n{"index":2,"score":0.3,"rationale":"somewhat tangential to topic"}'
+        })
+      }
+
+      const content = 'transformers and attention mechanisms in deep learning'
+      const signal = new AbortController().signal
+
+      const results = await matcher.rerank(mockProviderChain as any, content, tier1Matches, signal)
+
+      expect(results.length).toBe(2)
+
+      // Index 1 (originally p1) should have LLM score 0.95
+      const p1Result = results.find(r => r.paperId === 'p1')
+      expect(p1Result).toBeDefined()
+      expect(p1Result!.llmRelevanceScore).toBe(0.95)
+      expect(p1Result!.llmRationale).toBe('directly relevant to attention mechanisms')
+
+      // Index 2 (originally p2) should have LLM score 0.3
+      const p2Result = results.find(r => r.paperId === 'p2')
+      expect(p2Result).toBeDefined()
+      expect(p2Result!.llmRelevanceScore).toBe(0.3)
+      expect(p2Result!.llmRationale).toBe('somewhat tangential to topic')
+
+      // Results should be sorted by llmRelevanceScore descending
+      expect(results[0].paperId).toBe('p1') // higher score first
+    })
+
+    it('Test 9: should return empty array for empty matches without calling providerChain', async () => {
+      const mockProviderChain = {
+        generateSuggestion: vi.fn()
+      }
+
+      const signal = new AbortController().signal
+      const results = await matcher.rerank(mockProviderChain as any, 'some content', [], signal)
+
+      expect(results).toEqual([])
+      expect(mockProviderChain.generateSuggestion).not.toHaveBeenCalled()
+    })
+
+    it('Test 10: should return original Tier 1 matches on LLM error (graceful degradation)', async () => {
+      const mockProviderChain = {
+        generateSuggestion: vi.fn().mockImplementation(async function* () {
+          throw new Error('LLM connection failed')
+        })
+      }
+
+      const content = 'transformers and attention mechanisms'
+      const signal = new AbortController().signal
+
+      const results = await matcher.rerank(mockProviderChain as any, content, tier1Matches, signal)
+
+      // Should return original matches unchanged
+      expect(results.length).toBe(2)
+      expect(results[0].paperId).toBe('p1')
+      expect(results[0].relevanceScore).toBe(0.85)
+      expect(results[1].paperId).toBe('p2')
+      expect(results[1].relevanceScore).toBe(0.6)
+    })
+
+    it('Test 11: should enforce max 5 input papers for token budget', async () => {
+      let capturedPrompt = ''
+
+      const mockProviderChain = {
+        generateSuggestion: vi.fn().mockImplementation(async function* (messages: any[]) {
+          capturedPrompt = messages[1]?.content || ''
+          yield '{"index":1,"score":0.9,"rationale":"relevant"}'
+        })
+      }
+
+      // Create 10 tier1 matches
+      const tenMatches = Array.from({ length: 10 }, (_, i) => ({
+        paperId: `p${i}`,
+        title: `Paper ${i}`,
+        authors: [`Author ${i}`],
+        year: 2020,
+        relevanceScore: 0.9 - i * 0.05,
+        matchedKeywords: ['test']
+      }))
+
+      const signal = new AbortController().signal
+      await matcher.rerank(mockProviderChain as any, 'test content', tenMatches, signal)
+
+      // Prompt should only include 5 papers (not 10)
+      const paperCount = (capturedPrompt.match(/^\d+\./gm) || []).length
+      expect(paperCount).toBe(5)
+
+      // Prompt should not exceed roughly ~2000 chars
+      expect(capturedPrompt.length).toBeLessThan(2500)
+    })
+  })
 })

@@ -96,6 +96,8 @@ export interface PaperMatch {
   year: number | null
   relevanceScore: number
   matchedKeywords: string[]
+  llmRelevanceScore?: number     // Tier 2 LLM semantic re-rank score
+  llmRationale?: string          // Tier 2 LLM re-rank rationale
 }
 
 /** Section boundary event emitted by SectionBoundaryDetector */
