@@ -1,7 +1,7 @@
 import { writable, get } from 'svelte/store'
 import { invoke } from '@tauri-apps/api/core'
 import { workspace } from './workspace'
-import type { Settings, SuggestionSettings } from '../types/suggestion'
+import type { Settings, SuggestionSettings, CitationStyle } from '../types/suggestion'
 
 /**
  * Default settings per 09-CONTEXT.md locked decisions.
@@ -131,4 +131,22 @@ export function setProviderConfig(
  */
 export function setTelemetryOptIn(enabled: boolean): void {
   updateSuggestionSettings({ telemetryOptIn: enabled })
+}
+
+/**
+ * Set citation style preference (D-07).
+ * Controls how paper citations are formatted on click-to-insert.
+ * Options: 'author-year', 'cite-title', 'footnote'
+ */
+export function setCitationStyle(style: CitationStyle): void {
+  updateSuggestionSettings({ citationStyle: style })
+}
+
+/**
+ * Set sidebar layout preference (D-03).
+ * Controls whether the sidebar shows sectioned or unified feed.
+ * Options: 'sectioned', 'unified'
+ */
+export function setSidebarLayout(layout: 'sectioned' | 'unified'): void {
+  updateSuggestionSettings({ sidebarLayout: layout })
 }
