@@ -140,3 +140,122 @@ export function generateCitation(
 export function getCitationStyle(): CitationStyle {
   return (get(settings).suggestions.citationStyle as CitationStyle) || 'author-year'
 }
+
+/**
+ * Retroactively reformat all existing [cite: ...] citations in a document
+ * when the citation style changes (D-07).
+ *
+ * Scans document content for citation tags, looks up each paper by title,
+ * and replaces the entire citation expression with the new style format.
+ *
+ * @param content - Full document text
+ * @param papers - Available papers for title lookup
+ * @param newStyle - Target citation style
+ * @returns Reformatted document content with all citations updated
+ */
+export function reformatDocumentCitations(
+  content: string,
+  papers: Paper[],
+  newStyle: CitationStyle,
+): string {
+  if (!content) return content
+
+  let result = content
+
+  // ─── Unified pass: collect all citation positions (both cite-tagged and bare footnotes) ──
+  interface CitationMatch {
+    start: number
+    end: number
+    paper: Paper
+  }
+
+  const replacements: CitationMatch[] = []
+
+  // Find all [cite: Title] patterns
+  const citeRegex = /(\[cite:\s*([^\]]+)\])/gi
+  for (const match of result.matchAll(citeRegex)) {
+    const fullCiteTag = match[1]
+    const citedTitle = match[2].trim()
+    const citeStart = match.index!
+    const citeEnd = citeStart + fullCiteTag.length
+
+    const paper = papers.find(
+      (p) => p.title.toLowerCase() === citedTitle.toLowerCase(),
+    )
+    if (!paper) continue
+
+    // Determine the citation expression to replace
+    const textBefore = result.slice(0, citeStart)
+    let replaceStart = citeStart
+
+    // Check for author-year framing phrase backwards
+    for (const phrase of FRAMING_PHRASES) {
+      const phraseIdx = textBefore.lastIndexOf(phrase)
+      if (phraseIdx >= 0) {
+        const betweenPhraseAndCite = textBefore.slice(phraseIdx)
+        if (!betweenPhraseAndCite.includes('[cite:')) {
+          replaceStart = phraseIdx
+          break
+        }
+      }
+    }
+
+    // Check for footnote pattern if no framing phrase found
+    if (replaceStart === citeStart) {
+      const beforeWindow = textBefore.slice(Math.max(0, citeStart - 200))
+      const footnoteRegex = /([\w'-]+(?:,\s*[\w'-]+)*(?:\s+et\s+al\.)?\s*\(\d{4}\)\s*,\s*"[^"]+"\s*\.\s*)$/
+      const footnoteMatch = beforeWindow.match(footnoteRegex)
+      if (footnoteMatch) {
+        const fStartInText = citeStart - beforeWindow.length + footnoteMatch.index!
+        const between = textBefore.slice(fStartInText)
+        if (between.indexOf('[cite:') === -1) {
+          replaceStart = fStartInText
+        }
+      }
+    }
+
+    // Include trailing comma/space after cite tag
+    let replaceEnd = citeEnd
+    const afterCite = result.slice(citeEnd)
+    const trailingMatch = afterCite.match(/^(,\s*|\s+)/)
+    if (trailingMatch) {
+      replaceEnd += trailingMatch[0].length
+    }
+
+    replacements.push({ start: replaceStart, end: replaceEnd, paper })
+  }
+
+  // Find bare footnote citations (without cite tags)
+  const bareFootnoteRegex = /([\w'-]+(?:,\s*[\w'-]+)*(?:\s+et\s+al\.)?\s*\(\d{4}\)\s*,\s*"([^"]+)"\s*\.\s*)/g
+  for (const match of result.matchAll(bareFootnoteRegex)) {
+    const fullMatch = match[0]
+    const citedTitle = match[2].trim()
+    const matchStart = match.index!
+    const matchEnd = matchStart + fullMatch.length
+
+    // Skip if this footnote already has a nearby cite tag
+    const nearbyText = result.slice(matchStart, matchStart + fullMatch.length + 50)
+    if (nearbyText.includes('[cite:')) continue
+
+    // Skip if this position overlaps with an existing replacement
+    if (replacements.some((r) => r.start <= matchStart && r.end >= matchEnd)) continue
+
+    const paper = papers.find(
+      (p) => p.title.toLowerCase() === citedTitle.toLowerCase(),
+    )
+    if (!paper) continue
+
+    replacements.push({ start: matchStart, end: matchEnd, paper })
+  }
+
+  // ─── Apply replacements in reverse order ──────────────────────────────────
+  replacements.sort((a, b) => b.start - a.start) // Reverse by start position
+
+  for (const { start, end, paper } of replacements) {
+    _paperFrameIndex.delete(paper.id)
+    const newCitation = formatPaperCitation(paper, newStyle)
+    result = result.slice(0, start) + newCitation + result.slice(end)
+  }
+
+  return result
+}
