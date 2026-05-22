@@ -1,7 +1,7 @@
 import { get } from 'svelte/store'
 import { selectedItems } from '../stores/context-selection'
 import { settings } from '../stores/settings'
-import type { Suggestion, SuggestionRequest } from '../types/suggestion'
+import type { Suggestion, SuggestionRequest, SidebarSuggestionItem } from '../types/suggestion'
 import type { LLMProvider, Message, ChatOptions } from '../types/llm'
 import type { SuggestionProviderChain } from './suggestion-provider-chain'
 import { recordAcceptance, recordRejection } from '../stores/telemetry'
@@ -225,6 +225,65 @@ export class SuggestionService {
    */
   recordRejectionTelemetry(docId: string, provider: 'ollama' | 'openrouter'): void {
     recordRejection(docId, provider)
+  }
+
+  /**
+   * Generate ideas/questions for the sidebar (D-02, D-04).
+   * Uses LLM via the existing provider chain. Triggered on section boundary or manual button.
+   * @returns Array of SidebarSuggestionItem (type: 'idea'), max 3
+   */
+  async generateIdeas(docId: string, currentContent: string, cursorPos: number): Promise<SidebarSuggestionItem[]> {
+    const context = this._buildContext(currentContent, cursorPos)
+    const messages: Message[] = [
+      { role: 'system' as const, content: 'You are a research writing assistant. Based on the document context, generate 1-3 brief ideas, counterarguments, or follow-up questions that could strengthen this writing. Each idea should be exactly one sentence. Format: one idea per line, prefixed with "• " (bullet). No numbering. No explanations. No more than 3 lines total.' },
+      { role: 'user' as const, content: context }
+    ]
+    const settingsVal = get(settings)
+    const model = settingsVal.suggestions.llmProvider === 'ollama'
+      ? settingsVal.suggestions.ollamaModel
+      : settingsVal.suggestions.openrouterModel
+    const text = await this._streamSuggestion(messages, new AbortController().signal, model)
+    return text.split('\n')
+      .filter(line => line.trim().startsWith('•'))
+      .map((line, i) => ({
+        id: `idea-${docId}-${Date.now()}-${i}`,
+        type: 'idea' as const,
+        label: 'Ideas',
+        content: line.replace(/^•\s*/, '').trim(),
+        timestamp: Date.now(),
+        source: 'llm' as const,
+      }))
+      .slice(0, 3)
+  }
+
+  /**
+   * Generate text completions for the sidebar (D-02, D-04).
+   * Uses LLM via the existing provider chain. Triggered on section boundary or manual button.
+   * @returns Array of SidebarSuggestionItem (type: 'completion'), max 2
+   */
+  async generateCompletions(docId: string, currentContent: string, cursorPos: number): Promise<SidebarSuggestionItem[]> {
+    const context = this._buildContext(currentContent, cursorPos)
+    const messages: Message[] = [
+      { role: 'system' as const, content: 'You are a writing assistant helping a researcher. Based on the document context, generate exactly 1-2 brief sentence continuations that logically follow the last written text. Each completion should be one sentence. Format: one completion per line, plain text only (no prefixes, no numbering). No more than 2 lines. No explanations.' },
+      { role: 'user' as const, content: context }
+    ]
+    const settingsVal = get(settings)
+    const model = settingsVal.suggestions.llmProvider === 'ollama'
+      ? settingsVal.suggestions.ollamaModel
+      : settingsVal.suggestions.openrouterModel
+    const text = await this._streamSuggestion(messages, new AbortController().signal, model)
+    return text.split('\n')
+      .filter(line => line.trim().length > 0)
+      .map((line, i) => ({
+        id: `completion-${docId}-${Date.now()}-${i}`,
+        type: 'completion' as const,
+        label: 'Completions',
+        content: line.trim(),
+        timestamp: Date.now(),
+        source: 'llm' as const,
+        provider: get(settings).suggestions.llmProvider,
+      }))
+      .slice(0, 2)
   }
 
   cancel(): void {

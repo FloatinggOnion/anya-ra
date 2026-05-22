@@ -16,5 +16,5 @@
     "sourceMap": true
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.svelte"],
-  "exclude": ["node_modules", "src-tauri"]
+  "exclude": ["node_modules", "src-tauri", "**/*.test.ts"]
 }
