@@ -6,9 +6,6 @@
   import { saveDocument } from '../../stores/documents'
   import { saveNote } from '../../stores/notes'
   import { workspace } from '../../stores/workspace'
-  import { suggestionField, setSuggestion } from './SuggestionDecorations'
-  import '../../styles/suggestions.css'
-
   interface Props {
     type?: 'document' | 'paper'
     id?: string
@@ -16,14 +13,11 @@
     content: string
     onChange: (content: string) => void
     onBlur?: () => void
-    suggestion?: string | null
-    isGeneratingSuggestion?: boolean
   }
 
-  let { type = 'paper', id = '', title = '', content = $bindable(''), onChange, onBlur, suggestion = null, isGeneratingSuggestion = false } = $props()
+  let { type = 'paper', id = '', title = '', content = $bindable(''), onChange, onBlur } = $props()
   let editorElement: HTMLDivElement | undefined = $state()
   let cmEditor: any = $state(null)  // Keep reference to CodeMirror editor
-  let editorView: EditorView | null = $state(null)  // Direct reference to CodeMirror EditorView
 
   const theme = EditorView.theme({
     '.cm-editor': {
@@ -46,12 +40,6 @@
     // Find the CodeMirror editor element within the container
     const cmElement = editorElement.querySelector('.cm-editor')
 
-    // Get the CodeMirror view from the DOM element
-    if (cmElement) {
-      editorView = EditorView.findFromDOM(cmElement)
-      console.log('[NotesEditor] CodeMirror view obtained:', !!editorView)
-    }
-
     const handleBlur = () => {
       onChange(content)
       if (onBlur) onBlur()
@@ -64,48 +52,6 @@
       if (cmElement) {
         cmElement.removeEventListener('blur', handleBlur)
       }
-    }
-  })
-
-  // Update suggestion in CodeMirror when suggestion prop changes
-  $effect(() => {
-    console.log('[NotesEditor] Suggestion effect running, suggestion:', suggestion ? suggestion.substring(0, 50) : null, 'editorView:', !!editorView)
-    if (!editorView) {
-      console.log('[NotesEditor] CodeMirror view not ready, skipping suggestion update')
-      return
-    }
-
-    // Only update if suggestion actually changed
-    if (suggestion !== null) {
-      console.log('[NotesEditor] Setting suggestion in CodeMirror, text:', suggestion.substring(0, 50))
-      const suggestionObj = {
-        id: `suggestion-${Date.now()}`,
-        docId: id,
-        text: suggestion,
-        lines: suggestion.split('\n'),
-        provider: 'suggestion',
-        position: content.length,
-        state: 'pending' as const,
-        acceptedLines: new Set<number>()
-      }
-
-      console.log('[NotesEditor] Dispatching setSuggestion effect...')
-      editorView.dispatch({
-        effects: setSuggestion.of({
-          suggestion: suggestionObj,
-          cursorPos: content.length
-        })
-      })
-      console.log('[NotesEditor] setSuggestion effect dispatched')
-    } else {
-      // Clear suggestion
-      console.log('[NotesEditor] Clearing suggestion in CodeMirror')
-      editorView.dispatch({
-        effects: setSuggestion.of({
-          suggestion: null,
-          cursorPos: content.length
-        })
-      })
     }
   })
 
@@ -151,7 +97,7 @@
     lang={markdown()}
     {theme}
     editable={true}
-    extensions={[suggestionField]}
+    extensions={[]}
   />
 </div>
 
