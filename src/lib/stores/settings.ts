@@ -21,7 +21,9 @@ const defaultSettings: Settings = {
     ollamaModel: null,
     openrouterModel: 'openai/gpt-4o-mini',
     ollamaHost: 'localhost',
-    ollamaPort: 11434
+    ollamaPort: 11434,
+    citationStyle: 'author-year',
+    sidebarLayout: 'sectioned'
   }
 }
 
@@ -73,11 +75,12 @@ export async function loadSettings(workspacePath: string): Promise<void> {
       // Validate all required fields exist in merged suggestions
       const requiredFields: (keyof typeof defaultSettings.suggestions)[] = [
         'enabled', 'displayMode', 'acceptKeybinding', 'llmProvider', 'fallbackChain',
-        'telemetryOptIn', 'ollamaModel', 'openrouterModel', 'ollamaHost', 'ollamaPort'
+        'telemetryOptIn', 'ollamaModel', 'openrouterModel', 'ollamaHost', 'ollamaPort',
+        'citationStyle', 'sidebarLayout'
       ]
       for (const field of requiredFields) {
         if (!(field in mergedSuggestions)) {
-          mergedSuggestions[field] = defaultSettings.suggestions[field]
+          (mergedSuggestions as Record<string, unknown>)[field] = defaultSettings.suggestions[field]
         }
       }
 

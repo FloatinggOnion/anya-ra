@@ -31,6 +31,8 @@ export interface SuggestionSettings {
   openrouterModel: string  // Free-text model ID; defaults to 'openai/gpt-4o-mini'
   ollamaHost: string  // Host for Ollama API; defaults to 'localhost'
   ollamaPort: number  // Port for Ollama API; defaults to 11434
+  citationStyle: CitationStyle
+  sidebarLayout: 'sectioned' | 'unified'
 }
 
 export interface Settings {
@@ -58,4 +60,49 @@ export interface TelemetryStats {
     count: number
     acceptanceRate: number
   }>
+}
+
+// ─── Sidebar Companion Types (Phase 9 UX Rethink) ──────────────────────
+
+/** Suggestion card types displayed in the sidebar sections */
+export type SuggestionCardType = 'paper' | 'idea' | 'completion'
+
+/** A single suggestion item in the sidebar feed */
+export interface SidebarSuggestionItem {
+  id: string
+  type: SuggestionCardType
+  label: string
+  content: string
+  timestamp: number
+  provider?: 'ollama' | 'openrouter'
+  source: 'paper-keyword' | 'llm'
+  paper?: {
+    id: string
+    title: string
+    authors: string[]
+    year: number | null
+    relevanceScore: number
+  }
+}
+
+/** Citation style for paper reference insertion (D-07) */
+export type CitationStyle = 'author-year' | 'cite-title' | 'footnote'
+
+/** Match result from PaperKeywordMatcher */
+export interface PaperMatch {
+  paperId: string
+  title: string
+  authors: string[]
+  year: number | null
+  relevanceScore: number
+  matchedKeywords: string[]
+}
+
+/** Section boundary event emitted by SectionBoundaryDetector */
+export interface SectionBoundaryEvent {
+  docId: string
+  content: string
+  sectionText: string
+  cursorPos: number
+  timestamp: number
 }
