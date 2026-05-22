@@ -1,113 +1,214 @@
 /**
- * Inline suggestion ghost text styling.
- * Per 09-CONTEXT.md Area 2: "Ghost text (faint/grayed)"
+ * Sidebar Companion Suggestions — Phase 9 UX Rethink.
+ * Replaces old ghost-text/block-widget styles.
  */
 
-:global(.suggestion-ghost-text) {
-  /* Visible but clearly different from actual text - 15-20% opacity */
-  color: var(--color-text-secondary, #999);
-  opacity: 0.18;
-
-  /* Non-selectable and non-interactive */
-  user-select: none;
-  pointer-events: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-
-  /* Match the editor's font exactly */
-  font-size: inherit;
-  line-height: inherit;
-  letter-spacing: inherit;
-
-  /* Ensure it doesn't affect layout */
-  display: inline;
-  white-space: pre-wrap;
+/* Sidebar container — docked right pane, 280px */
+:global(.suggestions-sidebar) {
+  width: 280px;
+  min-width: 280px;
+  max-width: 280px;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border-left: 1px solid var(--color-border);
+  overflow: hidden;
+  height: 100%;
 }
 
-/**
- * Loading indicator for suggestion generation >1s.
- * Per SUGG-07: "Show loading indicator if suggestion takes >1s"
- */
-:global(.suggestion-loading) {
-  display: inline-block;
-  animation: spin 1s linear infinite;
-  margin-left: 0.25em;
+/* Header bar */
+:global(.ss-header) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+:global(.ss-title) {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  flex: 1;
 }
 
-/**
- * Block suggestion widget - displays as a highlighted box.
- * Used when displayMode === 'block' or 'both'.
- * Designed to be obviously distinct from actual editor content.
- */
-:global(.suggestion-block-widget) {
+:global(.ss-suggest-btn) {
+  padding: 4px 10px;
+  background: var(--color-accent);
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+:global(.ss-suggest-btn:hover) {
+  background: var(--color-accent-hover);
+}
+
+:global(.ss-layout-toggle) {
+  padding: 4px 6px;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+:global(.ss-layout-toggle:hover) {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+/* Section */
+:global(.ss-section) {
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+:global(.ss-section.collapsed .ss-items) {
+  display: none;
+}
+
+:global(.ss-section-header) {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  flex-shrink: 0;
+  transition: background 0.1s;
+}
+
+:global(.ss-section-header:hover) {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+:global(.ss-count) { color: var(--color-text-muted); font-weight: 400; }
+
+:global(.ss-chevron) { margin-left: auto; font-size: 0.6rem; color: var(--color-text-muted); }
+:global(.collapsed .ss-chevron) { transform: rotate(-90deg); }
+
+/* Items list */
+:global(.ss-items) {
+  overflow-y: auto;
+  max-height: 200px;
+  padding: 4px 8px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+:global(.ss-items::-webkit-scrollbar) { width: 4px; }
+:global(.ss-items::-webkit-scrollbar-thumb) { background: var(--color-border); border-radius: 2px; }
+
+/* Suggestion card */
+:global(.ss-card) {
   display: block;
   width: 100%;
-  margin: 8px 0;
-  pointer-events: none;
+  padding: 8px 10px;
+  margin-bottom: 4px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--color-text);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+  position: relative;
+  overflow: hidden;
+  animation: ss-fade-in 0.2s ease-out;
 }
 
-:global(.suggestion-block-content) {
-  /* More obvious background to distinguish from editor text */
-  background: linear-gradient(90deg, rgba(74, 142, 255, 0.08), rgba(74, 142, 255, 0.04));
-  border: 1px solid rgba(74, 142, 255, 0.3);
-  border-left: 4px solid var(--color-suggestion, #4a8eff);
-  border-radius: 6px;
-  padding: 12px 14px;
-  margin-left: -16px;
-  margin-right: -16px;
-  padding-left: 16px;
-  padding-right: 16px;
+:global(.ss-card:hover) {
+  background: var(--color-surface-3);
+  border-color: var(--color-accent);
+}
 
-  /* Typography */
-  font-size: 0.93em;
-  color: var(--color-text-secondary);
-  line-height: 1.6;
-  white-space: pre-wrap;
-  word-break: break-word;
+:global(.ss-card-text) { display: block; }
 
-  /* Clearly not selectable/interactive */
-  user-select: none;
-  pointer-events: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
+:global(.ss-card-provider) {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 0.625rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
 
-  /* Visual spacing from editor content */
-  max-width: 100%;
+:global(.ss-card-relevance) {
+  position: absolute;
+  bottom: 0; left: 0;
+  height: 2px;
+  background: var(--color-accent);
+  opacity: 0.5;
+  border-radius: 0 0 6px 0;
+}
+
+/* Empty state */
+:global(.ss-empty) {
+  padding: 16px 10px;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-style: italic;
+}
+
+/* Loading spinner */
+:global(.ss-loading) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 10px;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+:global(.ss-loading .spinner) {
+  display: inline-block;
+  animation: ss-spin 1s linear infinite;
+}
+
+/* Generating state indicator */
+:global(.ss-section.generating .ss-section-header) {
+  color: var(--color-accent);
   position: relative;
 }
 
-:global(.suggestion-block-content::before) {
-  content: '✨ Suggestion';
-  display: block;
-  font-size: 0.8em;
-  color: var(--color-text-secondary);
-  margin-bottom: 6px;
-  opacity: 0.7;
-  font-weight: 500;
+:global(.ss-section.generating .ss-section-header::after) {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 8px;
+  right: 8px;
+  height: 1px;
+  background: var(--color-accent);
+  opacity: 0.4;
+  animation: ss-pulse 1.5s ease-in-out infinite;
 }
 
-/**
- * Display mode: block highlight (alternative to ghost text).
- * Per 09-CONTEXT.md Area 2: configurable display (ghost, block, both).
- * Applied when settings.suggestions.displayMode === 'block' or 'both'.
- */
-:global(.suggestion-block-highlight) {
-  background-color: rgba(74, 142, 255, 0.15);  /* Light blue highlight */
-  border-left: 3px solid var(--color-suggestion, #4a8eff);
-  padding-left: 0.5em;
-  border-radius: 2px;
-}
+/* Unified feed mode */
+:global(.suggestions-sidebar.unified .ss-section) { border-bottom: none; }
+:global(.suggestions-sidebar.unified .ss-section-header) { display: none; }
 
-/**
- * Combined: both ghost text + block highlight.
- * Applied when settings.suggestions.displayMode === 'both'.
- */
-:global(.suggestion-ghost-text.suggestion-combined) {
-  background-color: rgba(74, 142, 255, 0.1);
-  border-bottom: 1px solid var(--color-suggestion, #4a8eff);
-}
+@keyframes ss-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+@keyframes ss-pulse { 0%, 100% { opacity: 0.2; } 50% { opacity: 0.6; } }
+@keyframes ss-fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }

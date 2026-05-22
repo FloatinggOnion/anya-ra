@@ -13,11 +13,18 @@
     content: string
     onChange: (content: string) => void
     onBlur?: () => void
+    onCursorChange?: (pos: number) => void
   }
 
-  let { type = 'paper', id = '', title = '', content = $bindable(''), onChange, onBlur } = $props()
+  let { type = 'paper', id = '', title = '', content = $bindable(''), onChange, onBlur, onCursorChange } = $props()
   let editorElement: HTMLDivElement | undefined = $state()
   let cmEditor: any = $state(null)  // Keep reference to CodeMirror editor
+
+  const cursorUpdateListener = EditorView.updateListener.of((update) => {
+    if (update.selectionSet && onCursorChange) {
+      onCursorChange(update.state.selection.main.head)
+    }
+  })
 
   const theme = EditorView.theme({
     '.cm-editor': {
@@ -97,7 +104,7 @@
     lang={markdown()}
     {theme}
     editable={true}
-    extensions={[]}
+    extensions={[cursorUpdateListener]}
   />
 </div>
 

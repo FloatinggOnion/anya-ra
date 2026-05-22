@@ -9,16 +9,23 @@
   import { SuggestionProviderChain } from '../../services/suggestion-provider-chain'
   import { settings } from '../../stores/settings'
   import { providerState, initializeProvider, switchProvider } from '../../stores/llm-provider'
+  import SuggestionsSidebar from '../suggestion/SuggestionsSidebar.svelte'
+  import { clearAll as clearSidebar } from '../../stores/suggestion-sidebar'
+  import { recordInsertion } from '../../stores/telemetry'
+  import { showToast } from '../../services/toast'
 
   let content = $state('')
   let currentLinks: any[] = $state([])
   let validationTimeout: ReturnType<typeof setTimeout> | null = null
   let autoSaveTimeout: ReturnType<typeof setTimeout> | null = null
-  let suggestionTimeout: ReturnType<typeof setTimeout> | null = null
   let lastLoadedContent = ''
-  let currentSuggestion: string | null = $state(null)
   let isGeneratingSuggestion = $state(false)
   let suggestionService: SuggestionService | null = null
+  let cursorPosition = $state(0)
+
+  function handleCursorMove(pos: number) {
+    cursorPosition = pos
+  }
 
   // Initialize provider on mount
   onMount(async () => {
@@ -65,7 +72,8 @@
           provider,
           fallbackProviders,
           (msg) => {
-            console.log('[SuggestionProviderChain] Fallback:', msg)
+            console.warn('[SuggestionProviderChain] Fallback:', msg)
+            showToast(`⚠️ ${msg}`, 'info', 5000)
           }
         )
         suggestionService = new SuggestionService(chain, (isGenerating) => {
@@ -155,48 +163,32 @@
     }, 100)
   })
 
-  // Trigger suggestions with 300ms debounce (when enabled)
+  // Clear sidebar when no document selected
   $effect(() => {
-    const newContent = content
-    const enabled = $settings.suggestions.enabled
+    if (!$selectedDocumentId) {
+      clearSidebar()
+    }
+  })
 
-    if (!enabled || !newContent || !$selectedDocumentId) {
-      if (currentSuggestion !== null) {
-        console.log('[DocumentEditor] Clearing suggestion (disabled or no content)')
-        currentSuggestion = null
-      }
-      return
+  // Listen for click-to-insert events from the sidebar
+  $effect(() => {
+    function handleSuggestionInsert(e: Event) {
+      const event = e as CustomEvent<{ type: string; item: any; text: string }>
+      const { type, text } = event.detail
+      if (type !== 'paper' && type !== 'completion') return
+      if (!text) return
+
+      // Insert text at cursor position
+      const pos = cursorPosition
+      content = content.slice(0, pos) + text + content.slice(pos)
+
+      // Telemetry — DocumentEditor is the authoritative recording point
+      const provider = event.detail.item?.provider || (type === 'paper' ? 'paper-keyword' : 'llm')
+      recordInsertion($selectedDocumentId || '', provider, type)
     }
 
-    if (!suggestionService) {
-      console.log('[DocumentEditor] SuggestionService not initialized yet')
-      return
-    }
-
-    if (suggestionTimeout) clearTimeout(suggestionTimeout)
-    suggestionTimeout = setTimeout(async () => {
-      try {
-        console.log('[DocumentEditor] Triggering suggestion for docId:', $selectedDocumentId, 'content length:', newContent.length)
-        isGeneratingSuggestion = true
-        const suggestion = await suggestionService!.triggerSuggestion(
-          $selectedDocumentId!,
-          newContent,
-          newContent.length
-        )
-        if (suggestion) {
-          console.log('[DocumentEditor] Got suggestion:', suggestion.text.substring(0, 100))
-          currentSuggestion = suggestion.text
-        } else {
-          console.log('[DocumentEditor] No suggestion returned')
-          currentSuggestion = null
-        }
-      } catch (err) {
-        console.error('[DocumentEditor] Suggestion failed:', err)
-        currentSuggestion = null
-      } finally {
-        isGeneratingSuggestion = false
-      }
-    }, 300)
+    window.addEventListener('suggestion-insert', handleSuggestionInsert)
+    return () => window.removeEventListener('suggestion-insert', handleSuggestionInsert)
   })
 
   async function handleAutoSave(newContent: string) {
@@ -227,16 +219,23 @@
       <p>Loading document...</p>
     </div>
   {:else}
-    <div class="editor-wrapper">
-      <NotesEditor
-        type="document"
-        id={$selectedDocumentId}
-        title={$currentDocument.title}
-        bind:content
-        onChange={() => {}}
-        onBlur={() => handleAutoSave(content)}
-        suggestion={currentSuggestion}
-        isGeneratingSuggestion={isGeneratingSuggestion}
+    <div class="editor-layout">
+      <div class="editor-main">
+        <NotesEditor
+          type="document"
+          id={$selectedDocumentId}
+          title={$currentDocument.title}
+          bind:content
+          onChange={() => {}}
+          onBlur={() => handleAutoSave(content)}
+          onCursorChange={handleCursorMove}
+        />
+      </div>
+      <SuggestionsSidebar
+        docId={$selectedDocumentId || ''}
+        {content}
+        cursorPos={cursorPosition}
+        suggestionService={suggestionService}
       />
     </div>
   {/if}
@@ -294,11 +293,20 @@
     font-size: 14px;
   }
 
-  .editor-wrapper {
+  .editor-layout {
     flex: 1;
     overflow: hidden;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    gap: 0;
     border-radius: 4px;
+  }
+
+  .editor-main {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
 </style>
