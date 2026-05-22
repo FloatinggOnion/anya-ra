@@ -5,6 +5,7 @@ import {
   formatPaperCitation,
   getCitationStyle,
   _resetFramingState,
+  reformatDocumentCitations,
 } from './smart-citation-insert'
 import type { Paper } from '../types/paper'
 import type { CitationStyle, SidebarSuggestionItem } from '../types/suggestion'
@@ -154,5 +155,82 @@ describe('generateCitation', () => {
     }
     const result = generateCitation(item)
     expect(result).toBe('')
+  })
+})
+
+describe('reformatDocumentCitations', () => {
+  beforeEach(() => {
+    _resetFramingState()
+  })
+
+  it('should reformat author-year to cite-title (Test 12)', () => {
+    const content =
+      'As demonstrated by Smith (2020) [cite: Test Paper], more text'
+    const papers: Paper[] = [
+      makePaper({ id: 'p1', title: 'Test Paper', authors: ['John Smith'], year: 2020 }),
+    ]
+    const result = reformatDocumentCitations(content, papers, 'cite-title')
+    expect(result).toBe(' [cite: Test Paper] more text')
+  })
+
+  it('should reformat cite-title to author-year with framing (Test 13)', () => {
+    const content = ' [cite: Attention Is All You Need] '
+    const papers: Paper[] = [
+      makePaper({
+        id: 'attn',
+        title: 'Attention Is All You Need',
+        authors: ['Ashish Vaswani', 'Noam Shazeer'],
+        year: 2017,
+      }),
+    ]
+    const result = reformatDocumentCitations(content, papers, 'author-year')
+    expect(result).toContain('[cite: Attention Is All You Need]')
+    expect(result).toContain('As demonstrated by')
+    expect(result).toContain('Vaswani and Shazeer')
+    expect(result).toContain('(2017)')
+  })
+
+  it('should reformat footnote to cite-title (Test 14)', () => {
+    const content = 'Smith, Jones et al. (2020), "Test Paper". '
+    const papers: Paper[] = [
+      makePaper({ id: 'p2', title: 'Test Paper', authors: ['John Smith', 'Jane Jones', 'Bob Lee'], year: 2020 }),
+    ]
+    const result = reformatDocumentCitations(content, papers, 'cite-title')
+    expect(result).toBe(' [cite: Test Paper] ')
+  })
+
+  it('should preserve cite tag when paper not found (Test 15)', () => {
+    const content = 'Some text [cite: Nonexistent Paper] more text'
+    const papers: Paper[] = []
+    const result = reformatDocumentCitations(content, papers, 'cite-title')
+    expect(result).toBe('Some text [cite: Nonexistent Paper] more text')
+  })
+
+  it('should return content unchanged when no cite tags present (Test 16)', () => {
+    const content = 'This is just plain text with no citations.'
+    const papers: Paper[] = [
+      makePaper({ id: 'p1', title: 'Test Paper', authors: ['John Smith'] }),
+    ]
+    const result = reformatDocumentCitations(content, papers, 'author-year')
+    expect(result).toBe(content)
+  })
+
+  it('should reformat multiple cite tags (Test 17)', () => {
+    const content =
+      'One: [cite: Paper A] . Two: Smith (2020) [cite: Paper B], end.'
+    const papers: Paper[] = [
+      makePaper({ id: 'a', title: 'Paper A', authors: ['Alice'], year: 2022 }),
+      makePaper({ id: 'b', title: 'Paper B', authors: ['Bob Smith'], year: 2020 }),
+    ]
+    const result = reformatDocumentCitations(content, papers, 'author-year')
+    // Paper A was cite-title, should become author-year
+    expect(result).toContain('[cite: Paper A]')
+    expect(result).toContain('Alice')
+    // Paper B was author-year, should be re-framed
+    expect(result).toContain('[cite: Paper B]')
+    expect(result).toContain('Smith')
+    // Both cite tags should still be present
+    expect(result).toContain('[cite: Paper A]')
+    expect(result).toContain('[cite: Paper B]')
   })
 })
