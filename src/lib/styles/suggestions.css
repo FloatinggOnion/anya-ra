@@ -3,17 +3,14 @@
  * Replaces old ghost-text/block-widget styles.
  */
 
-/* Sidebar container — docked right pane, 280px */
+/* Sidebar container — fills tab panel, flexible width */
 :global(.suggestions-sidebar) {
-  width: 280px;
-  min-width: 280px;
-  max-width: 280px;
   display: flex;
   flex-direction: column;
   background: var(--color-surface);
-  border-left: 1px solid var(--color-border);
   overflow: hidden;
   height: 100%;
+  width: 100%;
 }
 
 /* Header bar */

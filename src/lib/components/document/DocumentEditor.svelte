@@ -9,10 +9,11 @@
   import { SuggestionProviderChain } from '../../services/suggestion-provider-chain'
   import { settings } from '../../stores/settings'
   import { providerState, initializeProvider, switchProvider } from '../../stores/llm-provider'
-  import SuggestionsSidebar from '../suggestion/SuggestionsSidebar.svelte'
   import { clearAll as clearSidebar } from '../../stores/suggestion-sidebar'
   import { recordInsertion } from '../../stores/telemetry'
   import { showToast } from '../../services/toast'
+  import { setSuggestionService } from '../../stores/suggestion-service'
+  import { setCursor, setCursorDoc } from '../../stores/cursor-position'
 
   let content = $state('')
   let currentLinks: any[] = $state([])
@@ -25,6 +26,7 @@
 
   function handleCursorMove(pos: number) {
     cursorPosition = pos
+    setCursor(pos)
   }
 
   // Initialize provider on mount
@@ -49,13 +51,11 @@
     if (provider && !suggestionService) {
       console.log('[DocumentEditor] ✓ Initializing SuggestionService with provider:', type)
 
-      // Construct fallback providers based on primary provider type
       const initChain = async () => {
         const fallbackProviders = []
         const settingsVal = $settings
 
         if (type === 'ollama' && $providerState.apiKey) {
-          // If primary is Ollama, fallback to OpenRouter
           try {
             const { OpenRouterProvider } = await import('../../services/llm/openrouter')
             fallbackProviders.push(new OpenRouterProvider($providerState.apiKey))
@@ -63,7 +63,6 @@
             console.warn('[DocumentEditor] Could not load OpenRouter fallback:', e)
           }
         } else if (type === 'openrouter') {
-          // If primary is OpenRouter, fallback to Ollama
           const { OllamaProvider } = await import('../../services/llm/ollama')
           fallbackProviders.push(new OllamaProvider(settingsVal.suggestions.ollamaHost, settingsVal.suggestions.ollamaPort))
         }
@@ -79,12 +78,12 @@
         suggestionService = new SuggestionService(chain, (isGenerating) => {
           isGeneratingSuggestion = isGenerating
         })
+        setSuggestionService(suggestionService)
       }
 
       initChain()
     } else if (!provider && error) {
       console.warn('[DocumentEditor] Provider error:', error)
-      // Try to fallback to OpenRouter if available
       if (type === 'ollama' && $providerState.apiKey) {
         console.log('[DocumentEditor] Attempting fallback to OpenRouter...')
         switchProvider('openrouter', $providerState.apiKey)
@@ -92,52 +91,28 @@
     }
   })
 
-  // Plain (non-reactive) variable — tracks which doc ID has been loaded into the editor.
-  // Used to distinguish "switching documents" from "store updated after auto-save".
   let loadedDocId: string | null = null
 
-  // Load document content only when the selected document ID changes.
-  //
-  // MUST be $effect.pre() — runs BEFORE DOM update, which means `content` is
-  // set to the correct value before NotesEditor/CodeMirror mounts. Without this,
-  // the sequence is:
-  //   1. DOM updates → NotesEditor mounts with content=''
-  //   2. CodeMirror initializes with '' → first_update consumed on that empty call
-  //   3. $effect fires → content = doc.content → CodeMirror.$effect fires update()
-  //   4. first_update is ALREADY FALSE → would work... but see below
-  //
-  // With $effect.pre():
-  //   1. content = doc.content (before DOM update)
-  //   2. DOM update → NotesEditor mounts with content=doc.content
-  //   3. CodeMirror initializes with doc.content → correct from the start ✓
-  //
-  // The loadedDocId guard prevents auto-save (which updates store object's updatedAt)
-  // from re-triggering a content reload and causing cursor resets / flicker.
   $effect.pre(() => {
     const docId = $selectedDocumentId
-    const doc = $currentDocument  // Subscribe so we re-run if doc loads asynchronously
+    const doc = $currentDocument
+    setCursorDoc(docId)
 
     if (docId !== loadedDocId) {
       if (doc) {
-        // New document available — load it
         loadedDocId = docId
         lastLoadedContent = doc.content
         content = doc.content
         currentLinks = $documentLinks.get(doc.id) ?? []
       } else if (!docId) {
-        // Nothing selected
         loadedDocId = null
         lastLoadedContent = ''
         content = ''
         currentLinks = []
       }
-      // If docId is set but doc is still null (async load), wait —
-      // the effect re-runs when $currentDocument becomes available
     }
   })
 
-  // Auto-save on keystroke via $bindable propagation.
-  // Skips saves when content matches what was loaded from disk (document switch).
   $effect(() => {
     const newContent = content
     if (newContent === lastLoadedContent) return
@@ -149,7 +124,6 @@
     }, 300)
   })
 
-  // Validate citations with 100ms debounce
   $effect(() => {
     const newContent = content
     const papersList = $papers
@@ -163,7 +137,6 @@
     }, 100)
   })
 
-  // Clear sidebar when no document selected
   $effect(() => {
     if (!$selectedDocumentId) {
       clearSidebar()
@@ -178,11 +151,9 @@
       if (type !== 'paper' && type !== 'completion') return
       if (!text) return
 
-      // Insert text at cursor position
       const pos = cursorPosition
       content = content.slice(0, pos) + text + content.slice(pos)
 
-      // Telemetry — DocumentEditor is the authoritative recording point
       const provider = event.detail.item?.provider || (type === 'paper' ? 'paper-keyword' : 'llm')
       recordInsertion($selectedDocumentId || '', provider, type)
     }
@@ -219,23 +190,15 @@
       <p>Loading document...</p>
     </div>
   {:else}
-    <div class="editor-layout">
-      <div class="editor-main">
-        <NotesEditor
-          type="document"
-          id={$selectedDocumentId}
-          title={$currentDocument.title}
-          bind:content
-          onChange={() => {}}
-          onBlur={() => handleAutoSave(content)}
-          onCursorChange={handleCursorMove}
-        />
-      </div>
-      <SuggestionsSidebar
-        docId={$selectedDocumentId || ''}
-        {content}
-        cursorPos={cursorPosition}
-        suggestionService={suggestionService}
+    <div class="editor-main">
+      <NotesEditor
+        type="document"
+        id={$selectedDocumentId}
+        title={$currentDocument.title}
+        bind:content
+        onChange={() => {}}
+        onBlur={() => handleAutoSave(content)}
+        onCursorChange={handleCursorMove}
       />
     </div>
   {/if}
@@ -249,6 +212,14 @@
     width: 100%;
     background: var(--color-surface-0);
     overflow: hidden;
+  }
+
+  .editor-main {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
 
   .empty-state {
@@ -291,22 +262,5 @@
     height: 100%;
     color: var(--color-text-secondary);
     font-size: 14px;
-  }
-
-  .editor-layout {
-    flex: 1;
-    overflow: hidden;
-    display: flex;
-    flex-direction: row;
-    gap: 0;
-    border-radius: 4px;
-  }
-
-  .editor-main {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
   }
 </style>

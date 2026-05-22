@@ -10,6 +10,7 @@
   let resolvedPdfPath = $state<string | null>(null)
   let PDFViewerComponent: any = $state(null)
   let GraphCanvasComponent: any = $state(null)
+  let SuggestionsSidebarComponent: any = $state(null)
   let resolvePathRequest = 0
 
   function isAbsolutePath(path: string): boolean {
@@ -57,6 +58,15 @@
     }
   })
 
+  // ─── Lazy-load suggestions sidebar when suggestions tab is active ──────
+  $effect(() => {
+    if (($activeCenterTab === 'suggestions' || $activeRightTab === 'suggestions') && !SuggestionsSidebarComponent) {
+      import('../suggestion/SuggestionsSidebar.svelte').then((mod) => {
+        SuggestionsSidebarComponent = mod.default
+      })
+    }
+  })
+
   // ─── Keep legacy activeTab store in sync for external consumers ──────────
   $effect(() => {
     activeTab.set($activeCenterTab)
@@ -69,12 +79,14 @@
     {resolvedPdfPath}
     {PDFViewerComponent}
     {GraphCanvasComponent}
+    {SuggestionsSidebarComponent}
   />
   <PanelColumn
     panelId="right"
     {resolvedPdfPath}
     {PDFViewerComponent}
     {GraphCanvasComponent}
+    {SuggestionsSidebarComponent}
   />
 </div>
 

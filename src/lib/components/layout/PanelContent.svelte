@@ -2,6 +2,7 @@
   import ChatWindow from '../chat/ChatWindow.svelte'
   import PaperDetail from '../PaperDetail.svelte'
   import NotesPanel from '../editor/NotesPanel.svelte'
+  import SuggestionsSidebar from '../suggestion/SuggestionsSidebar.svelte'
   import { selectedPaper } from '../../stores/papers'
   import type { MovableTab } from '../../stores/panel-layout'
 
@@ -10,9 +11,16 @@
     resolvedPdfPath: string | null
     PDFViewerComponent: any
     GraphCanvasComponent: any
+    SuggestionsSidebarComponent: any
   }
 
-  let { tab, resolvedPdfPath, PDFViewerComponent, GraphCanvasComponent }: Props = $props()
+  let {
+    tab,
+    resolvedPdfPath,
+    PDFViewerComponent,
+    GraphCanvasComponent,
+    SuggestionsSidebarComponent = SuggestionsSidebar,
+  }: Props = $props()
 </script>
 
 {#if tab === 'chat'}
@@ -69,6 +77,8 @@
   {:else}
     <div class="loading-placeholder"><p>Loading graph canvas…</p></div>
   {/if}
+{:else if tab === 'suggestions'}
+  <SuggestionsSidebarComponent />
 {/if}
 
 <style>

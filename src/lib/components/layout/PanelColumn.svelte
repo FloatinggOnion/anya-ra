@@ -20,9 +20,10 @@
     resolvedPdfPath: string | null
     PDFViewerComponent: any
     GraphCanvasComponent: any
+    SuggestionsSidebarComponent: any
   }
 
-  let { panelId, resolvedPdfPath, PDFViewerComponent, GraphCanvasComponent }: Props = $props()
+  let { panelId, resolvedPdfPath, PDFViewerComponent, GraphCanvasComponent, SuggestionsSidebarComponent }: Props = $props()
 
   // Pick the right stores depending on which column we are — use $derived
   // so Svelte 5 tracks the prop reference correctly through re-renders.
@@ -131,6 +132,7 @@
         {resolvedPdfPath}
         {PDFViewerComponent}
         {GraphCanvasComponent}
+        {SuggestionsSidebarComponent}
       />
     </div>
   {/if}

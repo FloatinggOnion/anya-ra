@@ -1,4 +1,4 @@
-export type MovableTab = "chat" | "papers" | "pdf" | "notes" | "document" | "graph";
+export type MovableTab = "chat" | "papers" | "pdf" | "notes" | "document" | "graph" | "suggestions";
 export type PanelId = "center" | "right";
 
 export interface UILayout {
@@ -14,7 +14,7 @@ export interface UILayout {
 export const DEFAULT_LAYOUT: UILayout = {
     version: 1,
     centerTabs: ["papers", "pdf", "notes", "document"],
-    rightTabs: ["chat", "graph"],
+    rightTabs: ["chat", "graph", "suggestions"],
     activeCenterTab: "papers",
     activeRightTab: "chat",
     centerCollapsed: false,
