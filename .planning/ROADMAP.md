@@ -87,13 +87,13 @@ last_updated: "2026-05-22T00:00:00.000Z"
 **Plans:** 6 plans (3 original UX rethink + 3 gap-closure — May 2026)
 
 Original UX rethink plans (describe correct architecture, not yet executed):
-  - [ ] 09-01-PLAN.md — Wave 1: Types + PaperKeywordMatcher + SectionBoundaryDetector + SuggestionService sidebar methods
-  - [ ] 09-02-PLAN.md — Wave 2: NotesEditor cleanup + SuggestionsSidebar component + DocumentEditor split layout
-  - [ ] 09-03-PLAN.md — Wave 3: SmartCitationInsert + Citation style settings + Click-to-insert telemetry + polish
+  - [x] 09-01-PLAN.md — Wave 1: Types + PaperKeywordMatcher + SectionBoundaryDetector + SuggestionService sidebar methods
+  - [x] 09-02-PLAN.md — Wave 2: NotesEditor cleanup + SuggestionsSidebar component + DocumentEditor split layout
+  - [x] 09-03-PLAN.md — Wave 3: SmartCitationInsert + Citation style settings + Click-to-insert telemetry + polish
 
 Gap-closure plans (implement what the originals describe — address 8 VERIFICATION failures + 2 partials):
-  - [ ] 09-04-PLAN.md — Wave 1 (gap-closure): Types + PaperKeywordMatcher + SectionBoundaryDetector + SuggestionSidebarStore + SuggestionService extensions
-  - [ ] 09-05-PLAN.md — Wave 1 (gap-closure): SmartCitationInsert + Settings (citationStyle/sidebarLayout) + Telemetry (recordInsertion)
+  - [x] 09-04-PLAN.md — Wave 1 (gap-closure): Types + PaperKeywordMatcher + SectionBoundaryDetector + SuggestionSidebarStore + SuggestionService extensions
+  - [x] 09-05-PLAN.md — Wave 1 (gap-closure): SmartCitationInsert + Settings (citationStyle/sidebarLayout) + Telemetry (recordInsertion)
   - [ ] 09-06-PLAN.md — Wave 2 (gap-closure): NotesEditor cleanup + SuggestionsSidebar + DocumentEditor split layout + CSS + fallback toast + wiring
 
 **UI hint:** yes
