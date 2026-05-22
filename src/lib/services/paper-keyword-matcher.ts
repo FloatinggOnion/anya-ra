@@ -1,5 +1,7 @@
 import type { Paper } from '../types/paper'
 import type { PaperMatch } from '../types/suggestion'
+import type { SuggestionProviderChain } from './suggestion-provider-chain'
+import type { Message, ChatOptions } from '../types/llm'
 
 const STOPWORDS = new Set([
   'the', 'a', 'an', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
@@ -108,5 +110,93 @@ export class PaperKeywordMatcher {
     const score = Math.max(0, Math.min(1, normalized))
 
     return { score, matched }
+  }
+
+  /**
+   * Tier 2: LLM semantic re-rank of Tier 1 keyword results (D-05).
+   * Called on-demand (section boundary or manual "Suggest" button), not continuously.
+   * Uses the existing SuggestionProviderChain for LLM calls.
+   *
+   * @param providerChain - The existing multi-provider fallback chain
+   * @param content - Current document text (provides semantic context)
+   * @param tier1Matches - Top N results from Tier 1 keyword matching (max 5)
+   * @param signal - AbortSignal for cancellation
+   * @returns Re-ranked PaperMatch[] with llmRelevanceScore + llmRationale populated
+   */
+  async rerank(
+    providerChain: SuggestionProviderChain,
+    content: string,
+    tier1Matches: PaperMatch[],
+    signal: AbortSignal
+  ): Promise<PaperMatch[]> {
+    if (tier1Matches.length === 0) return []
+
+    // Truncate to max 5 to stay within token budget
+    const candidates = tier1Matches.slice(0, 5)
+
+    // Build paper list for the prompt
+    const paperList = candidates.map((m, i) =>
+      `${i+1}. "${m.title}" (${m.year ?? 'n.d.'}) by ${m.authors.slice(0, 3).join(', ')}`
+    ).join('\n')
+
+    // Build LLM prompt
+    const messages: Message[] = [
+      { role: 'system' as const, content: 'You are a research relevance rater. Given a document excerpt and a list of academic papers, rank the papers by their relevance to the document. For each paper, output exactly one line in JSON format: {"index":<N>,"score":<0.0-1.0>,"rationale":"<one sentence why>"}. Order lines by relevance (highest score first). Include ALL papers. No other output.' },
+      { role: 'user' as const, content: `Document text:\n"""\n${content.slice(0, 1500)}\n"""\n\nPapers to rank:\n${paperList}` }
+    ]
+
+    const options: ChatOptions = {
+      temperature: 0.2,
+      maxTokens: 512,
+    }
+
+    try {
+      // Collect streamed response
+      let responseText = ''
+      for await (const chunk of providerChain.generateSuggestion(messages, options, signal)) {
+        responseText += chunk
+      }
+
+      // Parse JSON lines from LLM output
+      const rankings = new Map<number, { score: number; rationale: string }>()
+      const lines = responseText.split('\n')
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (!trimmed.startsWith('{')) continue
+        try {
+          const parsed = JSON.parse(trimmed)
+          if (typeof parsed.index === 'number' && typeof parsed.score === 'number') {
+            rankings.set(parsed.index, {
+              score: Math.max(0, Math.min(1, parsed.score)),
+              rationale: parsed.rationale || 'No rationale provided'
+            })
+          }
+        } catch { /* skip malformed lines */ }
+      }
+
+      // Apply LLM scores to candidates
+      const reranked = candidates.map((m, i) => {
+        const llmResult = rankings.get(i + 1)
+        return {
+          ...m,
+          llmRelevanceScore: llmResult?.score ?? m.relevanceScore,
+          llmRationale: llmResult?.rationale,
+        }
+      })
+
+      // Sort: prioritized by llmRelevanceScore, then by original relevanceScore as tiebreaker
+      reranked.sort((a, b) => {
+        const scoreA = a.llmRelevanceScore ?? a.relevanceScore
+        const scoreB = b.llmRelevanceScore ?? b.relevanceScore
+        if (scoreB !== scoreA) return scoreB - scoreA
+        return b.relevanceScore - a.relevanceScore
+      })
+
+      return reranked
+    } catch (err) {
+      // Graceful degradation: return original Tier 1 matches on LLM error
+      console.warn('[PaperKeywordMatcher.rerank] LLM re-rank failed, falling back to Tier 1:', err)
+      return candidates.map(m => ({ ...m }))
+    }
   }
 }
