@@ -94,7 +94,7 @@ Original UX rethink plans (describe correct architecture, not yet executed):
 Gap-closure plans (implement what the originals describe — address 8 VERIFICATION failures + 2 partials):
   - [x] 09-04-PLAN.md — Wave 1 (gap-closure): Types + PaperKeywordMatcher + SectionBoundaryDetector + SuggestionSidebarStore + SuggestionService extensions
   - [x] 09-05-PLAN.md — Wave 1 (gap-closure): SmartCitationInsert + Settings (citationStyle/sidebarLayout) + Telemetry (recordInsertion)
-  - [ ] 09-06-PLAN.md — Wave 2 (gap-closure): NotesEditor cleanup + SuggestionsSidebar + DocumentEditor split layout + CSS + fallback toast + wiring
+  - [x] 09-06-PLAN.md — Wave 2 (gap-closure): NotesEditor cleanup + SuggestionsSidebar + DocumentEditor split layout + CSS + fallback toast + wiring
 
 **UI hint:** yes
 
