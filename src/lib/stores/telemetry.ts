@@ -60,6 +60,40 @@ export function recordRejection(
 }
 
 /**
+ * Record a sidebar click-to-insert event (D-11).
+ * Called when user clicks a suggestion card in the sidebar to insert text into the document.
+ * Silently ignores if telemetry opt-in is disabled.
+ *
+ * @param docId - Current document ID
+ * @param provider - Which provider generated the suggestion ('paper-keyword' | 'ollama' | 'openrouter')
+ * @param suggestionType - Type of suggestion clicked ('paper' | 'completion')
+ */
+export function recordInsertion(
+  docId: string,
+  provider: string,
+  suggestionType: string
+): void {
+  const optIn = get(settings).suggestions.telemetryOptIn
+  if (!optIn) return
+
+  const mappedProvider: 'ollama' | 'openrouter' =
+    provider === 'paper-keyword' ? 'ollama' : (provider as 'ollama' | 'openrouter')
+
+  telemetryBuffer.push({
+    docId,
+    provider: mappedProvider,
+    type: 'accept',    // Click-to-insert is always a full acceptance in sidebar model
+    lineCount: 1,      // Single insertion per click
+    timestamp: Date.now()
+  })
+
+  // Auto-persist every 10 records (batch writes)
+  if (telemetryBuffer.length % 10 === 0) {
+    persistTelemetry()
+  }
+}
+
+/**
  * Get aggregate telemetry statistics.
  * Computed from in-memory buffer + persisted records.
  */
@@ -111,6 +145,16 @@ export async function getTelemetryStats(): Promise<TelemetryStats> {
   }
 
   return stats
+}
+
+/**
+ * Get click-to-insert count from telemetry records.
+ * Filters for 'accept' type records (which in the sidebar model are click-to-insert events).
+ */
+export async function getInsertionCount(): Promise<number> {
+  const allRecords = await loadTelemetryRecords()
+  allRecords.push(...telemetryBuffer)
+  return allRecords.filter(r => r.type === 'accept').length
 }
 
 /**
