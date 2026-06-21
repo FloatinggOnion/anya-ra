@@ -101,9 +101,14 @@ export class SuggestionService {
       console.log('[SuggestionService] Calling providerChain.generateSuggestion...')
       // Get selected model from settings based on primary provider
       const settingsVal = get(settings)
-      const model = settingsVal.suggestions.llmProvider === 'ollama'
-        ? settingsVal.suggestions.ollamaModel
-        : settingsVal.suggestions.openrouterModel
+      let model: string | null | undefined
+      if (settingsVal.suggestions.llmProvider === 'ollama') {
+        model = settingsVal.suggestions.ollamaModel
+      } else if (settingsVal.suggestions.llmProvider === 'llamacpp') {
+        model = settingsVal.suggestions.llamaCppModel
+      } else {
+        model = settingsVal.suggestions.openrouterModel
+      }
 
       // Validate model is configured before passing to provider
       if (!model) {
@@ -209,7 +214,7 @@ export class SuggestionService {
    */
   recordAcceptanceTelemetry(
     docId: string,
-    provider: 'ollama' | 'openrouter',
+    provider: 'ollama' | 'openrouter' | 'llamacpp',
     totalLines: number,
     acceptedLines: number
   ): void {
@@ -223,7 +228,7 @@ export class SuggestionService {
   /**
    * Reject suggestion.
    */
-  recordRejectionTelemetry(docId: string, provider: 'ollama' | 'openrouter'): void {
+  recordRejectionTelemetry(docId: string, provider: 'ollama' | 'openrouter' | 'llamacpp'): void {
     recordRejection(docId, provider)
   }
 
@@ -239,9 +244,14 @@ export class SuggestionService {
       { role: 'user' as const, content: context }
     ]
     const settingsVal = get(settings)
-    const model = settingsVal.suggestions.llmProvider === 'ollama'
-      ? settingsVal.suggestions.ollamaModel
-      : settingsVal.suggestions.openrouterModel
+    let model: string | null | undefined
+    if (settingsVal.suggestions.llmProvider === 'ollama') {
+      model = settingsVal.suggestions.ollamaModel
+    } else if (settingsVal.suggestions.llmProvider === 'llamacpp') {
+      model = settingsVal.suggestions.llamaCppModel
+    } else {
+      model = settingsVal.suggestions.openrouterModel
+    }
     const text = await this._streamSuggestion(messages, new AbortController().signal, model)
     return text.split('\n')
       .filter(line => line.trim().startsWith('•'))
@@ -268,9 +278,14 @@ export class SuggestionService {
       { role: 'user' as const, content: context }
     ]
     const settingsVal = get(settings)
-    const model = settingsVal.suggestions.llmProvider === 'ollama'
-      ? settingsVal.suggestions.ollamaModel
-      : settingsVal.suggestions.openrouterModel
+    let model: string | null | undefined
+    if (settingsVal.suggestions.llmProvider === 'ollama') {
+      model = settingsVal.suggestions.ollamaModel
+    } else if (settingsVal.suggestions.llmProvider === 'llamacpp') {
+      model = settingsVal.suggestions.llamaCppModel
+    } else {
+      model = settingsVal.suggestions.openrouterModel
+    }
     const text = await this._streamSuggestion(messages, new AbortController().signal, model)
     return text.split('\n')
       .filter(line => line.trim().length > 0)

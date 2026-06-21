@@ -17,7 +17,7 @@ let telemetryBuffer: TelemetryRecord[] = []
  */
 export function recordAcceptance(
   docId: string,
-  provider: 'ollama' | 'openrouter',
+  provider: 'ollama' | 'openrouter' | 'llamacpp',
   acceptanceType: 'full' | 'partial',
   totalLines: number,
   acceptedLines?: number
@@ -45,7 +45,7 @@ export function recordAcceptance(
  */
 export function recordRejection(
   docId: string,
-  provider: 'ollama' | 'openrouter'
+  provider: 'ollama' | 'openrouter' | 'llamacpp'
 ): void {
   const optIn = get(settings).suggestions.telemetryOptIn
   if (!optIn) return
@@ -76,8 +76,8 @@ export function recordInsertion(
   const optIn = get(settings).suggestions.telemetryOptIn
   if (!optIn) return
 
-  const mappedProvider: 'ollama' | 'openrouter' =
-    provider === 'paper-keyword' ? 'ollama' : (provider as 'ollama' | 'openrouter')
+  const mappedProvider: 'ollama' | 'openrouter' | 'llamacpp' =
+    provider === 'paper-keyword' ? 'ollama' : (provider as 'ollama' | 'openrouter' | 'llamacpp')
 
   telemetryBuffer.push({
     docId,
@@ -111,7 +111,8 @@ export async function getTelemetryStats(): Promise<TelemetryStats> {
       acceptanceRate: 0,
       byProvider: {
         ollama: { count: 0, acceptanceRate: 0 },
-        openrouter: { count: 0, acceptanceRate: 0 }
+        openrouter: { count: 0, acceptanceRate: 0 },
+        llamacpp: { count: 0, acceptanceRate: 0 }
       }
     }
   }
@@ -124,14 +125,15 @@ export async function getTelemetryStats(): Promise<TelemetryStats> {
     acceptanceRate: 0,
     byProvider: {
       ollama: { count: 0, acceptanceRate: 0 },
-      openrouter: { count: 0, acceptanceRate: 0 }
+      openrouter: { count: 0, acceptanceRate: 0 },
+      llamacpp: { count: 0, acceptanceRate: 0 }
     }
   }
 
   stats.acceptanceRate =
     (stats.accepted + stats.partial) / (stats.totalSuggestions || 1)
 
-  for (const provider of ['ollama', 'openrouter'] as const) {
+  for (const provider of ['ollama', 'openrouter', 'llamacpp'] as const) {
     const providerRecords = allRecords.filter((r) => r.provider === provider)
     const providerTotal = providerRecords.length
     const providerAccepted = providerRecords.filter(
