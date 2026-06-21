@@ -1,6 +1,11 @@
 # AI Setup Guide
 
-Anya supports two AI providers for research assistance and chat features: **Ollama** for local models and **OpenRouter** for cloud-based models. You can configure one or both.
+Anya supports three AI providers for research assistance and chat features:
+- **Ollama** - Local models with automatic management
+- **llama.cpp** - Local GGUF models with high performance
+- **OpenRouter** - Cloud-based models with broad selection
+
+You can configure any one as your primary provider.
 
 ## Quick Start
 
@@ -62,7 +67,87 @@ View available models: https://ollama.ai/library
 
 ---
 
-### 2. OpenRouter (Cloud) - For Advanced Models
+### 2. llama.cpp (Local, GGUF) - For Maximum Performance
+
+Advanced users who want fine-grained control over inference and better performance can use **llama.cpp**, which runs quantized GGUF models with superior GPU support and optimization.
+
+#### Installation
+
+**macOS (via Homebrew):**
+```bash
+brew install llama.cpp
+```
+
+**Linux (build from source):**
+```bash
+git clone https://github.com/ggerganov/llama.cpp
+cd llama.cpp
+make
+# Binary will be at: ./server
+```
+
+**Windows:**
+Download prebuilt binaries from: https://github.com/ggerganov/llama.cpp/releases
+
+#### Downloading Models
+
+GGUF models are available on Hugging Face. Popular choices:
+
+```bash
+# Download a small, quantized model
+# Example: Qwen2 0.5B quantized to Q4_K_M (fast, ~400MB)
+cd ~/models  # Create a models directory
+# Download from Hugging Face:
+# https://huggingface.co/Qwen/Qwen2-0.5B-Instruct-GGUF/
+
+# Or use a tool to download:
+wget https://huggingface.co/Qwen/Qwen2-0.5B-Instruct-GGUF/resolve/main/qwen2-0.5b-instruct-q4_k_m.gguf
+```
+
+**Popular GGUF models:**
+- **Qwen2 0.5B** (~400MB) - Fast, good for testing
+- **Mistral 7B Q4** (~4GB) - Excellent balance of speed and quality
+- **Llama2 7B Q4** (~4GB) - General purpose
+- **Neural-Chat 7B Q4** (~4GB) - Optimized for conversation
+
+Find more: https://huggingface.co (search for "GGUF")
+
+#### Using llama.cpp in Anya
+
+1. Launch Anya
+2. Open **Settings** → **LLM Provider**
+3. Select **llama.cpp**
+4. Click **Detect Binary** (auto-finds llama.cpp installation)
+   - If not found, click file picker to manually locate the `server` binary
+5. Click **Select Model** and choose your .gguf file
+6. Click **✓ Detect Binary** to start the server
+7. Wait for "✓ Server connected" status
+8. Start chatting!
+
+**That's it!** llama.cpp is now running locally with your chosen model.
+
+#### Performance Tips
+
+- **Model Quantization Matters**: Q4_K_M is a sweet spot (quality vs speed)
+  - Q5_K_S: Better quality, slower
+  - Q4_K_M: Balanced (recommended)
+  - Q3_K_M: Faster, lower quality
+  
+- **GPU Acceleration**: For even faster inference, build llama.cpp with GPU support:
+  ```bash
+  # For NVIDIA (CUDA)
+  mkdir build && cd build
+  cmake .. -DLLAMA_CUDA=ON
+  cmake --build . --config Release
+  
+  # For Apple Silicon (Metal)
+  cmake .. -DLLAMA_METAL=ON
+  cmake --build . --config Release
+  ```
+
+---
+
+### 3. OpenRouter (Cloud) - For Advanced Models
 
 Use cloud-based LLMs like GPT-4o, Claude, and Gemini without running local models.
 
@@ -107,17 +192,20 @@ Default: `openai/gpt-4o-mini` (cheapest and fastest)
 
 ---
 
-## Comparing Ollama vs OpenRouter
+## Comparing Providers
 
-| Aspect | Ollama | OpenRouter |
-|--------|--------|-----------|
-| **Cost** | Free | Pay-per-use |
-| **Setup** | Download + Install | API key only |
-| **Speed** | Depends on your hardware | Usually faster (cloud) |
-| **Model Quality** | Good open models | Access to GPT-4o, Claude, etc. |
-| **Privacy** | Runs locally | Sent to OpenRouter's servers |
-| **Internet Required** | No | Yes |
-| **Available Offline** | Yes | No |
+| Aspect | Ollama | llama.cpp | OpenRouter |
+|--------|--------|-----------|-----------|
+| **Cost** | Free | Free | Pay-per-use |
+| **Setup Difficulty** | Very easy | Moderate | Easy (API key) |
+| **Speed** | Good | Excellent | Usually fastest (cloud) |
+| **Model Variety** | Broad selection | GGUF models only | 100+ models |
+| **Performance Control** | Limited | Fine-grained | None (cloud) |
+| **GPU Support** | Good | Excellent | N/A |
+| **Privacy** | Local (private) | Local (private) | Cloud (shared) |
+| **Internet Required** | No | No | Yes |
+| **Offline Use** | Yes | Yes | No |
+| **Best For** | Beginners | Power users | Advanced models |
 
 ---
 
@@ -142,6 +230,28 @@ Default: `openai/gpt-4o-mini` (cheapest and fastest)
 **Problem: Ollama won't start on Mac**
 - Try: `arch -arm64 ollama serve` (for Apple Silicon)
 - Or check logs in `~/.ollama/`
+
+### llama.cpp Issues
+
+**Problem: "Binary not found"**
+- Ensure llama.cpp is installed and the `server` binary exists
+- Try manually locating it: `which llama-server` or `which server`
+- Rebuild from source if needed: https://github.com/ggerganov/llama.cpp
+
+**Problem: "Server won't start"**
+- Port 8000 might be in use; specify different port in settings
+- Check your .gguf file path is correct and file exists
+- Try launching manually: `./server -m model.gguf --listen localhost --port 8000`
+
+**Problem: "Very slow responses"**
+- Ensure you're not on CPU-only (consider GPU support)
+- Model might be too large for your hardware
+- Try a smaller/more-quantized model (Q4 instead of Q5)
+
+**Problem: "Out of memory"**
+- Your system doesn't have enough RAM for this model
+- Try a smaller model (e.g., 7B instead of 13B)
+- Reduce context size: model file parser shows limits
 
 ### OpenRouter Issues
 
@@ -219,6 +329,12 @@ Anya shows token counts to help you estimate usage:
 - Increase model size if you have extra RAM/VRAM
 - Use GPU support if available: https://ollama.ai/gpu
 
+### For llama.cpp
+- **Best quantization**: Q4_K_M (quality/speed balance)
+- **Enable GPU**: Build with `-DLLAMA_CUDA=ON` or `-DLLAMA_METAL=ON`
+- **Context size**: Check model's max context in Anya settings
+- **Start small**: Test with 7B models before 13B+
+
 ### For OpenRouter
 - `gpt-4o-mini` is fast and affordable for most use cases
 - `claude-3.5-sonnet` for best reasoning
@@ -232,6 +348,11 @@ Anya shows token counts to help you estimate usage:
 - Official: https://ollama.ai
 - Models: https://ollama.ai/library
 - GitHub: https://github.com/jmorganca/ollama
+
+**llama.cpp**:
+- GitHub: https://github.com/ggerganov/llama.cpp
+- GGUF Models: https://huggingface.co (search "GGUF")
+- Quantization Guide: https://github.com/ggerganov/llama.cpp/blob/master/README.md
 
 **OpenRouter**:
 - Official: https://openrouter.ai

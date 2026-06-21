@@ -50,7 +50,7 @@ Anya is a research companion designed for academics, students, and researchers w
 
 - **AI Integration**
   - Chat with your research data
-  - Ollama (local) or OpenRouter (cloud) support
+  - Ollama, llama.cpp (local), or OpenRouter (cloud) support
   - Reference papers and notes in conversations
   - Secure API key storage
 
@@ -72,16 +72,22 @@ Download the latest version for your platform from [Releases](https://github.com
 
 ### AI Integration (Optional)
 
-Anya integrates with two LLM providers for AI-powered chat:
+Anya integrates with three LLM providers for AI-powered chat:
 
 1. **Ollama** (Local, Free)
    - Run LLMs locally without internet
    - [Install Ollama](https://ollama.ai)
-   - Default model: `qwen2:0.5b`
+   - Easy setup with automatic model management
    - Run: `ollama serve`
 
-2. **OpenRouter** (Cloud, Paid)
-   - Access to GPT-4o, Claude, Gemini, and more
+2. **llama.cpp** (Local, Free, High-Performance)
+   - Run quantized GGUF models with superior performance
+   - [Build llama.cpp](https://github.com/ggerganov/llama.cpp)
+   - Fine-grained control over inference parameters
+   - Excellent GPU support (CUDA, Metal)
+
+3. **OpenRouter** (Cloud, Paid)
+   - Access to GPT-4o, Claude, Gemini, and 100+ models
    - [Get API key at OpenRouter](https://openrouter.ai)
    - Pay-per-use pricing
 
