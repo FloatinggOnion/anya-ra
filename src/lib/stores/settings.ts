@@ -9,6 +9,7 @@ import type { Settings, SuggestionSettings, CitationStyle } from '../types/sugge
  * Area 6: primaryProvider = ollama, fallbackChain = [ollama, openrouter]
  * Area 8: telemetryOptIn = false (opt-in only)
  * Model config: ollamaModel = null (auto-select), openrouterModel = 'openai/gpt-4o-mini'
+ * llama.cpp config: modelPath = null, host = localhost, port = 8000, binaryPath = null (auto-detect)
  */
 const defaultSettings: Settings = {
   suggestions: {
@@ -22,6 +23,10 @@ const defaultSettings: Settings = {
     openrouterModel: 'openai/gpt-4o-mini',
     ollamaHost: 'localhost',
     ollamaPort: 11434,
+    llamaCppModel: null,
+    llamaCppHost: 'localhost',
+    llamaCppPort: 8000,
+    llamaCppBinaryPath: null,
     citationStyle: 'author-year',
     sidebarLayout: 'sectioned'
   }
@@ -76,6 +81,7 @@ export async function loadSettings(workspacePath: string): Promise<void> {
       const requiredFields: (keyof typeof defaultSettings.suggestions)[] = [
         'enabled', 'displayMode', 'acceptKeybinding', 'llmProvider', 'fallbackChain',
         'telemetryOptIn', 'ollamaModel', 'openrouterModel', 'ollamaHost', 'ollamaPort',
+        'llamaCppModel', 'llamaCppHost', 'llamaCppPort', 'llamaCppBinaryPath',
         'citationStyle', 'sidebarLayout'
       ]
       for (const field of requiredFields) {
@@ -116,8 +122,8 @@ export function updateSuggestionSettings(
  * Per 09-CONTEXT.md Area 6.
  */
 export function setProviderConfig(
-  primary: 'ollama' | 'openrouter',
-  fallbackChain: Array<'ollama' | 'openrouter'>
+  primary: 'ollama' | 'openrouter' | 'llamacpp',
+  fallbackChain: Array<'ollama' | 'openrouter' | 'llamacpp'>
 ): void {
   updateSuggestionSettings({
     llmProvider: primary,

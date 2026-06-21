@@ -2,6 +2,7 @@
   import { onMount } from 'svelte'
   import { chatState, streamChat } from '../../stores/chat'
   import { providerState, initializeProvider } from '../../stores/llm-provider'
+  import { settings } from '../../stores/settings'
   import MessageBubble from './MessageBubble.svelte'
   import ProviderSettings from './ProviderSettings.svelte'
   import ContextSelection from './ContextSelection.svelte'
@@ -26,7 +27,10 @@
     const message = inputValue.trim()
     inputValue = ''
 
-    await streamChat(message, provider, {})
+    const model = $providerState.type === 'ollama'
+      ? ($settings.suggestions.ollamaModel || undefined)
+      : ($settings.suggestions.openrouterModel || undefined)
+    await streamChat(message, provider, { model })
 
     // Auto-scroll to bottom after streaming
     if (chatContainer) {

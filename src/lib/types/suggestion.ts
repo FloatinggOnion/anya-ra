@@ -4,7 +4,7 @@ export interface Suggestion {
   docId: string
   text: string  // Full suggestion text
   lines: string[]  // Split by \n for partial acceptance tracking
-  provider: 'ollama' | 'openrouter'  // Which provider generated it
+  provider: 'ollama' | 'openrouter' | 'llamacpp'  // Which provider generated it
   position: { line: number; col: number }  // Cursor position when generated
   generatedAt: number  // Unix timestamp (for latency p95 tracking)
   state: 'pending' | 'accepted' | 'rejected' | 'partial'
@@ -24,13 +24,17 @@ export interface SuggestionSettings {
   enabled: boolean
   displayMode: 'ghost' | 'block' | 'both'  // Ghost text styling preference
   acceptKeybinding: 'tab' | 'ctrl-enter' | 'cmd-enter'  // Area 2: configurable keybinding
-  llmProvider: 'ollama' | 'openrouter'  // Area 6: user-selected primary
-  fallbackChain: Array<'ollama' | 'openrouter'>  // Area 6: fallback order
+  llmProvider: 'ollama' | 'openrouter' | 'llamacpp'  // Area 6: user-selected primary
+  fallbackChain: Array<'ollama' | 'openrouter' | 'llamacpp'>  // Area 6: fallback order
   telemetryOptIn: boolean  // Area 8: local-only opt-in toggle
   ollamaModel: string | null  // User-selected model from installed; null = auto-select on next dialog open
   openrouterModel: string  // Free-text model ID; defaults to 'openai/gpt-4o-mini'
   ollamaHost: string  // Host for Ollama API; defaults to 'localhost'
   ollamaPort: number  // Port for Ollama API; defaults to 11434
+  llamaCppModel: string | null  // Path to .gguf model file
+  llamaCppHost: string  // Host for llama.cpp API; defaults to 'localhost'
+  llamaCppPort: number  // Port for llama.cpp API; defaults to 8000
+  llamaCppBinaryPath: string | null  // Path to llama.cpp server binary (auto-detected or user-specified)
   citationStyle: CitationStyle
   sidebarLayout: 'sectioned' | 'unified'
 }
@@ -43,7 +47,7 @@ export interface Settings {
 // Telemetry (from 09-CONTEXT.md Area 8)
 export interface TelemetryRecord {
   docId: string
-  provider: 'ollama' | 'openrouter'
+  provider: 'ollama' | 'openrouter' | 'llamacpp'
   type: 'accept' | 'reject' | 'partial'
   lineCount: number  // Suggestion lines (for partial: lineCount is total, acceptedCount in accept)
   acceptedCount?: number  // For partial acceptance
@@ -56,7 +60,7 @@ export interface TelemetryStats {
   rejected: number
   partial: number
   acceptanceRate: number  // accepted / (accepted + rejected + partial)
-  byProvider: Record<'ollama' | 'openrouter', {
+  byProvider: Record<'ollama' | 'openrouter' | 'llamacpp', {
     count: number
     acceptanceRate: number
   }>
@@ -74,7 +78,7 @@ export interface SidebarSuggestionItem {
   label: string
   content: string
   timestamp: number
-  provider?: 'ollama' | 'openrouter'
+  provider?: 'ollama' | 'openrouter' | 'llamacpp'
   source: 'paper-keyword' | 'llm'
   paper?: {
     id: string

@@ -19,6 +19,11 @@
   let openrouterValidationError = $state<string | null>(null)
   let openrouterValidationSuccess = $state(false)
 
+  // llama.cpp state
+  let llamaCppConnectionError = $state<string | null>(null)
+  let llamaCppDetecting = $state(false)
+  let llamaCppModelInfo = $state<any>(null)
+
   export function open() {
     isOpen = true
     // Fetch models when dialog opens
@@ -102,6 +107,64 @@
       openrouterValidationError = 'Validation error'
     } finally {
       openrouterValidating = false
+    }
+  }
+
+  async function detectLlamaCpp() {
+    llamaCppDetecting = true
+    llamaCppConnectionError = null
+    try {
+      const { detectLlamaCppBinary } = await import('../../services/system/llamacpp-launcher')
+      const binaryPath = await detectLlamaCppBinary()
+      if (binaryPath) {
+        $settings.suggestions.llamaCppBinaryPath = binaryPath
+      } else {
+        llamaCppConnectionError = 'Binary not found in common paths. Please specify manually.'
+      }
+    } catch (err) {
+      llamaCppConnectionError = 'Detection failed'
+    } finally {
+      llamaCppDetecting = false
+    }
+  }
+
+  async function validateLlamaCppConnection() {
+    llamaCppConnectionError = null
+    try {
+      const { LlamaCppProvider } = await import('../../services/llm/llamacpp')
+      const provider = new LlamaCppProvider({
+        host: $settings.suggestions.llamaCppHost,
+        port: $settings.suggestions.llamaCppPort,
+        modelPath: $settings.suggestions.llamaCppModel
+      })
+      const available = await provider.isAvailable()
+      if (available) {
+        llamaCppModelInfo = provider.getModelInfo()
+      } else {
+        llamaCppConnectionError = 'Server not running or model not loaded'
+      }
+    } catch (err) {
+      llamaCppConnectionError = 'Connection failed'
+    }
+  }
+
+  async function pickModelFile() {
+    try {
+      // Use native file dialog via Tauri
+      const { open } = await import('@tauri-apps/api/dialog')
+      const selected = await open({
+        multiple: false,
+        filters: [
+          { name: 'GGUF Models', extensions: ['gguf'] },
+          { name: 'All Files', extensions: ['*'] }
+        ]
+      })
+      if (selected && typeof selected === 'string') {
+        $settings.suggestions.llamaCppModel = selected
+        validateLlamaCppConnection()
+      }
+    } catch (err) {
+      llamaCppConnectionError = 'File picker failed'
     }
   }
 </script>
@@ -222,6 +285,17 @@
 
               <button
                 class="provider-button"
+                class:active={$settings.suggestions.llmProvider === 'llamacpp'}
+                onclick={() => {
+                  $settings.suggestions.llmProvider = 'llamacpp'
+                }}
+              >
+                <span class="provider-name">🦙 llama.cpp</span>
+                <span class="provider-note">Local GGUF (high performance)</span>
+              </button>
+
+              <button
+                class="provider-button"
                 class:active={$settings.suggestions.llmProvider === 'openrouter'}
                 onclick={() => {
                   $settings.suggestions.llmProvider = 'openrouter'
@@ -308,6 +382,94 @@
               </div>
             {/if}
 
+            {#if $settings.suggestions.llmProvider === 'llamacpp'}
+              <div class="llamacpp-section">
+                <h4>llama.cpp Configuration</h4>
+
+                <div class="config-row">
+                  <label>
+                    <span>Host:</span>
+                    <input
+                      type="text"
+                      value={$settings.suggestions.llamaCppHost}
+                      onchange={(e) => {
+                        $settings.suggestions.llamaCppHost = e.currentTarget.value
+                        validateLlamaCppConnection()
+                      }}
+                      placeholder="localhost"
+                    />
+                  </label>
+                </div>
+
+                <div class="config-row">
+                  <label>
+                    <span>Port:</span>
+                    <input
+                      type="number"
+                      value={$settings.suggestions.llamaCppPort}
+                      onchange={(e) => {
+                        $settings.suggestions.llamaCppPort = parseInt(e.currentTarget.value) || 8000
+                        validateLlamaCppConnection()
+                      }}
+                      placeholder="8000"
+                    />
+                  </label>
+                </div>
+
+                <div class="model-select">
+                  <label>
+                    <span>Model File (.gguf):</span>
+                    <button class="file-picker-button" onclick={pickModelFile}>
+                      {$settings.suggestions.llamaCppModel ? '📁 Change Model' : '📁 Select Model'}
+                    </button>
+                  </label>
+                  {#if $settings.suggestions.llamaCppModel}
+                    <p class="model-path">{$settings.suggestions.llamaCppModel.split('/').pop()}</p>
+                  {/if}
+                </div>
+
+                {#if llamaCppModelInfo}
+                  <div class="model-info-card">
+                    <div class="info-row">
+                      <span class="info-label">Quantization:</span>
+                      <span>{llamaCppModelInfo.quantization || 'Unknown'}</span>
+                    </div>
+                    <div class="info-row">
+                      <span class="info-label">Parameters:</span>
+                      <span>{llamaCppModelInfo.parameterCount || 'Unknown'}</span>
+                    </div>
+                    <div class="info-row">
+                      <span class="info-label">File Size:</span>
+                      <span>{llamaCppModelInfo.fileSizeFormatted}</span>
+                    </div>
+                  </div>
+                {/if}
+
+                {#if llamaCppConnectionError}
+                  <p class="error-message">{llamaCppConnectionError}</p>
+                {:else if llamaCppModelInfo}
+                  <p class="success-message">✓ Server connected</p>
+                {/if}
+
+                <div class="button-group">
+                  <button
+                    class="detect-button"
+                    onclick={detectLlamaCpp}
+                    disabled={llamaCppDetecting}
+                  >
+                    {llamaCppDetecting ? '🔍 Detecting...' : '🔍 Detect Binary'}
+                  </button>
+                  {#if $settings.suggestions.llamaCppBinaryPath}
+                    <p class="binary-path">Binary: {$settings.suggestions.llamaCppBinaryPath.split('/').pop()}</p>
+                  {/if}
+                </div>
+
+                <p class="llamacpp-note">
+                  llama.cpp runs one model at a time. <a href="https://github.com/ggerganov/llama.cpp" target="_blank">Download and build llama.cpp</a>, then select a .gguf model file.
+                </p>
+              </div>
+            {/if}
+
             {#if $settings.suggestions.llmProvider === 'openrouter'}
               <div class="openrouter-section">
                 <h4>OpenRouter Configuration</h4>
@@ -383,22 +545,24 @@
   .settings-dialog {
     background: var(--color-surface-0);
     border: 1px solid var(--color-surface-2);
-    border-radius: 8px;
+    border-radius: 12px;
     width: 92%;
-    max-width: 900px;
-    max-height: 85vh;
-    overflow: auto;
+    max-width: 520px;
+    min-height: 55vh;
+    max-height: 88vh;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
   }
 
   .settings-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px;
+    padding: 20px 24px;
     border-bottom: 1px solid var(--color-surface-2);
+    flex-shrink: 0;
   }
 
   .settings-header h2 {
@@ -421,6 +585,7 @@
     display: flex;
     border-bottom: 1px solid var(--color-surface-2);
     gap: 0;
+    flex-shrink: 0;
   }
 
   .tab-button {
@@ -484,8 +649,9 @@
     display: flex;
     justify-content: flex-end;
     gap: 12px;
-    padding: 16px;
+    padding: 16px 24px;
     border-top: 1px solid var(--color-surface-2);
+    flex-shrink: 0;
   }
 
   .button-primary {
@@ -592,7 +758,7 @@
     flex-direction: column;
     gap: 4px;
     padding: 8px;
-    background: var(--color-surface-1);
+    background: var(--color-surface-2);
     border-radius: 3px;
     cursor: pointer;
   }
@@ -650,7 +816,7 @@
   .config-row input[type="number"] {
     flex: 1;
     padding: 6px 8px;
-    background: var(--color-surface-1);
+    background: var(--color-surface-2);
     border: 1px solid var(--color-surface-3);
     border-radius: 3px;
     color: var(--color-text);
@@ -678,7 +844,7 @@
   .model-select select {
     flex: 1;
     padding: 6px 8px;
-    background: var(--color-surface-1);
+    background: var(--color-surface-2);
     border: 1px solid var(--color-surface-3);
     border-radius: 3px;
     color: var(--color-text);
@@ -760,7 +926,7 @@
   .model-id-input input {
     flex: 1;
     padding: 6px 8px;
-    background: var(--color-surface-1);
+    background: var(--color-surface-2);
     border: 1px solid var(--color-surface-3);
     border-radius: 3px;
     color: var(--color-text);
@@ -801,6 +967,115 @@
   }
 
   .openrouter-note a:hover {
+    text-decoration: underline;
+  }
+
+  .llamacpp-section {
+    margin-top: 16px;
+    padding: 12px;
+    background: var(--color-surface-2);
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .llamacpp-section h4 {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .file-picker-button {
+    flex: 1;
+    padding: 6px 8px;
+    background: var(--color-surface-3);
+    border: 1px solid var(--color-surface-4, var(--color-surface-2));
+    border-radius: 3px;
+    color: var(--color-text);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .file-picker-button:hover {
+    background: var(--color-accent);
+    color: white;
+  }
+
+  .model-path {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    margin: 0;
+    word-break: break-all;
+  }
+
+  .model-info-card {
+    padding: 8px;
+    background: var(--color-surface-3);
+    border-radius: 3px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+  }
+
+  .info-label {
+    color: var(--color-text-secondary);
+    font-weight: 500;
+  }
+
+  .button-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .detect-button {
+    padding: 6px 12px;
+    background: var(--color-surface-3);
+    border: 1px solid var(--color-surface-2);
+    border-radius: 3px;
+    color: var(--color-text);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .detect-button:hover:not(:disabled) {
+    background: var(--color-accent);
+    color: white;
+  }
+
+  .detect-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .binary-path {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    margin: 0;
+    word-break: break-all;
+  }
+
+  .llamacpp-note {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    margin: 0;
+  }
+
+  .llamacpp-note a {
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+
+  .llamacpp-note a:hover {
     text-decoration: underline;
   }
 </style>

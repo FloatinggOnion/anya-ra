@@ -3,12 +3,15 @@ import type { LLMProvider } from '../types/llm'
 import { OllamaProvider } from '../services/llm/ollama'
 import { invoke } from '@tauri-apps/api/core'
 import { settings } from './settings'
+import { LlamaCppProvider } from '../services/llm/llamacpp'
+import { detectLlamaCppBinary, launchServer, isServerReady } from '../services/system/llamacpp-launcher'
 
 export interface ProviderState {
-  type: 'ollama' | 'openrouter'
+  type: 'ollama' | 'openrouter' | 'llamacpp'
   provider: LLMProvider | null
   apiKey: string | null
   error: string | null
+  serverStarting?: boolean
 }
 
 const initialState: ProviderState = {
@@ -34,6 +37,20 @@ export async function initializeProvider(): Promise<void> {
     const available = await provider.isAvailable()
 
     if (available) {
+      if (!settingsVal.suggestions.ollamaModel) {
+        try {
+          const models = await provider.models()
+          if (models.length > 0) {
+            settings.update((s) => ({
+              ...s,
+              suggestions: { ...s.suggestions, ollamaModel: models[0].id }
+            }))
+          }
+        } catch {
+          // Model fetch failed — user will need to select manually
+        }
+      }
+
       providerState.set({ type: 'ollama', provider, apiKey, error: null })
     } else {
       providerState.set({
@@ -52,17 +69,51 @@ export async function initializeProvider(): Promise<void> {
 }
 
 export async function switchProvider(
-  type: 'ollama' | 'openrouter',
+  type: 'ollama' | 'openrouter' | 'llamacpp',
   apiKey?: string
 ): Promise<void> {
   try {
     let provider: LLMProvider
+    const settingsVal = get(settings)
 
     if (type === 'ollama') {
-      const settingsVal = get(settings)
       provider = new OllamaProvider(settingsVal.suggestions.ollamaHost, settingsVal.suggestions.ollamaPort)
       const available = await provider.isAvailable()
       if (!available) throw new Error('Ollama is not running. Start Ollama and try again.')
+    } else if (type === 'llamacpp') {
+      if (!settingsVal.suggestions.llamaCppModel) {
+        throw new Error('Please select a .gguf model file first.')
+      }
+
+      provider = new LlamaCppProvider({
+        host: settingsVal.suggestions.llamaCppHost,
+        port: settingsVal.suggestions.llamaCppPort,
+        modelPath: settingsVal.suggestions.llamaCppModel
+      })
+
+      // Check if server is running; if not, try to auto-start
+      let available = await provider.isAvailable()
+      if (!available && settingsVal.suggestions.llamaCppBinaryPath) {
+        providerState.update((s) => ({ ...s, serverStarting: true }))
+        try {
+          await launchServer(
+            settingsVal.suggestions.llamaCppBinaryPath,
+            settingsVal.suggestions.llamaCppModel,
+            settingsVal.suggestions.llamaCppPort
+          )
+          const ready = await isServerReady(
+            settingsVal.suggestions.llamaCppHost,
+            settingsVal.suggestions.llamaCppPort
+          )
+          available = ready
+        } catch (launchErr) {
+          throw new Error(`Failed to start llama.cpp: ${launchErr instanceof Error ? launchErr.message : 'unknown error'}`)
+        }
+      }
+
+      if (!available) {
+        throw new Error('llama.cpp server is not running. Check binary path or start server manually.')
+      }
     } else {
       if (!apiKey?.trim()) throw new Error('OpenRouter requires an API key')
       const { OpenRouterProvider } = await import('../services/llm/openrouter')
@@ -74,12 +125,14 @@ export async function switchProvider(
       type,
       provider,
       apiKey: apiKey || s.apiKey,
-      error: null
+      error: null,
+      serverStarting: false
     }))
   } catch (err) {
     providerState.update((s) => ({
       ...s,
-      error: err instanceof Error ? err.message : 'Failed to switch provider'
+      error: err instanceof Error ? err.message : 'Failed to switch provider',
+      serverStarting: false
     }))
   }
 }
