@@ -27,9 +27,14 @@
     const message = inputValue.trim()
     inputValue = ''
 
-    const model = $providerState.type === 'ollama'
-      ? ($settings.suggestions.ollamaModel || undefined)
-      : ($settings.suggestions.openrouterModel || undefined)
+    let model: string | undefined
+    if ($providerState.type === 'ollama') {
+      model = $settings.suggestions.ollamaModel || undefined
+    } else if ($providerState.type === 'llamacpp') {
+      model = $settings.suggestions.llamaCppModel || undefined
+    } else {
+      model = $settings.suggestions.openrouterModel || undefined
+    }
     await streamChat(message, provider, { model })
 
     // Auto-scroll to bottom after streaming

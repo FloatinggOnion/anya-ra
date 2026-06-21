@@ -4,7 +4,7 @@
 
   let showSettings = $state(false)
   let apiKeyInput = $state('')
-  let selectedProvider = $state<'ollama' | 'openrouter'>('ollama')
+  let selectedProvider = $state<'ollama' | 'openrouter' | 'llamacpp'>('ollama')
   let isSwitching = $state(false)
 
   $effect(() => {
@@ -32,7 +32,13 @@
 <div class="provider-settings">
   <button class="toggle" onclick={() => (showSettings = !showSettings)}>
     <span class="provider-label">
-      {$providerState.type === 'ollama' ? '🦙 Ollama (Local)' : '🌐 OpenRouter (Cloud)'}
+      {#if $providerState.type === 'ollama'}
+        🦙 Ollama (Local)
+      {:else if $providerState.type === 'llamacpp'}
+        🦙 llama.cpp (Local)
+      {:else}
+        🌐 OpenRouter (Cloud)
+      {/if}
     </span>
     <span class="status-dot" class:available={!!$providerState.provider}></span>
     <span class="toggle-icon">{showSettings ? '▼' : '▶'}</span>
@@ -51,6 +57,17 @@
           />
           <span>🦙 Ollama (Local)</span>
           <span class="sub-label">Run models on your machine</span>
+        </label>
+        <label class="radio-label">
+          <input
+            type="radio"
+            value="llamacpp"
+            bind:group={selectedProvider}
+            onchange={handleProviderChange}
+            disabled={isSwitching}
+          />
+          <span>🦙 llama.cpp (Local)</span>
+          <span class="sub-label">Run GGUF models with high performance</span>
         </label>
         <label class="radio-label">
           <input
