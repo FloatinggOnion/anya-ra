@@ -135,7 +135,7 @@
       const provider = new LlamaCppProvider({
         host: $settings.suggestions.llamaCppHost,
         port: $settings.suggestions.llamaCppPort,
-        modelPath: $settings.suggestions.llamaCppModel
+        modelPath: $settings.suggestions.llamaCppModel ?? undefined
       })
       const available = await provider.isAvailable()
       if (available) {
@@ -151,11 +151,11 @@
   async function pickModelFile() {
     try {
       // Use native file dialog via Tauri
-      const { open } = await import('@tauri-apps/api/dialog')
+      const { open } = await import('@tauri-apps/plugin-dialog')
       const selected = await open({
         multiple: false,
         filters: [
-          { name: 'GGUF Models', extensions: ['gguf'] },
+          { name: 'Model Files', extensions: ['gguf', 'bin'] },
           { name: 'All Files', extensions: ['*'] }
         ]
       })
@@ -418,7 +418,7 @@
 
                 <div class="model-select">
                   <label>
-                    <span>Model File (.gguf):</span>
+                    <span>Model File (.gguf, .bin):</span>
                     <button class="file-picker-button" onclick={pickModelFile}>
                       {$settings.suggestions.llamaCppModel ? '📁 Change Model' : '📁 Select Model'}
                     </button>
@@ -465,7 +465,7 @@
                 </div>
 
                 <p class="llamacpp-note">
-                  llama.cpp runs one model at a time. <a href="https://github.com/ggerganov/llama.cpp" target="_blank">Download and build llama.cpp</a>, then select a .gguf model file.
+                  llama.cpp runs one model at a time. <a href="https://github.com/ggerganov/llama.cpp" target="_blank">Download and build llama.cpp</a>, then select a .gguf or .bin model file.
                 </p>
               </div>
             {/if}

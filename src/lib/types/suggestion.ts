@@ -31,7 +31,7 @@ export interface SuggestionSettings {
   openrouterModel: string  // Free-text model ID; defaults to 'openai/gpt-4o-mini'
   ollamaHost: string  // Host for Ollama API; defaults to 'localhost'
   ollamaPort: number  // Port for Ollama API; defaults to 11434
-  llamaCppModel: string | null  // Path to .gguf model file
+  llamaCppModel: string | null  // Path to model file (.gguf or .bin)
   llamaCppHost: string  // Host for llama.cpp API; defaults to 'localhost'
   llamaCppPort: number  // Port for llama.cpp API; defaults to 8000
   llamaCppBinaryPath: string | null  // Path to llama.cpp server binary (auto-detected or user-specified)

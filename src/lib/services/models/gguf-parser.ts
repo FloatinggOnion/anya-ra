@@ -11,7 +11,7 @@ export function parseGGUFFilename(filePath: string): GGUFMetadata {
   let parameterCount: string | null = null
 
   // Parse quantization format from filename (Q4_K_M, Q5_K_S, Q8_0, etc.)
-  const quantMatch = fileName.match(/\.(Q\d[_\w]+)(?:\.gguf)?$/i)
+  const quantMatch = fileName.match(/\.(Q\d[_\w]+)(?:\.(?:gguf|bin))?$/i)
   if (quantMatch) {
     quantization = quantMatch[1]
   }

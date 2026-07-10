@@ -82,7 +82,7 @@ export async function switchProvider(
       if (!available) throw new Error('Ollama is not running. Start Ollama and try again.')
     } else if (type === 'llamacpp') {
       if (!settingsVal.suggestions.llamaCppModel) {
-        throw new Error('Please select a .gguf model file first.')
+        throw new Error('Please select a model file (.gguf or .bin) first.')
       }
 
       provider = new LlamaCppProvider({
