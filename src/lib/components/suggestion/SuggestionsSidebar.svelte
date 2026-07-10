@@ -4,8 +4,8 @@
   import { settings } from '../../stores/settings'
   import { setSidebarLayout } from '../../stores/settings'
   import { selectedDocumentId, currentDocument } from '../../stores/documents'
-  import { cursorPos, cursorDocId } from '../../stores/cursor-position'
-  import { service as suggestionService } from '../../stores/suggestion-service'
+  import { cursorState } from '../../stores/cursor-position.svelte'
+  import { suggestionSvc } from '../../stores/suggestion-service.svelte'
   import type { SidebarSuggestionItem, PaperMatch } from '../../types/suggestion'
   import { PaperKeywordMatcher } from '../../services/paper-keyword-matcher'
   import { SectionBoundaryDetector } from '../../services/section-boundary-detector'
@@ -23,7 +23,7 @@
   // Derived: doc ID and content from stores
   let docId = $derived($selectedDocumentId || '')
   let content = $derived($currentDocument?.content || '')
-  let pos = $derived(cursorPos)
+  let pos = $derived(cursorState.pos)
 
   let layoutMode = $state<'sectioned' | 'unified'>('sectioned')
   let sectionsCollapsed = $state({ papers: false, ideas: false, completions: false })
@@ -41,7 +41,7 @@
 
     boundaryDetector = new SectionBoundaryDetector(
       async (event) => {
-        const svc = suggestionService
+        const svc = suggestionSvc.current
         if (!svc) return
         isGenerating = true
         setGenerating(true)

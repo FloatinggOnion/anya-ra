@@ -12,8 +12,8 @@
   import { clearAll as clearSidebar } from '../../stores/suggestion-sidebar'
   import { recordInsertion } from '../../stores/telemetry'
   import { showToast } from '../../services/toast'
-  import { setSuggestionService } from '../../stores/suggestion-service'
-  import { setCursor, setCursorDoc } from '../../stores/cursor-position'
+  import { setSuggestionService } from '../../stores/suggestion-service.svelte'
+  import { setCursor, setCursorDoc } from '../../stores/cursor-position.svelte'
 
   let content = $state('')
   let currentLinks: any[] = $state([])
