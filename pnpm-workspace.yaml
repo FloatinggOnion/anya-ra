@@ -1,0 +1,4 @@
+allowBuilds:
+  core-js: true
+  esbuild: true
+  svelte-virtual: true

@@ -1,25 +1,30 @@
-import { Command } from '@tauri-apps/api/shell'
-import { exists, resolve } from '@tauri-apps/api/path'
+import { Command, type Child } from '@tauri-apps/plugin-shell'
+import { exists } from '@tauri-apps/plugin-fs'
 
+/**
+ * Tauri v2's shell plugin requires every executable path to be explicitly
+ * allow-listed in src-tauri/capabilities/default.json under shell:allow-execute
+ * (no wildcards or variable expansion, by design). Auto-detection is therefore
+ * limited to these fixed system install paths, which are mirrored exactly in
+ * that capability file. A binary picked via a file dialog at a different path
+ * cannot be launched — only detected paths from this list are executable.
+ */
 const COMMON_PATHS = [
   '/usr/local/bin/llama-server',
   '/usr/local/bin/server',
   '/opt/homebrew/bin/llama-server',
   '/opt/homebrew/bin/server',
   '/usr/bin/llama-server',
-  '/usr/bin/server',
-  '~/llama.cpp/server',
-  '~/llama.cpp/build/bin/server'
+  '/usr/bin/server'
 ]
 
-let serverProcess: { kill(): void } | null = null
+let serverProcess: Child | null = null
 
 export async function detectLlamaCppBinary(): Promise<string | null> {
   for (const path of COMMON_PATHS) {
     try {
-      const resolvedPath = await resolve(path)
-      if (await exists(resolvedPath)) {
-        return resolvedPath
+      if (await exists(path)) {
+        return path
       }
     } catch {
       continue
@@ -35,12 +40,12 @@ export async function launchServer(
 ): Promise<void> {
   // Kill existing server if one is running
   if (serverProcess) {
-    serverProcess.kill()
+    await serverProcess.kill()
+    serverProcess = null
   }
 
   try {
-    const cmd = new Command('shell', [
-      binaryPath,
+    const cmd = Command.create(binaryPath, [
       '-m',
       modelPath,
       '--listen',
@@ -50,8 +55,7 @@ export async function launchServer(
       '--log-disable'
     ])
 
-    serverProcess = cmd
-    await cmd.spawn()
+    serverProcess = await cmd.spawn()
   } catch (error) {
     throw new Error(`Failed to launch llama.cpp server: ${error instanceof Error ? error.message : String(error)}`)
   }

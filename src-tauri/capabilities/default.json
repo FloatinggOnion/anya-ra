@@ -16,11 +16,34 @@
     "fs:allow-exists",
     "fs:scope-home-recursive",
     "fs:scope-appdata-recursive",
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        { "path": "/usr/local/bin/llama-server" },
+        { "path": "/usr/local/bin/server" },
+        { "path": "/opt/homebrew/bin/llama-server" },
+        { "path": "/opt/homebrew/bin/server" },
+        { "path": "/usr/bin/llama-server" },
+        { "path": "/usr/bin/server" }
+      ]
+    },
     "store:default",
     "store:allow-get",
     "store:allow-set",
     "store:allow-save",
     "store:allow-load",
-    "store:allow-get-store"
+    "store:allow-get-store",
+    "shell:default",
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        { "name": "llamacpp-usr-local-llama-server", "cmd": "/usr/local/bin/llama-server", "args": true },
+        { "name": "llamacpp-usr-local-server", "cmd": "/usr/local/bin/server", "args": true },
+        { "name": "llamacpp-homebrew-llama-server", "cmd": "/opt/homebrew/bin/llama-server", "args": true },
+        { "name": "llamacpp-homebrew-server", "cmd": "/opt/homebrew/bin/server", "args": true },
+        { "name": "llamacpp-usr-llama-server", "cmd": "/usr/bin/llama-server", "args": true },
+        { "name": "llamacpp-usr-server", "cmd": "/usr/bin/server", "args": true }
+      ]
+    }
   ]
 }
