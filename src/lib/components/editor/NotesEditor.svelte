@@ -104,7 +104,7 @@
     lang={markdown()}
     {theme}
     editable={true}
-    extensions={[cursorUpdateListener]}
+    extensions={[cursorUpdateListener, EditorView.lineWrapping]}
   />
 </div>
 
