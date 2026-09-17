@@ -107,6 +107,11 @@
   </div>
 
   <div class="editor-wrapper">
+    {#if !content}
+      <div class="notes-empty-state" role="status">
+        <p>Take notes on papers</p>
+      </div>
+    {/if}
     {#if NotesEditorComponent}
       <svelte:component
         this={NotesEditorComponent}

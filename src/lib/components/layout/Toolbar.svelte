@@ -2,6 +2,9 @@
   import { workspace } from '../../stores/workspace'
   import FullTextSearch from '../FullTextSearch.svelte'
   import ThemeToggle from '../ThemeToggle.svelte'
+  import SettingsPanel from '../SettingsPanel.svelte'
+
+  let showSettings = $state(false)
 </script>
 
 <header class="toolbar">
@@ -15,6 +18,10 @@
   <div class="right">
     <FullTextSearch />
     <ThemeToggle />
+    <button class="settings-btn" onclick={() => (showSettings = true)} title="Settings" aria-label="Open settings">
+      ⚙️
+    </button>
+    <SettingsPanel bind:isOpen={showSettings} />
     <span class="phase-badge">Phase 8</span>
   </div>
 </header>
@@ -65,6 +72,20 @@
     display: flex;
     align-items: center;
     gap: 1rem;
+  }
+
+  .settings-btn {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+  }
+
+  .settings-btn:hover {
+    background-color: var(--color-hover-bg, rgba(255, 255, 255, 0.1));
   }
 
   .phase-badge {

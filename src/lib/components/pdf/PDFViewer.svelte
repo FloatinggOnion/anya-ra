@@ -328,6 +328,11 @@
     role="document"
     aria-label="PDF document viewer"
   >
+    {#if !pdfPath}
+      <div class="pdf-empty-state" role="status">
+        <p>Select a paper from the sidebar, then click View PDF</p>
+      </div>
+    {/if}
     {#if isLoading}
       <div class="loading-state" aria-live="polite">
         <div class="spinner"></div>

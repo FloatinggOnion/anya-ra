@@ -15,12 +15,16 @@
     return map
   })
 
-  const categories = ['global', 'editor', 'graph', 'search'] as const
+  const categories = ['global', 'navigation', 'editor', 'search', 'papers', 'graph', 'chat', 'export'] as const
   const categoryLabels: Record<string, string> = {
     global: 'Global',
+    navigation: 'Navigation',
     editor: 'Notes Editor',
+    papers: 'Papers',
     graph: 'Graph',
+    chat: 'Chat',
     search: 'Search',
+    export: 'Export',
   }
 </script>
 

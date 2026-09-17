@@ -66,6 +66,11 @@
   <ContextSelection />
 
   <div class="messages" bind:this={chatContainer}>
+    {#if !$providerState.provider}
+      <div class="chat-empty-state" role="status">
+        <p>Configure LLM in Settings</p>
+      </div>
+    {/if}
     {#each $chatState.messages as message (message.id)}
       <MessageBubble {message} />
     {/each}

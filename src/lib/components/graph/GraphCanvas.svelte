@@ -200,9 +200,11 @@
     />
     {#if nodes.length === 0}
       <Panel position="top-center">
-        <div class="empty-hint">
+        <div class="empty-hint" role="status">
           No nodes yet — use <strong>💡 Concept</strong> or <strong>📝 Note</strong> to add ideas,
           or click <strong>🕸 Add to Graph</strong> on a paper.
+          <span>Add concepts/notes to build your knowledge graph</span>
+          <button style="pointer-events: auto;" onclick={() => (editorMode = 'concept')}>Add Concept</button>
         </div>
       </Panel>
     {/if}

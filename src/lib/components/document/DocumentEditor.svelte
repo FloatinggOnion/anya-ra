@@ -99,10 +99,11 @@
 
 <div class="document-editor">
   {#if !$selectedDocumentId}
-    <div class="empty-state">
+    <div class="empty-state" role="status">
       <div class="empty-icon">📄</div>
       <h2>No document selected</h2>
       <p>Select a document from the sidebar to open it in the editor.</p>
+      <p>Click New Document to create one.</p>
     </div>
   {:else if !$currentDocument}
     <div class="loading-state">

@@ -65,6 +65,14 @@
       moveTab(tab, panelId)
     }
   }
+
+  const tabShortcutOrder: MovableTab[] = ['papers', 'pdf', 'notes', 'document', 'chat', 'graph']
+
+  function tabTitle(tab: MovableTab): string {
+    const idx = tabShortcutOrder.indexOf(tab)
+    const label = tab.charAt(0).toUpperCase() + tab.slice(1)
+    return idx >= 0 ? `Cmd+${idx + 1} ${label}` : label
+  }
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -90,6 +98,7 @@
             draggable={true}
             role="tab"
             aria-selected={activeTab === tab}
+            title={tabTitle(tab)}
             ondragstart={(e) => onTabDragStart(e, tab)}
             onclick={() => activateTab(tab)}
             onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && activateTab(tab)}
