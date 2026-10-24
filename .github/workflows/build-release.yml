@@ -94,24 +94,23 @@ jobs:
       - name: Prepare release assets
         id: prepare_assets
         run: |
-          # Native builds produce bundles at target/release/bundle/
-          # Cross-compiled builds (Linux aarch64, Windows i686/aarch64) use target/<triple>/release/bundle/
-          # Use find to locate the bundle regardless of where Tauri placed it.
+          ASSET_VERSION="${GITHUB_REF_NAME//\//-}"
+          BUNDLE_DIR="src-tauri/target/${{ matrix.target }}/release/bundle"
           if [ "${{ runner.os }}" == "macOS" ]; then
-            DMG=$(find src-tauri/target -name "*.dmg" -path "*/bundle/dmg/*" | head -1)
+            DMG=$(find "$BUNDLE_DIR" -name "*.dmg" -path "*/dmg/*" | head -1)
             if [ -z "$DMG" ]; then echo "ERROR: No DMG found in build output" && find src-tauri/target -name "*.dmg" 2>/dev/null; exit 1; fi
-            mv "$DMG" "Anya_${{ github.ref_name }}_${{ matrix.arch }}.dmg"
-            echo "asset_path=Anya_${{ github.ref_name }}_${{ matrix.arch }}.dmg" >> $GITHUB_OUTPUT
+            mv "$DMG" "Anya_${ASSET_VERSION}_${{ matrix.arch }}.dmg"
+            echo "asset_path=Anya_${ASSET_VERSION}_${{ matrix.arch }}.dmg" >> $GITHUB_OUTPUT
           elif [ "${{ runner.os }}" == "Windows" ]; then
-            EXE=$(find src-tauri/target -name "*.exe" -path "*/bundle/nsis/*" | head -1)
+            EXE=$(find "$BUNDLE_DIR" -name "*.exe" -path "*/nsis/*" | head -1)
             if [ -z "$EXE" ]; then echo "ERROR: No NSIS installer found in build output" && find src-tauri/target -name "*.exe" 2>/dev/null; exit 1; fi
-            mv "$EXE" "Anya_${{ github.ref_name }}_${{ matrix.arch }}.exe"
-            echo "asset_path=Anya_${{ github.ref_name }}_${{ matrix.arch }}.exe" >> $GITHUB_OUTPUT
+            mv "$EXE" "Anya_${ASSET_VERSION}_${{ matrix.arch }}.exe"
+            echo "asset_path=Anya_${ASSET_VERSION}_${{ matrix.arch }}.exe" >> $GITHUB_OUTPUT
           else
-            APPIMAGE=$(find src-tauri/target -name "*.AppImage" -path "*/bundle/appimage/*" | head -1)
+            APPIMAGE=$(find "$BUNDLE_DIR" -name "*.AppImage" -path "*/appimage/*" | head -1)
             if [ -z "$APPIMAGE" ]; then echo "ERROR: No AppImage found in build output" && find src-tauri/target -name "*.AppImage" 2>/dev/null; exit 1; fi
-            mv "$APPIMAGE" "Anya_${{ github.ref_name }}_${{ matrix.arch }}.AppImage"
-            echo "asset_path=Anya_${{ github.ref_name }}_${{ matrix.arch }}.AppImage" >> $GITHUB_OUTPUT
+            mv "$APPIMAGE" "Anya_${ASSET_VERSION}_${{ matrix.arch }}.AppImage"
+            echo "asset_path=Anya_${ASSET_VERSION}_${{ matrix.arch }}.AppImage" >> $GITHUB_OUTPUT
           fi
         shell: bash
 
@@ -119,10 +118,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-${{ matrix.target }}
+          if-no-files-found: error
           path: |
-            Anya_${{ github.ref_name }}_*.dmg
-            Anya_${{ github.ref_name }}_*.exe
-            Anya_${{ github.ref_name }}_*.AppImage
+            Anya_*.dmg
+            Anya_*.exe
+            Anya_*.AppImage
 
   release:
     needs: build
