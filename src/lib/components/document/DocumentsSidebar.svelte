@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from '../Icon.svelte'
   import { documents, selectedDocumentId, updateDocumentMetadata } from '../../stores/documents'
   import { workspace } from '../../stores/workspace'
   import { showToast } from '../../services/toast'
@@ -122,7 +123,7 @@
 <div class="documents-section">
   <!-- Header -->
   <div class="section-header">
-    <h3 class="section-title">📝 Documents</h3>
+    <h3 class="section-title"><Icon name="note" /> Documents</h3>
   </div>
 
   {#if filteredDocuments.length === 0 && searchQuery === ''}
@@ -137,28 +138,28 @@
           onclick={() => handleCreateClick('literature-review')}
           title="Create a new Literature Review document"
         >
-          📋 Literature Review
+          <Icon name="clipboard" /> Literature Review
         </button>
         <button
           class="template-btn"
           onclick={() => handleCreateClick('research-summary')}
           title="Create a new Research Summary document"
         >
-          📝 Research Summary
+          <Icon name="note" /> Research Summary
         </button>
         <button
           class="template-btn"
           onclick={() => handleCreateClick('reading-notes')}
           title="Create a new Reading Notes document"
         >
-          📚 Reading Notes
+          <Icon name="library" /> Reading Notes
         </button>
         <button
           class="template-btn"
           onclick={() => handleCreateClick('blank')}
           title="Create a blank document"
         >
-          ➕ Blank Document
+          <Icon name="plus" /> Blank Document
         </button>
       </div>
     </div>
@@ -223,7 +224,7 @@
                   title="Rename document"
                   aria-label="Rename document"
                 >
-                  ✏️
+                  <Icon name="edit" />
                 </button>
                 <button
                   class="action-btn delete-btn"
@@ -234,7 +235,7 @@
                   title="Delete document"
                   aria-label="Delete document"
                 >
-                  🗑️
+                  <Icon name="trash" />
                 </button>
               </div>
             {/if}
@@ -245,7 +246,7 @@
 
     <!-- New document button -->
     <button class="new-document-btn" onclick={() => handleCreateClick()}>
-      ➕ New Document
+      <Icon name="plus" /> New Document
     </button>
   {/if}
 

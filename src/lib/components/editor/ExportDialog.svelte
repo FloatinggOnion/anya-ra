@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from '../Icon.svelte'
   import type { Paper } from '../../types/paper'
   import type { Note } from '../../types/notes'
 
@@ -72,7 +73,7 @@
 
 <div class="overlay">
   <div class="modal">
-    <h3>📥 Export Notes</h3>
+    <h3><Icon name="download" /> Export Notes</h3>
     <p class="subtitle">{paper.title}</p>
 
     {#if exportError}

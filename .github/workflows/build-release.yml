@@ -2,6 +2,8 @@ name: Build and Release
 
 on:
   push:
+    branches:
+      - 'codex/platform-build-*'
     tags:
       - 'v*'
   workflow_dispatch:

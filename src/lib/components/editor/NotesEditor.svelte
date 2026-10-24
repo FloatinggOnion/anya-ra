@@ -29,8 +29,9 @@
   const theme = EditorView.theme({
     '.cm-editor': {
       height: '100%',
-      fontSize: '13px',
-      fontFamily: '"Monaco", "Menlo", monospace',
+      fontSize: '17px',
+      fontFamily: 'var(--font-display)',
+      lineHeight: '1.8',
     },
     '.cm-gutters': {
       backgroundColor: 'var(--color-surface-1)',

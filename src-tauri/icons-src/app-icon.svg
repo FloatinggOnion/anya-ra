@@ -1,0 +1,25 @@
+<!-- Hallmark · asset: app-icon · concept: three-node constellation (knowledge-graph fragment / "A" ligature)
+     tokens baked from src/App.svelte :root — accent #7c6af7, accent-hover #9b8df9, text #f2f2f7
+     pre-emit self-critique: P5 H5 E4 S5 R5 V5 -->
+<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="512" y1="0" x2="512" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#9b8df9"/>
+      <stop offset="1" stop-color="#6a57e8"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="1024" height="1024" rx="224" fill="url(#bg)"/>
+
+  <!-- base edge: closes the triangle, thin + soft so it reads as secondary -->
+  <line x1="340" y1="662" x2="684" y2="662" stroke="#f2f2f7" stroke-width="16" stroke-linecap="round" opacity="0.5"/>
+
+  <!-- primary edges: apex to each base node — thin threads so the triangular gap survives downsampling -->
+  <line x1="512" y1="300" x2="340" y2="662" stroke="#f2f2f7" stroke-width="26" stroke-linecap="round"/>
+  <line x1="512" y1="300" x2="684" y2="662" stroke="#f2f2f7" stroke-width="26" stroke-linecap="round"/>
+
+  <!-- nodes: the dominant mass, drawn over the edges -->
+  <circle cx="512" cy="300" r="64" fill="#f2f2f7"/>
+  <circle cx="340" cy="662" r="78" fill="#f2f2f7"/>
+  <circle cx="684" cy="662" r="78" fill="#f2f2f7"/>
+</svg>

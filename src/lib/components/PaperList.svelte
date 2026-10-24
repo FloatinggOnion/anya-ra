@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from './Icon.svelte'
   import { filteredPapers, selectedPaperId } from '../stores/papers'
   import PaperListItem from './PaperListItem.svelte'
   import type { Paper } from '../types/paper'
@@ -52,7 +53,7 @@
 >
   {#if $filteredPapers.length === 0}
     <div class="empty-state">
-      <div class="empty-icon">🔬</div>
+      <div class="empty-icon"><Icon name="experiment" size={32} /></div>
       <p>No papers yet</p>
       <p class="hint">Search arXiv or Semantic Scholar above, or import a local PDF</p>
     </div>

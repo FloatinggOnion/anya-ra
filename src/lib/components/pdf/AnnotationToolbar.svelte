@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from '../Icon.svelte'
   /**
    * AnnotationToolbar — floating toolbar shown when text is selected in PDF viewer.
    * Provides buttons to create highlights (yellow/green/red), underlines, and sticky notes.
@@ -59,7 +60,7 @@
     title="Highlight yellow"
     onclick={() => onCreateHighlight('yellow')}
   >
-    🟡
+    <Icon name="highlight" />
   </button>
   <button
     class="toolbar-btn highlight-btn green"
@@ -67,7 +68,7 @@
     title="Highlight green"
     onclick={() => onCreateHighlight('green')}
   >
-    🟢
+    <Icon name="highlight" />
   </button>
   <button
     class="toolbar-btn highlight-btn red"
@@ -75,7 +76,7 @@
     title="Highlight red"
     onclick={() => onCreateHighlight('red')}
   >
-    🔴
+    <Icon name="highlight" />
   </button>
 
   <div class="separator" role="separator" aria-orientation="vertical"></div>
@@ -87,7 +88,7 @@
     title="Underline"
     onclick={() => onCreateUnderline('yellow')}
   >
-    <span class="underline-icon">U̲</span>
+    <Icon name="underline" />
   </button>
 
   <div class="separator" role="separator" aria-orientation="vertical"></div>
@@ -99,7 +100,7 @@
     title="Add sticky note"
     onclick={onCreateNote}
   >
-    📝
+    <Icon name="note" />
   </button>
 </div>
 
@@ -145,11 +146,9 @@
     outline-offset: 2px;
   }
 
-  .underline-icon {
-    font-size: 14px;
-    font-weight: bold;
-    color: var(--color-text, #f0f0f0);
-  }
+  .highlight-btn.yellow { color: var(--color-highlight-yellow); }
+  .highlight-btn.green { color: var(--color-highlight-green); }
+  .highlight-btn.red { color: var(--color-highlight-red); }
 
   .separator {
     width: 1px;

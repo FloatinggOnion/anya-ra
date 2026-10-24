@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from './Icon.svelte'
   import { themePreference, saveThemePreference, effectiveTheme } from '../stores/theme'
   import type { Theme } from '../stores/theme'
 
@@ -10,9 +11,9 @@
   }
 
   const themeNames: Record<Theme, string> = {
-    light: '☀️ Light',
-    dark: '🌙 Dark',
-    auto: '🔄 Auto',
+    light: 'Light',
+    dark: 'Dark',
+    auto: 'System',
   }
 </script>
 
@@ -20,12 +21,12 @@
   <button
     class="toggle-btn"
     onclick={() => (showMenu = !showMenu)}
-    title="Toggle theme"
+    title="Change appearance" aria-label="Change appearance"
   >
     {#if $effectiveTheme === 'dark'}
-      🌙
+      <Icon name="moon" />
     {:else}
-      ☀️
+      <Icon name="sun" />
     {/if}
   </button>
 
@@ -37,9 +38,9 @@
           class:active={$themePreference === theme}
           onclick={() => handleThemeChange(theme as Theme)}
         >
-          {themeNames[theme as Theme]}
+          <Icon name={theme === 'light' ? 'sun' : theme === 'dark' ? 'moon' : 'monitor'} /> <span class="theme-label">{themeNames[theme as Theme]}</span>
           {#if $themePreference === theme}
-            ✓
+            <Icon name="check" size={14} />
           {/if}
         </button>
       {/each}
@@ -53,6 +54,11 @@
   }
 
   .toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
     background: none;
     border: none;
     font-size: 1.2rem;
@@ -82,7 +88,8 @@
   .menu-item {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
+    gap: 8px;
     width: 100%;
     padding: 8px 12px;
     background: none;
@@ -96,6 +103,8 @@
   .menu-item:hover {
     background-color: var(--color-hover-bg, rgba(255, 255, 255, 0.1));
   }
+
+  .theme-label { flex: 1; }
 
   .menu-item.active {
     color: var(--color-primary, #0a84ff);

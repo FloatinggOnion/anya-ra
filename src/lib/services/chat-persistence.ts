@@ -2,19 +2,18 @@ import { invoke } from '@tauri-apps/api/core'
 import { get } from 'svelte/store'
 import { workspace } from '../stores/workspace'
 import { chatState } from '../stores/chat'
-import type { ChatHistory } from '../types/chat'
+import type { ChatHistory, ChatState } from '../types/chat'
 
 /**
  * Save the current chat state to {workspace}/chats/{chatId}.json
  */
-export async function saveChatHistory(chatId: string): Promise<void> {
-  const ws = get(workspace)
-  if (!ws) throw new Error('No workspace selected')
+export async function saveChatHistory(chatId: string, snapshot?: ChatState, workspacePath = get(workspace)?.path): Promise<void> {
+  if (!workspacePath) throw new Error('No workspace selected')
 
-  const state = get(chatState)
+  const state = snapshot ?? get(chatState)
   const history: ChatHistory = {
     id: chatId,
-    workspacePath: ws.path,
+    workspacePath,
     messages: state.messages,
     draftSections: state.draftSections,
     createdAt:
@@ -25,7 +24,7 @@ export async function saveChatHistory(chatId: string): Promise<void> {
   }
 
   await invoke('save_chat_file', {
-    workspacePath: ws.path,
+    workspacePath,
     chatId,
     content: JSON.stringify(history, null, 2)
   })
@@ -39,16 +38,14 @@ export async function loadChatHistory(chatId: string): Promise<ChatHistory | nul
   const ws = get(workspace)
   if (!ws) throw new Error('No workspace selected')
 
-  try {
-    const content = await invoke<string>('load_chat_file', {
+    const content = await invoke<string | null>('load_chat_file', {
       workspacePath: ws.path,
       chatId
     })
-    return JSON.parse(content) as ChatHistory
-  } catch (err) {
-    console.warn('Failed to load chat history:', err)
-    return null
-  }
+    if (!content) return null
+    const history = JSON.parse(content) as ChatHistory
+    if (!Array.isArray(history.messages) || !Array.isArray(history.draftSections)) throw new Error('This conversation could not be read.')
+    return history
 }
 
 /**
@@ -80,17 +77,37 @@ export async function listChatFiles(): Promise<string[]> {
 
 // Debounce timer for auto-save
 let saveTimeout: ReturnType<typeof setTimeout> | undefined
+let openRequest = 0
+
+export async function openChatSession(chatId: string): Promise<void> {
+  const request = ++openRequest
+  const workspacePath = get(workspace)?.path
+  const state = get(chatState)
+  if (state.currentChatId === chatId) return
+  if (state.isStreaming) throw new Error('Wait for the current response before switching conversations.')
+  if (saveTimeout) { clearTimeout(saveTimeout); saveTimeout = undefined }
+  if (state.currentChatId) await saveChatHistory(state.currentChatId, state)
+  const history = await loadChatHistory(chatId)
+  if (request !== openRequest || get(workspace)?.path !== workspacePath) return
+  chatState.set({
+    messages: history?.messages ?? [], draftSections: history?.draftSections ?? [],
+    currentChatId: chatId, isStreaming: false, error: null,
+  })
+}
 
 /**
  * Debounced auto-save: saves chat after 2 seconds of inactivity.
  * Call this after message updates or draft accept/reject actions.
  */
 export function autoSaveChatHistory(chatId: string): void {
+  const snapshot = get(chatState)
+  const workspacePath = get(workspace)?.path
+  if (!workspacePath) return
   if (saveTimeout !== undefined) {
     clearTimeout(saveTimeout)
   }
   saveTimeout = setTimeout(() => {
-    saveChatHistory(chatId).catch((err) =>
+    saveChatHistory(chatId, snapshot, workspacePath).catch((err) =>
       console.error('Auto-save failed:', err)
     )
   }, 2000)

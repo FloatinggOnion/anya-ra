@@ -1,7 +1,16 @@
 <script lang="ts">
   import { onMount } from 'svelte'
+  import type { Workspace } from './lib/types/workspace'
   import { workspace, hasWorkspace, initializeWorkspace } from './lib/stores/workspace'
-  import { papers } from './lib/stores/papers'
+  import { papers, selectedPaperId, searchQuery } from './lib/stores/papers'
+  import { notes } from './lib/stores/notes'
+  import { documents, documentLinks, selectedDocumentId } from './lib/stores/documents'
+  import { graphNodes, graphEdges } from './lib/stores/graph'
+  import { clearChat } from './lib/stores/chat'
+  import { clearContext } from './lib/stores/context-selection'
+  import { researchGoal, researchProposals, acceptedProposals } from './lib/stores/spatial'
+  import { loadSettings } from './lib/stores/settings'
+  import { providerState } from './lib/stores/llm-provider'
   import { loadPapers } from './lib/services/papers'
   import { initializeNotes } from './lib/services/notes-io'
   import { initializeDocuments } from './lib/stores/documents'
@@ -15,51 +24,59 @@
   let isLoading = $state(true)
   let settingsDialog: SettingsDialog
 
-  onMount(async () => {
-    // Initialize theme first (before other UI)
-    await initializeTheme()
-
-    await initializeWorkspace()
-
-    // Load existing papers from workspace on startup
-    if ($workspace) {
-      try {
-        const loaded = await loadPapers($workspace.path)
-        papers.set(loaded)
-      } catch (error) {
-        console.error('Failed to load papers:', error)
-      }
-
-      // Initialize notes after papers are loaded
-      try {
-        await initializeNotes($workspace.path)
-      } catch (error) {
-        console.error('Failed to initialize notes:', error)
-      }
-
-      // Load all documents from disk so the sidebar is populated on startup
-      try {
-        await initializeDocuments($workspace.path)
-      } catch (error) {
-        console.error('Failed to initialize documents:', error)
-      }
-
-      // Initialize graph AFTER papers — orphan filtering requires live paper list
-      try {
-        await initializeGraph()
-      } catch (error) {
-        console.error('Failed to load graph:', error)
-      }
+  let loadError = $state('')
+  async function loadWorkspaceContents(ws: Workspace) {
+    isLoading = true
+    loadError = ''
+    try {
+      await loadSettings(ws.path)
+      papers.set(await loadPapers(ws.path))
+      await initializeNotes(ws.path)
+      await initializeDocuments(ws.path)
+      await initializeGraph()
+    } catch (error) {
+      loadError = error instanceof Error ? error.message : 'The workspace could not be loaded.'
+    } finally {
+      isLoading = false
     }
-
-    isLoading = false
+  }
+  let isStarting = $state(true)
+  onMount(() => {
+    let unsubscribe = () => {}
+    let disposed = false
+    async function start() {
+      await initializeTheme()
+      await initializeWorkspace()
+      if (disposed) return
+      unsubscribe = workspace.subscribe(ws => {
+        papers.set([]); notes.set(new Map()); documents.set(new Map()); documentLinks.set(new Map())
+        graphNodes.set([]); graphEdges.set([]); selectedPaperId.set(null); selectedDocumentId.set(null)
+        searchQuery.set(''); clearChat(); clearContext()
+        researchGoal.set(''); researchProposals.set([]); acceptedProposals.set({})
+        if (!ws) {
+          providerState.set({ type: 'ollama', provider: null, apiKey: null, error: null })
+          isLoading = false
+          return
+        }
+        void loadWorkspaceContents(ws)
+      })
+      isStarting = false
+    }
+    void start()
+    return () => { disposed = true; unsubscribe() }
   })
 
 </script>
 
-{#if isLoading}
+{#if isStarting || isLoading}
   <div class="loading">
     <div class="loading-spinner"></div>
+  </div>
+{:else if loadError && $hasWorkspace}
+  <div class="workspace-error" role="alert">
+    <h1>Could not open this workspace.</h1><p>{loadError}</p>
+    <button onclick={() => $workspace && loadWorkspaceContents($workspace)}>Try again</button>
+    <button onclick={() => workspace.set(null)}>Choose another workspace</button>
   </div>
 {:else if $hasWorkspace}
   <MainLayout on:open-settings={() => settingsDialog?.open()} />
@@ -71,6 +88,11 @@
 <Toast />
 
 <style>
+  .workspace-error { max-width: 560px; margin: 20vh auto; padding: 24px; }
+  .workspace-error h1 { font: 400 32px/1.3 var(--font-display); }
+  .workspace-error p { color: var(--color-text-secondary); }
+  .workspace-error button { color: var(--color-text); background: var(--color-surface); border: 1px solid var(--color-border); padding: 10px 14px; border-radius: var(--radius-input); margin: 8px 8px 0 0; cursor: pointer; }
+
   /* ── Design Tokens ──────────────────────────────────────────────── */
   :global(:root) {
     /* Dark mode (default) — near-black with subtle warmth */
@@ -141,7 +163,7 @@
   :global(body) {
     margin: 0;
     padding: 0;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: var(--font-body);
     font-size: 14px;
     line-height: 1.6;
     color: var(--color-text);

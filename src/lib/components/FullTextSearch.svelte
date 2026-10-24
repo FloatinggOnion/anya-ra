@@ -1,8 +1,10 @@
 <script lang="ts">
+  import Icon from './Icon.svelte'
   import { searchQuery, searchResults, isSearching, setupSearch } from '../stores/search'
   import { papers } from '../stores/papers'
   import { selectedPaperId } from '../stores/papers'
   import { onMount } from 'svelte'
+  import { focusTool } from '../stores/spatial'
 
   let isOpen = $state(false)
   let selectedIndex = $state(-1)
@@ -50,6 +52,7 @@
     const paperId = result.type === 'paper' ? result.id : result.paperId
     if (paperId) {
       selectedPaperId.set(paperId)
+      focusTool.set(result.type === 'note' ? 'notes' : 'papers')
     }
     isOpen = false
     searchQuery.set('')
@@ -70,8 +73,9 @@
       setTimeout(() => inputElement?.focus(), 0)
     }}
     title="Search papers and notes (Cmd+K)"
+    aria-label="Search papers and notes"
   >
-    🔍
+    <Icon name="search" />
     <span class="shortcut">⌘K</span>
   </button>
 
@@ -79,7 +83,7 @@
     <div class="search-overlay" onclick={() => (isOpen = false)}>
       <div class="search-modal" onclick={e => e.stopPropagation()}>
         <div class="search-input-wrapper">
-          <span class="search-icon">🔍</span>
+          <span class="search-icon"><Icon name="search" /></span>
           <input
             type="text"
             bind:this={inputElement}
@@ -106,7 +110,7 @@
                 onclick={() => handleSelectResult(result)}
               >
                 <span class="result-icon">
-                  {result.type === 'paper' ? '📄' : '📝'}
+                  <Icon name={result.type === 'paper' ? 'paper' : 'note'} />
                 </span>
                 <div class="result-content">
                   <div class="result-title">{result.title}</div>

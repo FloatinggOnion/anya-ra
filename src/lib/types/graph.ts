@@ -16,6 +16,7 @@ export interface ConceptNodeData {
   label: string
   body?: string          // optional longer text shown on hover/expand
   color?: string
+  role?: 'question' | 'claim' | 'application' | 'experiment'
 }
 
 export interface NoteNodeData {
@@ -26,7 +27,24 @@ export interface NoteNodeData {
   color?: string
 }
 
-export type AnyNodeData = PaperNodeData | ConceptNodeData | NoteNodeData
+export interface DocumentNodeData {
+  kind: 'document'
+  documentId: string
+  title: string
+}
+
+export interface ChatNodeData {
+  kind: 'chat'
+  chatId: string
+  title: string
+}
+
+export interface SearchNodeData {
+  kind: 'search'
+  query: string
+}
+
+export type AnyNodeData = PaperNodeData | ConceptNodeData | NoteNodeData | DocumentNodeData | ChatNodeData | SearchNodeData
 
 // ─── Typed node / edge ────────────────────────────────────────────────────────
 
@@ -52,7 +70,7 @@ export interface GraphViewport {
 /** Lightweight serializable node used only in graph.json */
 export interface PersistedNode {
   id: string
-  type: 'paper' | 'concept' | 'note'
+  type: AnyNodeData['kind']
   position: XYPosition
   data: AnyNodeData
 }

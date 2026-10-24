@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from '../Icon.svelte'
   import { settings } from '../../stores/settings'
   import { providerState } from '../../stores/llm-provider'
   import { OllamaProvider } from '../../services/llm/ollama'
@@ -279,7 +280,7 @@
                   $settings.suggestions.llmProvider = 'ollama'
                 }}
               >
-                <span class="provider-name">🐳 Ollama</span>
+                <span class="provider-name"><Icon name="cpu" /> Ollama</span>
                 <span class="provider-note">Local LLM (fast, private)</span>
               </button>
 
@@ -290,7 +291,7 @@
                   $settings.suggestions.llmProvider = 'llamacpp'
                 }}
               >
-                <span class="provider-name">🦙 llama.cpp</span>
+                <span class="provider-name"><Icon name="cpu" /> llama.cpp</span>
                 <span class="provider-note">Local GGUF (high performance)</span>
               </button>
 
@@ -301,7 +302,7 @@
                   $settings.suggestions.llmProvider = 'openrouter'
                 }}
               >
-                <span class="provider-name">🔗 OpenRouter</span>
+                <span class="provider-name"><Icon name="graph" /> OpenRouter</span>
                 <span class="provider-note">Cloud LLM (requires API key)</span>
               </button>
             </div>
@@ -420,7 +421,7 @@
                   <label>
                     <span>Model File (.gguf, .bin):</span>
                     <button class="file-picker-button" onclick={pickModelFile}>
-                      {$settings.suggestions.llamaCppModel ? '📁 Change Model' : '📁 Select Model'}
+                      <Icon name="folder" /> {$settings.suggestions.llamaCppModel ? 'Change Model' : 'Select Model'}
                     </button>
                   </label>
                   {#if $settings.suggestions.llamaCppModel}
@@ -457,7 +458,7 @@
                     onclick={detectLlamaCpp}
                     disabled={llamaCppDetecting}
                   >
-                    {llamaCppDetecting ? '🔍 Detecting...' : '🔍 Detect Binary'}
+                    <Icon name="search" /> {llamaCppDetecting ? 'Detecting...' : 'Detect Binary'}
                   </button>
                   {#if $settings.suggestions.llamaCppBinaryPath}
                     <p class="binary-path">Binary: {$settings.suggestions.llamaCppBinaryPath.split('/').pop()}</p>

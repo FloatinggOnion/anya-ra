@@ -131,7 +131,7 @@ export async function generatePaperHTML(
     ${notesSection}
 
     <footer>
-      <p>📚 Exported from Anya Research Workspace on ${new Date().toISOString().split('T')[0]}</p>
+      <p>Exported from Anya Research Workspace on ${new Date().toISOString().split('T')[0]}</p>
       <p><a href="../index.html">← Back to workspace</a></p>
     </footer>
   </article>

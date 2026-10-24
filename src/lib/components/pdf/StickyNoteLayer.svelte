@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from '../Icon.svelte'
   /**
    * StickyNoteLayer — renders sticky notes as absolutely-positioned HTML divs.
    * Uses contenteditable for in-place editing. Saves on blur.
@@ -67,7 +68,7 @@
       data-annotation-id={note.id}
     >
       <div class="note-header">
-        <span class="note-icon" aria-hidden="true">📌</span>
+        <span class="note-icon" aria-hidden="true"><Icon name="pin" /></span>
         <span class="note-label">Note</span>
         <button
           class="delete-btn"

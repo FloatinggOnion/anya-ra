@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from '../Icon.svelte'
   import { papers } from '../../stores/papers'
   import { notes } from '../../stores/notes'
   import { graphNodes, graphEdges, graphViewport } from '../../stores/graph'
@@ -165,7 +166,7 @@
   class="export-button"
   title="Export workspace as ZIP archive"
 >
-  📥 Export Workspace
+  <Icon name="download" /> Export Workspace
 </button>
 
 <!-- Modal Dialog -->
@@ -226,7 +227,7 @@
               />
               Include PDFs ({estimatedSize.pdfSize > 0 ? `+${(estimatedSize.pdfSize / (1024 * 1024)).toFixed(1)} MB` : 'No PDFs'})
             </label>
-            <p class="hint">⚠️ Including PDFs significantly increases file size</p>
+            <p class="hint"><Icon name="alert" /> Including PDFs significantly increases file size</p>
 
             <label class="checkbox-label">
               <input

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { workspace } from '../stores/workspace'
+  import ThemeToggle from './ThemeToggle.svelte'
   import { pickFolder, createWorkspace, getRecentWorkspaces, addToRecentWorkspaces } from '../services/workspace'
   import type { Workspace } from '../types/workspace'
 
@@ -56,13 +57,14 @@
 </script>
 
 <div class="welcome-screen">
+  <div class="welcome-theme"><ThemeToggle /></div>
   <div class="content">
     <div class="logo">
       <h1>Anya</h1>
     </div>
-    <p class="tagline">Research Assistant</p>
+    <p class="tagline">A space for thinking</p>
     <p class="description">
-      Your integrated workspace for papers, annotations, and writing.
+      Bring research together. Question what you know. Make room for what comes next.
     </p>
 
     <button
@@ -100,6 +102,7 @@
 </div>
 
 <style>
+  .welcome-theme { position: absolute; top: 24px; right: 24px; }
   .welcome-screen {
     display: flex;
     align-items: center;
@@ -116,16 +119,12 @@
   }
 
   .logo h1 {
+    font-family: var(--font-display);
     font-size: 4rem;
-    font-weight: 800;
+    font-weight: 400;
     margin: 0 0 0.5rem 0;
     letter-spacing: -0.04em;
-    background: linear-gradient(135deg, var(--color-text) 30%, var(--color-accent) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    /* Subtle glow behind the text */
-    filter: drop-shadow(0 0 24px var(--color-accent-subtle));
+    color: var(--color-text);
   }
 
   .tagline {
@@ -149,7 +148,7 @@
     align-items: center;
     gap: 0.5rem;
     background: var(--color-accent);
-    color: #ffffff;
+    color: var(--color-on-accent);
     border: none;
     padding: 0.875rem 2rem;
     font-size: 0.9375rem;

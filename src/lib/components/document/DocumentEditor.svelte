@@ -1,8 +1,12 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
+  import Icon from '../Icon.svelte'
+  import { onMount, onDestroy } from 'svelte'
+  import { get } from 'svelte/store'
+  import type { Document } from '../../types/document'
   import { selectedDocumentId, currentDocument, documentLinks, updateLinks, saveDocumentWithLinks } from '../../stores/documents'
   import { papers } from '../../stores/papers'
   import NotesEditor from '../editor/NotesEditor.svelte'
+  import SuggestionsSidebar from '../suggestion/SuggestionsSidebar.svelte'
   import { workspace } from '../../stores/workspace'
   import { validateAndGetLinks } from '../../services/document-validation'
   import { SuggestionService } from '../../services/suggestions'
@@ -23,6 +27,8 @@
   let isGeneratingSuggestion = $state(false)
   let suggestionService: SuggestionService | null = null
   let cursorPosition = $state(0)
+  let showWritingSuggestions = $state(false)
+  let destroyed = false
 
   function handleCursorMove(pos: number) {
     cursorPosition = pos
@@ -67,12 +73,13 @@
           fallbackProviders.push(new OllamaProvider(settingsVal.suggestions.ollamaHost, settingsVal.suggestions.ollamaPort))
         }
 
+        if (destroyed) return
         const chain = new SuggestionProviderChain(
           provider,
           fallbackProviders,
           (msg) => {
             console.warn('[SuggestionProviderChain] Fallback:', msg)
-            showToast(`⚠️ ${msg}`, 'info', 5000)
+            showToast(`${msg}`, 'info', 5000)
           }
         )
         suggestionService = new SuggestionService(chain, (isGenerating) => {
@@ -92,6 +99,8 @@
   })
 
   let loadedDocId: string | null = null
+  let editorDocument: Document | null = null
+  const editorWorkspacePath = get(workspace)?.path
 
   $effect.pre(() => {
     const docId = $selectedDocumentId
@@ -101,6 +110,7 @@
     if (docId !== loadedDocId) {
       if (doc) {
         loadedDocId = docId
+        editorDocument = doc
         lastLoadedContent = doc.content
         content = doc.content
         currentLinks = $documentLinks.get(doc.id) ?? []
@@ -163,25 +173,34 @@
   })
 
   async function handleAutoSave(newContent: string) {
-    const ws = $workspace
-    const docId = $selectedDocumentId
-    const doc = $currentDocument
-    if (!ws || !docId || !doc) return
+    const doc = editorDocument
+    if (!editorWorkspacePath || !doc) return
+    const docId = doc.id
 
     try {
-      await saveDocumentWithLinks(ws.path, docId, doc.title, newContent, currentLinks, doc.createdAt)
+      const { links } = validateAndGetLinks(newContent, get(papers))
+      await saveDocumentWithLinks(editorWorkspacePath, docId, doc.title, newContent, links, doc.createdAt)
       lastLoadedContent = newContent
       console.log(`[DocumentEditor] Saved ${docId}`)
     } catch (err) {
       console.error(`[DocumentEditor] Save failed:`, err)
     }
   }
+  onDestroy(() => {
+    destroyed = true
+    setSuggestionService(null)
+    clearSidebar()
+    if (autoSaveTimeout) clearTimeout(autoSaveTimeout)
+    if (validationTimeout) clearTimeout(validationTimeout)
+    if (content !== lastLoadedContent) void handleAutoSave(content)
+    suggestionService?.cancel()
+  })
 </script>
 
 <div class="document-editor">
   {#if !$selectedDocumentId}
     <div class="empty-state">
-      <div class="empty-icon">📄</div>
+      <div class="empty-icon"><Icon name="paper" size={32} /></div>
       <h2>No document selected</h2>
       <p>Select a document from the sidebar to open it in the editor.</p>
     </div>
@@ -190,7 +209,9 @@
       <p>Loading document...</p>
     </div>
   {:else}
+    <div class="writing-tools"><button onclick={() => showWritingSuggestions = !showWritingSuggestions} aria-expanded={showWritingSuggestions}>Writing suggestions</button></div>
     <div class="editor-main">
+      <div class="writing-content">
       <NotesEditor
         type="document"
         id={$selectedDocumentId}
@@ -200,11 +221,17 @@
         onBlur={() => handleAutoSave(content)}
         onCursorChange={handleCursorMove}
       />
+      </div>
+      {#if showWritingSuggestions}<aside class="writing-suggestions"><SuggestionsSidebar /></aside>{/if}
     </div>
   {/if}
 </div>
 
 <style>
+  .writing-tools { padding: 8px 16px; border-bottom: 1px solid var(--color-border); }
+  .writing-tools button { background: transparent; border: 1px solid var(--color-border); color: var(--color-text-secondary); padding: 6px 10px; border-radius: var(--radius-input); cursor: pointer; font-size: var(--text-sm); }
+  .writing-content { flex: 1; min-height: 0; overflow: hidden; }
+  .writing-suggestions { height: 280px; flex-shrink: 0; border-top: 1px solid var(--color-border); overflow: auto; }
   .document-editor {
     display: flex;
     flex-direction: column;

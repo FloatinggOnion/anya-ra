@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from '../Icon.svelte'
   /**
    * PDFControls — navigation toolbar with page prev/next and zoom in/out controls.
    */
@@ -59,7 +60,7 @@
       disabled={isFirstPage}
       onclick={prevPage}
     >
-      ◀
+      <Icon name="chevron-left" />
     </button>
 
     <div class="page-counter" aria-label="Page {currentPage} of {totalPages}">
@@ -84,7 +85,7 @@
       disabled={isLastPage}
       onclick={nextPage}
     >
-      ▶
+      <Icon name="chevron-right" />
     </button>
   </div>
 

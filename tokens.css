@@ -1,0 +1,49 @@
+/* Hallmark · macrostructure: spatial workbench · tone: scholarly · anchor hue: sage
+ * pre-emit critique: P5 H4 E4 S5 R5 V4 */
+:root {
+  --font-display: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+  --font-body: 'Avenir Next', 'Segoe UI', sans-serif;
+  --space-xs: 4px; --space-sm: 8px; --space-md: 16px; --space-lg: 24px; --space-xl: 32px;
+  --text-xs: 11px; --text-sm: 13px; --text-md: 15px; --text-lg: 20px; --text-display: clamp(28px, 3vw, 40px);
+  --radius-card: 8px; --radius-input: 5px;
+  --ease-out: cubic-bezier(.16, 1, .3, 1); --dur-short: 150ms;
+}
+html:root, html:root.dark {
+  --color-bg: oklch(20% .012 85); --color-surface: oklch(24% .013 85);
+  --color-surface-2: oklch(28% .014 85); --color-surface-3: oklch(32% .014 85);
+  --color-border: oklch(36% .018 85); --color-border-strong: oklch(46% .018 85);
+  --color-text: oklch(92% .018 85); --color-text-secondary: oklch(77% .02 85); --color-text-muted: oklch(67% .02 85);
+  --color-accent: oklch(77% .085 155); --color-accent-hover: oklch(84% .075 155);
+  --color-accent-subtle: oklch(31% .035 155); --color-on-accent: oklch(20% .025 155);
+  --color-error: oklch(78% .12 30); --color-success: var(--color-accent); --color-warning: oklch(82% .1 85);
+  --color-canvas-dot: oklch(35% .015 85); --color-shadow: oklch(10% .01 85 / .15);
+  --color-hover-bg: var(--color-surface-2); --color-primary: var(--color-accent);
+  --color-hover: var(--color-hover-bg); --color-surface-1: var(--color-surface); --color-text-primary: var(--color-text);
+  --color-surface-0: var(--color-bg);
+  --color-focus: var(--color-accent);
+  --color-highlight-yellow: oklch(82% .14 85);
+  --color-highlight-green: oklch(77% .13 150);
+  --color-highlight-red: oklch(76% .14 30);
+}
+html:root.light {
+  --color-highlight-yellow: oklch(50% .1 85);
+  --color-highlight-green: oklch(45% .1 150);
+  --color-highlight-red: oklch(48% .14 30);
+  --color-bg: oklch(96% .014 85); --color-surface: oklch(98.5% .009 85);
+  --color-surface-2: oklch(93% .018 85); --color-surface-3: oklch(90% .02 85);
+  --color-border: oklch(85% .022 85); --color-border-strong: oklch(72% .025 85);
+  --color-text: oklch(28% .025 85); --color-text-secondary: oklch(45% .025 85); --color-text-muted: oklch(50% .02 85);
+  --color-accent: oklch(40% .07 155); --color-accent-hover: oklch(33% .07 155);
+  --color-accent-subtle: oklch(92% .03 155); --color-on-accent: oklch(98% .01 85);
+  --color-error: oklch(46% .14 30); --color-warning: oklch(45% .1 85);
+  --color-canvas-dot: oklch(82% .02 85); --color-shadow: oklch(25% .02 85 / .07);
+}
+html body { font-family: var(--font-body); }
+button, input, select, textarea { font-family: inherit; }
+:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 3px; }
+button:disabled { cursor: not-allowed; opacity: .5; }
+button:active:not(:disabled) { background: var(--color-surface-3); }
+html, body { overflow-x: clip; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}

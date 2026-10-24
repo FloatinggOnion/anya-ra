@@ -21,10 +21,10 @@
   )
 
   const relationColors: Record<AnyaEdgeType, string> = {
-    related: '#6c7086',
-    supports: '#a6e3a1',
-    contradicts: '#f38ba8',
-    cites: '#89b4fa',
+    related: 'var(--color-text-muted)',
+    supports: 'var(--color-success)',
+    contradicts: 'var(--color-error)',
+    cites: 'var(--color-accent)',
   }
 
   const edgeData = $derived(data as AnyaEdgeData | undefined)
@@ -45,10 +45,10 @@
     position: absolute;
     font-size: 10px;
     font-weight: 600;
-    background: #1e1e2e;
+    background: var(--color-bg);
     padding: 2px 6px;
     border-radius: 4px;
-    border: 1px solid #313244;
+    border: 1px solid var(--color-border);
     pointer-events: none;
     text-transform: uppercase;
     letter-spacing: 0.04em;

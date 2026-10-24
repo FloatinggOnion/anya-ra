@@ -6,18 +6,14 @@ import type { GraphFile } from '../types/graph'
  * Returns null if the file doesn't exist yet (first run).
  */
 export async function loadGraph(workspacePath: string): Promise<GraphFile | null> {
-  try {
-    const json = await invoke<string>('load_graph_file', { workspacePath })
-    const parsed = JSON.parse(json) as GraphFile
-    if (parsed.version !== 1) {
-      console.warn('[graph] Unknown graph.json version:', parsed.version)
-      return null
-    }
-    return parsed
-  } catch {
-    // File doesn't exist yet — normal on first run
-    return null
+  const json = await invoke<string | null>('load_graph_file', { workspacePath })
+  if (!json) return null
+  const parsed = JSON.parse(json) as GraphFile
+  if (parsed.version !== 1) {
+    throw new Error('This canvas uses an unsupported file version.')
   }
+  if (!Array.isArray(parsed.nodes) || !Array.isArray(parsed.edges)) throw new Error('The saved canvas could not be read.')
+  return parsed
 }
 
 /**

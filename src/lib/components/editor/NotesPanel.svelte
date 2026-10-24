@@ -1,11 +1,14 @@
 <script lang="ts">
+  import Icon from '../Icon.svelte'
   import { workspace } from '../../stores/workspace'
   import { currentPaperNote, saveNote } from '../../stores/notes'
   import { ensureNoteNodeForPaper, deleteNoteNodeForPaper } from '../../stores/graph'
   import { showToast } from '../../services/toast'
   import ExportDialog from './ExportDialog.svelte'
   import type { Paper } from '../../types/paper'
-  import { onMount } from 'svelte'
+  import { onMount, onDestroy } from 'svelte'
+  import { get } from 'svelte/store'
+  import { persistGraph, graphViewport } from '../../stores/graph'
 
   interface Props {
     paper: Paper
@@ -13,6 +16,7 @@
 
   let { paper } = $props()
 
+  const workspacePath = get(workspace)?.path
   let content = $state('')
   let isSaving = $state(false)
   let showExportDialog = $state(false)
@@ -44,16 +48,17 @@
 
     isSaving = true
     pendingSave = setTimeout(async () => {
-      if (!$workspace) return
+      if (!workspacePath) return
 
       try {
-        await saveNote($workspace.path, paper.id, content)
+        await saveNote(workspacePath, paper.id, content)
         // Add/update note in graph
         if (content.trim()) {
           ensureNoteNodeForPaper(paper.id, content)
         } else {
           deleteNoteNodeForPaper(paper.id)
         }
+        persistGraph(get(graphViewport))
         console.log(`[NotesPanel] Auto-saved for ${paper.id}`)
       } catch (error) {
         console.error('[NotesPanel] Save failed:', error)
@@ -71,15 +76,16 @@
       pendingSave = null
     }
 
-    if ($workspace) {
+    if (workspacePath) {
       try {
-        await saveNote($workspace.path, paper.id, content)
+        await saveNote(workspacePath, paper.id, content)
         // Add/update note in graph
         if (content.trim()) {
           ensureNoteNodeForPaper(paper.id, content)
         } else {
           deleteNoteNodeForPaper(paper.id)
         }
+        persistGraph(get(graphViewport))
         console.log(`[NotesPanel] Blur-saved for ${paper.id}`)
       } catch (error) {
         console.error('[NotesPanel] Blur-save failed:', error)
@@ -87,18 +93,21 @@
       }
     }
   }
+  onDestroy(() => {
+    if (pendingSave) void handleEditorBlur()
+  })
 </script>
 
 <div class="notes-panel">
   <div class="notes-header">
-    <h2 class="title">📝 Notes: {paper.title || 'Untitled'}</h2>
+    <h2 class="title"><Icon name="note" /> Notes: {paper.title || 'Untitled'}</h2>
     <div class="controls">
       <button
         class="export-btn"
         onclick={() => (showExportDialog = true)}
         disabled={!content}
       >
-        ⬇️ Export
+        <Icon name="download" /> Export
       </button>
       {#if isSaving}
         <span class="save-indicator">Saving...</span>

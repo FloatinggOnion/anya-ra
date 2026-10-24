@@ -1,5 +1,6 @@
 <!-- ProviderSettings.svelte — LLM provider toggle and API key management -->
 <script lang="ts">
+  import Icon from '../Icon.svelte'
   import { providerState, switchProvider, setApiKey } from '../../stores/llm-provider'
 
   let showSettings = $state(false)
@@ -33,15 +34,15 @@
   <button class="toggle" onclick={() => (showSettings = !showSettings)}>
     <span class="provider-label">
       {#if $providerState.type === 'ollama'}
-        🦙 Ollama (Local)
+        <Icon name="cpu" /> Ollama (Local)
       {:else if $providerState.type === 'llamacpp'}
-        🦙 llama.cpp (Local)
+        <Icon name="cpu" /> llama.cpp (Local)
       {:else}
-        🌐 OpenRouter (Cloud)
+        <Icon name="cloud" /> OpenRouter (Cloud)
       {/if}
     </span>
     <span class="status-dot" class:available={!!$providerState.provider}></span>
-    <span class="toggle-icon">{showSettings ? '▼' : '▶'}</span>
+    <span class="toggle-icon"><Icon name={showSettings ? 'chevron-down' : 'chevron-right'} size={14} /></span>
   </button>
 
   {#if showSettings}
@@ -55,7 +56,7 @@
             onchange={handleProviderChange}
             disabled={isSwitching}
           />
-          <span>🦙 Ollama (Local)</span>
+          <span><Icon name="cpu" /> Ollama (Local)</span>
           <span class="sub-label">Run models on your machine</span>
         </label>
         <label class="radio-label">
@@ -66,7 +67,7 @@
             onchange={handleProviderChange}
             disabled={isSwitching}
           />
-          <span>🦙 llama.cpp (Local)</span>
+          <span><Icon name="cpu" /> llama.cpp (Local)</span>
           <span class="sub-label">Run GGUF models with high performance</span>
         </label>
         <label class="radio-label">
@@ -77,7 +78,7 @@
             onchange={handleProviderChange}
             disabled={isSwitching}
           />
-          <span>🌐 OpenRouter (Cloud)</span>
+          <span><Icon name="cloud" /> OpenRouter (Cloud)</span>
           <span class="sub-label">100+ models — GPT, Claude, Gemini…</span>
         </label>
       </div>
@@ -92,7 +93,7 @@
             placeholder="sk-or-..."
             onblur={handleSaveKey}
           />
-          <p class="hint">🔒 Stored securely in OS keychain · <a href="https://openrouter.ai/keys" target="_blank">Get a key</a></p>
+          <p class="hint"><Icon name="lock" /> Stored securely in OS keychain · <a href="https://openrouter.ai/keys" target="_blank">Get a key</a></p>
         </div>
       {/if}
 

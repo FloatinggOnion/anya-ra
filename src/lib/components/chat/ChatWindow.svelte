@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from '../Icon.svelte'
   import { onMount } from 'svelte'
   import { chatState, streamChat } from '../../stores/chat'
   import { providerState, initializeProvider } from '../../stores/llm-provider'
@@ -7,6 +8,7 @@
   import ProviderSettings from './ProviderSettings.svelte'
   import ContextSelection from './ContextSelection.svelte'
   import DraftSuggestions from './DraftSuggestions.svelte'
+  import { canvasSelection } from '../../stores/spatial'
 
   let inputValue = $state('')
   let chatContainer: HTMLDivElement | undefined = $state()
@@ -66,7 +68,7 @@
 <div class="chat-window">
   {#if ollamaWarning && $providerState.error}
     <div class="ollama-banner">
-      ⚠️ {$providerState.error}
+      <Icon name="alert" /> {$providerState.error}
       <button onclick={() => (ollamaWarning = false)}>✕</button>
     </div>
   {/if}
@@ -75,6 +77,9 @@
   <ContextSelection />
 
   <div class="messages" bind:this={chatContainer}>
+    {#if $chatState.messages.length === 0}
+      <div class="conversation-empty"><h2>Follow a line of inquiry.</h2><p>Explore an idea, question an assumption, or work out how research could be applied.</p><small>{$canvasSelection.length ? 'Selected canvas objects and their neighbours are included as context.' : 'Select canvas objects to bring their evidence into the conversation.'}</small></div>
+    {/if}
     {#each $chatState.messages as message (message.id)}
       <MessageBubble {message} />
     {/each}
@@ -89,7 +94,7 @@
 
     {#if $chatState.error}
       <div class="error-message" role="alert">
-        ⚠️ {$chatState.error}
+        <Icon name="alert" /> {$chatState.error}
       </div>
     {/if}
   </div>
@@ -115,12 +120,16 @@
       disabled={$chatState.isStreaming || !inputValue.trim() || !$providerState.provider}
       aria-label="Send message"
     >
-      {$chatState.isStreaming ? '⏳' : '→'}
+      <Icon name={$chatState.isStreaming ? 'loader' : 'send'} />
     </button>
   </div>
 </div>
 
 <style>
+  .conversation-empty { padding: 24px 12px; }
+  .conversation-empty h2 { font: 400 28px/1.3 var(--font-display); margin: 0 0 16px; }
+  .conversation-empty p { color: var(--color-text-secondary); font-size: var(--text-sm); line-height: 1.8; }
+  .conversation-empty small { color: var(--color-text-muted); line-height: 1.6; }
   .chat-window {
     display: flex;
     flex-direction: column;

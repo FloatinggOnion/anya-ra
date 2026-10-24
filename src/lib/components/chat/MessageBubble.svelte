@@ -28,7 +28,7 @@
 
   .message.user {
     background: var(--color-accent);
-    color: white;
+    color: var(--color-on-accent);
     margin-left: auto;
     align-self: flex-end;
   }
@@ -53,6 +53,6 @@
   }
 
   .message.user .message-timestamp {
-    color: rgba(255, 255, 255, 0.7);
+    color: var(--color-on-accent);
   }
 </style>

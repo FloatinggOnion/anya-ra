@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from '../Icon.svelte'
   import { workspace } from '../../stores/workspace'
   import { showDownloadedOnly } from '../../stores/papers'
   import SearchBar from '../SearchBar.svelte'
@@ -13,7 +14,7 @@
 <nav class="sidebar">
   {#if $workspace}
     <div class="workspace-header">
-      <div class="workspace-icon">📁</div>
+      <div class="workspace-icon"><Icon name="folder" /></div>
       <div class="workspace-info">
         <p class="workspace-name">{$workspace.name}</p>
         <p class="workspace-path">{$workspace.path}</p>
@@ -28,7 +29,7 @@
           type="checkbox"
           bind:checked={$showDownloadedOnly}
         />
-        <span>📥 Downloaded Only</span>
+        <span><Icon name="download" /> Downloaded Only</span>
       </label>
     </div>
     <PaperList />
