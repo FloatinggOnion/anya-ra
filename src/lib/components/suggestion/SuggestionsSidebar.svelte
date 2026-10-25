@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from '../Icon.svelte'
   import { get } from 'svelte/store'
   import { papers } from '../../stores/papers'
   import { settings } from '../../stores/settings'
@@ -32,7 +33,7 @@
 
   // Load saved layout preference on mount
   $effect(() => {
-    layoutMode = get(settings).suggestions.sidebarLayout || 'sectioned'
+    layoutMode = $settings.suggestions.sidebarLayout || 'sectioned'
   })
 
   // ── Initialize services and boundary detector ─────────────────────────
@@ -143,7 +144,7 @@
 
 {#if !$selectedDocumentId}
   <div class="ss-empty-state">
-    <div class="ss-empty-icon">💡</div>
+    <div class="ss-empty-icon"><Icon name="think" size={32} /></div>
     <h2>Suggestions</h2>
     <p>Open a document to see writing suggestions.</p>
   </div>
@@ -154,14 +155,14 @@
       <span class="ss-title">Suggestions</span>
       <button class="ss-suggest-btn" onclick={handleSuggest}>Suggest</button>
       <button class="ss-layout-toggle" onclick={toggleLayout} title="Toggle layout">
-        {layoutMode === 'sectioned' ? '☰' : '⊞'}
+        <Icon name={layoutMode === 'sectioned' ? 'list' : 'canvas'} />
       </button>
     </div>
 
     <!-- Papers Section (D-02) -->
     <div class="ss-section" class:collapsed={sectionsCollapsed.papers}>
       <button class="ss-section-header" onclick={() => sectionsCollapsed.papers = !sectionsCollapsed.papers}>
-        📄 Papers <span class="ss-count">({papersLocal.length})</span>
+        <Icon name="paper" /> Papers <span class="ss-count">({papersLocal.length})</span>
         <span class="ss-chevron">▾</span>
       </button>
       <div class="ss-items">
@@ -182,7 +183,7 @@
     <!-- Ideas Section (D-02) -->
     <div class="ss-section" class:collapsed={sectionsCollapsed.ideas} class:generating={isGenerating && ideasLocal.length === 0}>
       <button class="ss-section-header" onclick={() => sectionsCollapsed.ideas = !sectionsCollapsed.ideas}>
-        💡 Ideas &amp; Questions <span class="ss-count">({ideasLocal.length})</span>
+        <Icon name="think" /> Ideas &amp; Questions <span class="ss-count">({ideasLocal.length})</span>
         <span class="ss-chevron">▾</span>
       </button>
       <div class="ss-items">
@@ -205,7 +206,7 @@
     <!-- Completions Section (D-02) -->
     <div class="ss-section" class:collapsed={sectionsCollapsed.completions} class:generating={isGenerating && completionsLocal.length === 0}>
       <button class="ss-section-header" onclick={() => sectionsCollapsed.completions = !sectionsCollapsed.completions}>
-        ✏️ Text Completions <span class="ss-count">({completionsLocal.length})</span>
+        <Icon name="edit" /> Text Completions <span class="ss-count">({completionsLocal.length})</span>
         <span class="ss-chevron">▾</span>
       </button>
       <div class="ss-items">

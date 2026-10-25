@@ -214,7 +214,7 @@ export function generateIndexHTML(
 <body>
   <div class="container">
     <header>
-      <h1>📚 Research Workspace</h1>
+      <h1>Research Workspace</h1>
       <p class="count">${papers.length} papers • ${new Date().toLocaleDateString()}</p>
     </header>
 
@@ -231,7 +231,7 @@ export function generateIndexHTML(
     <div id="results"></div>
 
     <div class="search-info">
-      <p>💡 Tip: Search across titles, authors, tags, and notes in real-time.</p>
+      <p>Tip: Search across titles, authors, tags, and notes in real-time.</p>
     </div>
   </div>
 

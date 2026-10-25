@@ -32,25 +32,27 @@ const defaultSettings: Settings = {
   }
 }
 
-export const settings = writable<Settings>(defaultSettings)
+export const settings = writable<Settings>(structuredClone(defaultSettings))
 
 let pendingSave: ReturnType<typeof setTimeout> | null = null
+let loadingSettings = false
 
 /**
  * Auto-save settings on changes (debounced 300ms).
  * Same pattern as document save from Phase 8.
  */
 settings.subscribe(async (value) => {
+  if (loadingSettings) return
+  const workspacePath = get(workspace)?.path
+  if (!workspacePath) return
+  const snapshot = JSON.stringify(value, null, 2)
   if (pendingSave) clearTimeout(pendingSave)
 
   pendingSave = setTimeout(async () => {
-    const ws = get(workspace)
-    if (!ws) return
-
     try {
       await invoke('save_settings', {
-        workspacePath: ws.path,
-        settings: JSON.stringify(value, null, 2)
+        workspacePath,
+        settings: snapshot
       })
       console.log('[settings] Saved to workspace')
     } catch (err) {
@@ -65,6 +67,7 @@ settings.subscribe(async (value) => {
  * Called from App.svelte during workspace initialization.
  */
 export async function loadSettings(workspacePath: string): Promise<void> {
+  loadingSettings = true
   try {
     const content = await invoke<string | null>('load_settings', {
       workspacePath
@@ -97,10 +100,15 @@ export async function loadSettings(workspacePath: string): Promise<void> {
       }
       settings.set(merged)
       console.log('[settings] Loaded from workspace (merged with defaults)')
+    } else {
+      settings.set(structuredClone(defaultSettings))
     }
   } catch (err) {
     console.error('[settings] Load failed:', err)
     // Keep defaults if load fails
+    settings.set(structuredClone(defaultSettings))
+  } finally {
+    loadingSettings = false
   }
 }
 

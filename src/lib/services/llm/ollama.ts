@@ -24,6 +24,7 @@ export class OllamaProvider implements LLMProvider {
 
     const response = await fetch(`${this.baseUrl}/api/chat`, {
       method: 'POST',
+      signal: options.signal,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: options.model,
@@ -31,7 +32,8 @@ export class OllamaProvider implements LLMProvider {
         stream: true,
         options: {
           temperature: options.temperature ?? 0.7,
-          top_p: options.topP ?? 0.9
+          top_p: options.topP ?? 0.9,
+          num_predict: options.maxTokens ?? -1
         }
       })
     })

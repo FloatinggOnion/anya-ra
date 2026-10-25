@@ -329,11 +329,11 @@ Created: ${today}
 
   .btn-primary {
     background: var(--color-accent);
-    color: var(--color-text);
+    color: var(--color-on-accent);
   }
 
   .btn-primary:hover:not(:disabled) {
-    background: rgba(107, 156, 255, 0.8);
+    background: var(--color-accent-hover);
   }
 
   .btn-primary:disabled {

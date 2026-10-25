@@ -4,7 +4,9 @@
   import { workspace } from '../stores/workspace'
   import type { Paper } from '../types/paper'
 
+  let { initialQuery = '' }: { initialQuery?: string } = $props()
   let query = $state('')
+  $effect(() => { query = initialQuery; searchQuery.set(initialQuery) })
   let isSearching = $state(false)
   let errorMessage = $state<string | null>(null)
 
@@ -28,6 +30,7 @@
         addPaper(paper)
         await savePaper($workspace.path, paper)
       }
+      searchQuery.set('')
 
       console.log(`Found ${results.length} papers from ${source}`)
     } catch (error) {

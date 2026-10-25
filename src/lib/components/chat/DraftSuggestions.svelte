@@ -1,5 +1,6 @@
 <!-- DraftSuggestions.svelte — Accept/reject/edit interface for LLM draft sections -->
 <script lang="ts">
+  import Icon from '../Icon.svelte'
   import {
     chatState,
     acceptDraft,
@@ -47,11 +48,11 @@
   <div class="draft-suggestions">
     <div class="draft-header">
       <h3>
-        ✍️ Draft Sections
+        <Icon name="edit" /> Draft Sections
         <span class="count">{$chatState.draftSections.length}</span>
       </h3>
       <button class="copy-btn" onclick={copyToClipboard} disabled={acceptedCount === 0}>
-        {copied ? '✓ Copied!' : `📋 Copy Accepted (${acceptedCount})`}
+        <Icon name={copied ? 'check' : 'clipboard'} /> {copied ? 'Copied!' : `Copy Accepted (${acceptedCount})`}
       </button>
     </div>
 
@@ -85,7 +86,7 @@
                   ✓ Accept
                 </button>
                 <button class="edit-btn" onclick={() => startEdit(section)}>
-                  ✎ Edit
+                  <Icon name="edit" /> Edit
                 </button>
                 <button class="reject-btn" onclick={() => rejectDraft(section.id)}>
                   ✗ Reject

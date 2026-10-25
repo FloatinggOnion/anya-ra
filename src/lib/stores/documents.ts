@@ -5,7 +5,7 @@
  * Pattern: writable store with debounced persistence via documents-io service
  */
 
-import { writable, derived } from 'svelte/store'
+import { writable, derived, get } from 'svelte/store'
 import { listDocuments, loadDocument, loadDocumentSidecar, saveDocument as ioSaveDocument, saveDocumentSidecar } from '../services/documents-io'
 import { workspace } from './workspace'
 import type { Document, DocumentSidecar, LinkMetadata } from '../types/document'
@@ -31,8 +31,20 @@ export const currentDocument = derived(
 
 // ─── Helper to debounce disk writes ───────────────────────────────────────
 
-let pendingSave: ReturnType<typeof setTimeout> | null = null
-let isSaving = false
+const pendingSaves = new Map<string, ReturnType<typeof setTimeout>>()
+const writes = new Map<string, Promise<void>>()
+
+function scheduleSave(path: string, docId: string, write: () => Promise<void>) {
+  const key = `${path}::${docId}`
+  const pending = pendingSaves.get(key)
+  if (pending) clearTimeout(pending)
+  pendingSaves.set(key, setTimeout(() => {
+    pendingSaves.delete(key)
+    const next = (writes.get(key) ?? Promise.resolve()).catch(() => {}).then(write)
+    writes.set(key, next)
+    void next.finally(() => { if (writes.get(key) === next) writes.delete(key) })
+  }, 300))
+}
 
 /**
  * Save a document to both store and disk.
@@ -52,12 +64,9 @@ export async function saveDocument(
 ): Promise<void> {
   if (!workspacePath || !docId || !title) return
 
-  // Clear any pending save (new save supercedes it)
-  if (pendingSave) clearTimeout(pendingSave)
-
   // Update store immediately (optimistic)
   const now = new Date().toISOString()
-  const docCreatedAt = createdAt || now
+  const docCreatedAt = createdAt || getDocument(docId)?.createdAt || now
 
   const document: Document = {
     id: docId,
@@ -72,10 +81,9 @@ export async function saveDocument(
     return map
   })
 
+  const links = get(documentLinks).get(docId) ?? []
   // Schedule debounced disk write (300ms)
-  if (!isSaving) {
-    pendingSave = setTimeout(async () => {
-      isSaving = true
+  scheduleSave(workspacePath, docId, async () => {
       try {
         // Save markdown content
         await ioSaveDocument(workspacePath, docId, content)
@@ -87,19 +95,15 @@ export async function saveDocument(
           title,
           created: docCreatedAt,
           modified: now,
-          links: [], // Links populated in Phase 2+ by validation
+          links,
         }
         await saveDocumentSidecar(workspacePath, docId, sidecar)
 
         console.log(`[documents] Auto-saved for ${docId} at ${new Date().toLocaleTimeString()}`)
       } catch (error) {
         console.error(`[documents] Auto-save failed for ${docId}:`, error)
-      } finally {
-        isSaving = false
-        pendingSave = null
       }
-    }, 300)
-  }
+  })
 }
 
 /**
@@ -124,15 +128,12 @@ export async function updateDocumentMetadata(
     return map
   })
 
-  // Debounce metadata save (reuse pendingSave timer for consistency)
-  if (pendingSave) clearTimeout(pendingSave)
-
-  if (!isSaving) {
-    pendingSave = setTimeout(async () => {
-      isSaving = true
+  const doc = getDocument(docId)
+  const links = get(documentLinks).get(docId) ?? []
+  if (!doc) return
+  scheduleSave(workspacePath, docId, async () => {
       try {
-        const doc = getDocument(docId)
-        if (!doc) return
+        await ioSaveDocument(workspacePath, docId, doc.content)
 
         const sidecar: DocumentSidecar = {
           version: 1,
@@ -140,19 +141,15 @@ export async function updateDocumentMetadata(
           title: newTitle,
           created: doc.createdAt,
           modified: new Date().toISOString(),
-          links: [], // Links preserved from original
+          links,
         }
         await saveDocumentSidecar(workspacePath, docId, sidecar)
 
         console.log(`[documents] Metadata updated for ${docId}`)
       } catch (error) {
         console.error(`[documents] Metadata update failed for ${docId}:`, error)
-      } finally {
-        isSaving = false
-        pendingSave = null
       }
-    }, 300)
-  }
+  })
 }
 
 // Helper to get document from store (for internal use)
@@ -181,12 +178,9 @@ export async function saveDocumentWithLinks(
 ): Promise<void> {
   if (!workspacePath || !docId || !title) return
 
-  // Clear any pending save
-  if (pendingSave) clearTimeout(pendingSave)
-
   // Update both stores immediately (optimistic)
   const now = new Date().toISOString()
-  const docCreatedAt = createdAt || now
+  const docCreatedAt = createdAt || getDocument(docId)?.createdAt || now
 
   const document: Document = {
     id: docId,
@@ -207,9 +201,7 @@ export async function saveDocumentWithLinks(
   })
 
   // Schedule debounced disk write (300ms)
-  if (!isSaving) {
-    pendingSave = setTimeout(async () => {
-      isSaving = true
+  scheduleSave(workspacePath, docId, async () => {
       try {
         // Save markdown content
         await ioSaveDocument(workspacePath, docId, content)
@@ -228,12 +220,8 @@ export async function saveDocumentWithLinks(
         console.log(`[documents] Auto-saved with ${links.length} links for ${docId} at ${new Date().toLocaleTimeString()}`)
       } catch (error) {
         console.error(`[documents] Auto-save with links failed for ${docId}:`, error)
-      } finally {
-        isSaving = false
-        pendingSave = null
       }
-    }, 300)
-  }
+  })
 }
 
 /**

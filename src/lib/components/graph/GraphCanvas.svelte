@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from '../Icon.svelte'
   import { onMount } from 'svelte'
   import {
     SvelteFlow,
@@ -201,8 +202,8 @@
     {#if nodes.length === 0}
       <Panel position="top-center">
         <div class="empty-hint">
-          No nodes yet — use <strong>💡 Concept</strong> or <strong>📝 Note</strong> to add ideas,
-          or click <strong>🕸 Add to Graph</strong> on a paper.
+          No nodes yet — use <strong><Icon name="think" /> Concept</strong> or <strong><Icon name="note" /> Note</strong> to add ideas,
+          or click <strong><Icon name="graph" /> Add to Graph</strong> on a paper.
         </div>
       </Panel>
     {/if}

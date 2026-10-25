@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from '../Icon.svelte'
   import ChatWindow from '../chat/ChatWindow.svelte'
   import PaperDetail from '../PaperDetail.svelte'
   import NotesPanel from '../editor/NotesPanel.svelte'
@@ -11,7 +12,7 @@
     resolvedPdfPath: string | null
     PDFViewerComponent: any
     GraphCanvasComponent: any
-    SuggestionsSidebarComponent: any
+    SuggestionsSidebarComponent?: any
   }
 
   let {
@@ -30,7 +31,7 @@
     <PaperDetail />
   {:else}
     <div class="empty-state">
-      <div class="empty-icon">📄</div>
+      <div class="empty-icon"><Icon name="paper" size={32} /></div>
       <h2>Ready to research</h2>
       <p>Search for papers or import a PDF to get started.</p>
     </div>
@@ -46,7 +47,7 @@
     {/if}
   {:else}
     <div class="empty-state">
-      <div class="empty-icon">📖</div>
+      <div class="empty-icon"><Icon name="book" size={32} /></div>
       <h2>No PDF loaded</h2>
       <p>Select a paper that has a local PDF attached.</p>
     </div>
@@ -56,7 +57,7 @@
     <NotesPanel paper={$selectedPaper} />
   {:else}
     <div class="empty-state">
-      <div class="empty-icon">📝</div>
+      <div class="empty-icon"><Icon name="note" size={32} /></div>
       <h2>No paper selected</h2>
       <p>Select a paper to open its notes.</p>
     </div>
@@ -66,7 +67,7 @@
     <svelte:component this={DocumentEditorComponent} />
   {:catch error}
     <div class="empty-state">
-      <div class="empty-icon">⚠️</div>
+      <div class="empty-icon"><Icon name="alert" size={32} /></div>
       <h2>Error loading document editor</h2>
       <p>Failed to load the document editor.</p>
     </div>

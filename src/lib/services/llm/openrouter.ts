@@ -18,6 +18,7 @@ export class OpenRouterProvider implements LLMProvider {
 
     const response = await fetch(`${OPENROUTER_BASE}/chat/completions`, {
       method: 'POST',
+      signal: options.signal,
       headers: {
         Authorization: `Bearer ${this.apiKey}`,
         'Content-Type': 'application/json',
@@ -29,6 +30,7 @@ export class OpenRouterProvider implements LLMProvider {
         messages,
         stream: true,
         temperature: options.temperature ?? 0.7,
+        max_tokens: options.maxTokens,
         top_p: options.topP ?? 0.9
       })
     })

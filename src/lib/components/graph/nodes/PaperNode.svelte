@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from '../../Icon.svelte'
   import { Handle, Position } from '@xyflow/svelte'
   import type { NodeProps, Node } from '@xyflow/svelte'
   import type { PaperNodeData } from '../../../types/graph'
@@ -23,12 +24,12 @@
 
 <div class="paper-node">
   <Handle type="target" position={Position.Top} />
-  <div class="badge">📄 Paper</div>
+  <div class="badge"><Icon name="paper" /> Paper</div>
   <div class="title">{nodeData.title}</div>
   {#if authorLine}
     <div class="meta">{authorLine}</div>
   {/if}
-  <div class="open-hint">↗ Double-click to view</div>
+  <div class="open-hint"><Icon name="arrow-up-right" size={14} /> Double-click to view</div>
   <Handle type="source" position={Position.Bottom} />
 </div>
 

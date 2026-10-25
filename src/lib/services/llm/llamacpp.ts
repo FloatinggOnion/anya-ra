@@ -20,6 +20,7 @@ export class LlamaCppProvider implements LLMProvider {
   async *chat(messages: Message[], options: ChatOptions = {}): AsyncIterable<string> {
     const response = await fetch(`${this.baseUrl}/chat/completions`, {
       method: 'POST',
+      signal: options.signal,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         messages,

@@ -24,6 +24,7 @@ const initialState: ProviderState = {
 export const providerState = writable<ProviderState>(initialState)
 
 export async function initializeProvider(): Promise<void> {
+  if (get(providerState).provider) return
   try {
     let apiKey: string | null = null
     try {
@@ -33,6 +34,14 @@ export async function initializeProvider(): Promise<void> {
     }
 
     const settingsVal = get(settings)
+    if (settingsVal.suggestions.llmProvider === 'openrouter' && apiKey) {
+      await switchProvider('openrouter', apiKey)
+      return
+    }
+    if (settingsVal.suggestions.llmProvider === 'llamacpp') {
+      await switchProvider('llamacpp')
+      return
+    }
     const provider = new OllamaProvider(settingsVal.suggestions.ollamaHost, settingsVal.suggestions.ollamaPort)
     const available = await provider.isAvailable()
 
@@ -128,6 +137,7 @@ export async function switchProvider(
       error: null,
       serverStarting: false
     }))
+    settings.update(s => ({ ...s, suggestions: { ...s.suggestions, llmProvider: type } }))
   } catch (err) {
     providerState.update((s) => ({
       ...s,

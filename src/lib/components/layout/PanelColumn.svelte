@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from '../Icon.svelte'
   import PanelContent from './PanelContent.svelte'
   import {
     tabLabels,
@@ -106,7 +107,7 @@
       </div>
     {:else}
       <div class="collapsed-label">
-        {panelId === 'center' ? '◀' : '▶'}
+        <Icon name={panelId === 'center' ? 'chevron-left' : 'chevron-right'} size={14} />
       </div>
     {/if}
 
@@ -117,9 +118,9 @@
       aria-label={collapsed ? 'Expand column' : 'Collapse column'}
     >
       {#if panelId === 'center'}
-        {collapsed ? '▶' : '◀'}
+        <Icon name={collapsed ? 'chevron-right' : 'chevron-left'} size={14} />
       {:else}
-        {collapsed ? '◀' : '▶'}
+        <Icon name={collapsed ? 'chevron-left' : 'chevron-right'} size={14} />
       {/if}
     </button>
   </div>

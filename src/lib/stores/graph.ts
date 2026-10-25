@@ -3,6 +3,7 @@ import { workspace } from './workspace'
 import { papers } from './papers'
 import { loadGraph, saveGraph } from '../services/graph'
 import { loadNotes } from '../services/notes-io'
+import { showToast } from '../services/toast'
 import type { GraphNode, GraphEdge, GraphFile, AnyNodeData, PersistedNode, PersistedEdge, AnyaEdgeData } from '../types/graph'
 import type { Paper } from '../types/paper'
 
@@ -20,47 +21,41 @@ export const graphFitOnInit = writable<boolean>(true)
 // ─── Persistence (debounced) ──────────────────────────────────────────────────
 
 let _saveTimer: ReturnType<typeof setTimeout> | null = null
+let pendingGraph: { path: string; file: GraphFile } | null = null
+let graphWrite: Promise<void> = Promise.resolve()
 
 export function persistGraph(viewport: { x: number; y: number; zoom: number }): void {
   graphViewport.set(viewport)
-
-  if (_saveTimer) clearTimeout(_saveTimer)
-  _saveTimer = setTimeout(async () => {
-    const ws = get(workspace)
-    if (!ws?.path) return
-
-    const nodes = get(graphNodes)
-    const edges = get(graphEdges)
-
-    const graphFile: GraphFile = {
+  const ws = get(workspace)
+  if (!ws?.path) return
+  if (pendingGraph && pendingGraph.path !== ws.path) void flushGraph().catch(() => {})
+  pendingGraph = {
+    path: ws.path,
+    file: {
       version: 1,
-      nodes: nodes.map((n): PersistedNode => ({
-        id: n.id,
-        type: n.type as 'paper' | 'concept' | 'note',
-        position: n.position,
-        data: n.data as AnyNodeData,
-      })),
-      edges: edges.map((e): PersistedEdge => ({
-        id: e.id,
-        source: e.source,
-        target: e.target,
-        data: e.data as AnyaEdgeData,
-      })),
-      viewport,
-    }
+      nodes: get(graphNodes).map(n => ({ id: n.id, type: n.data.kind, position: { ...n.position }, data: { ...n.data } })),
+      edges: get(graphEdges).map(e => ({ id: e.id, source: e.source, target: e.target, data: { ...e.data } as AnyaEdgeData })),
+      viewport: { ...viewport },
+    },
+  }
+  if (_saveTimer) clearTimeout(_saveTimer)
+  _saveTimer = setTimeout(() => { void flushGraph().catch(() => {}) }, 300)
+}
 
-    try {
-      await saveGraph(ws.path, graphFile)
-      console.debug('[graph] Graph persisted successfully', {
-        nodeCount: nodes.length,
-        edgeCount: edges.length,
-        nodePositions: nodes.map(n => ({ id: n.id, pos: n.position })),
-        viewport,
-      })
-    } catch (err) {
-      console.error('[graph] Failed to persist graph:', err)
-    }
-  }, 1000) // Increased from 300ms to 1000ms to ensure save completes
+export async function flushGraph(): Promise<void> {
+  if (_saveTimer) clearTimeout(_saveTimer)
+  _saveTimer = null
+  const pending = pendingGraph
+  pendingGraph = null
+  if (!pending) return graphWrite
+  graphWrite = graphWrite.catch(() => {}).then(() => saveGraph(pending.path, pending.file))
+  try {
+    await graphWrite
+  } catch (error) {
+    if (!pendingGraph) pendingGraph = pending
+    showToast('Canvas could not be saved. Keep this workspace open and try again.', 'error')
+    throw error
+  }
 }
 
 // ─── Initialization ───────────────────────────────────────────────────────────
@@ -73,6 +68,8 @@ export async function initializeGraph(): Promise<void> {
   if (!file) {
     graphNodes.set([])
     graphEdges.set([])
+    graphViewport.set({ x: 0, y: 0, zoom: 1 })
+    graphFitOnInit.set(true)
     return
   }
 
@@ -108,6 +105,7 @@ export async function initializeGraph(): Promise<void> {
           id: e.id,
           source: e.source,
           target: e.target,
+          type: 'typed',
           data: e.data,
         }) as GraphEdge
     )
@@ -124,9 +122,39 @@ export async function initializeGraph(): Promise<void> {
   })
 }
 
+export function addCanvasNode(data: AnyNodeData, position?: { x: number; y: number }): string {
+  const nodes = get(graphNodes)
+  const existing = nodes.find(n =>
+    (data.kind === 'document' && n.data.kind === 'document' && n.data.documentId === data.documentId) ||
+    (data.kind === 'chat' && n.data.kind === 'chat' && n.data.chatId === data.chatId)
+  )
+  if (existing) return existing.id
+  const id = `${data.kind}-${crypto.randomUUID()}`
+  const viewport = get(graphViewport)
+  graphNodes.update(ns => [...ns, {
+    id, type: data.kind, data: { ...data },
+    position: position ?? { x: (160 - viewport.x) / viewport.zoom, y: (140 - viewport.y) / viewport.zoom + (nodes.length % 4) * 60 },
+  }])
+  persistGraph(viewport)
+  return id
+}
+
+export function updateCanvasNode(id: string, data: AnyNodeData) {
+  graphNodes.update(ns => ns.map(n => n.id === id ? { ...n, data: { ...data } } : n))
+  persistGraph(get(graphViewport))
+}
+
+export function removeCanvasNodes(ids: string[]) {
+  const removed = new Set(ids)
+  graphNodes.update(ns => ns.filter(n => !removed.has(n.id)))
+  graphEdges.update(es => es.filter(e => !removed.has(e.source) && !removed.has(e.target)))
+  persistGraph(get(graphViewport))
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 export function ensurePaperNode(paper: Paper): void {
+  const viewport = get(graphViewport)
   graphNodes.update((nodes) => {
     const alreadyExists = nodes.some(
       (n) => n.type === 'paper' && (n.data as { kind: string; paperId: string }).paperId === paper.id
@@ -137,8 +165,8 @@ export function ensurePaperNode(paper: Paper): void {
       id: `paper-${paper.id}`,
       type: 'paper',
       position: {
-        x: 80 + Math.random() * 720,
-        y: 80 + Math.random() * 520,
+        x: (160 - viewport.x) / viewport.zoom,
+        y: (140 - viewport.y) / viewport.zoom + (nodes.length % 4) * 60,
       },
       data: {
         kind: 'paper',
@@ -236,18 +264,17 @@ export function ensureNoteNodeForPaper(paperId: string, body: string): string {
     return nodes
   })
 
-  if (existingNoteId) return existingNoteId
-
   // Position note below-right of the paper node
   const pos = paperNodePos as { x: number; y: number } | null
   const position = pos
     ? { x: pos.x + 60, y: pos.y + 220 }
     : { x: 400, y: 300 }
 
-  const noteId = addNoteNode(body, position, { paperId })
+  const noteId = existingNoteId ?? addNoteNode(body, position, { paperId })
 
   // Link note to its paper with a 'related' edge
   const paperNodeId = `paper-${paperId}`
+  if (!get(graphNodes).some(n => n.id === paperNodeId)) return noteId
   graphEdges.update((edges) => {
     const alreadyLinked = edges.some((e) => e.source === paperNodeId && e.target === noteId)
     if (alreadyLinked) return edges
@@ -270,7 +297,6 @@ export function ensureNoteNodeForPaper(paperId: string, body: string): string {
  * Delete note node for a paper from the graph.
  */
 export function deleteNoteNodeForPaper(paperId: string): void {
-  graphNodes.update((nodes) =>
-    nodes.filter((n) => !(n.data.kind === 'note' && (n.data as any).paperId === paperId))
-  )
+  const ids = get(graphNodes).filter(n => n.data.kind === 'note' && n.data.paperId === paperId).map(n => n.id)
+  removeCanvasNodes(ids)
 }

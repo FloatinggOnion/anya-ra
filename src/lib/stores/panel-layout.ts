@@ -2,19 +2,20 @@ import { writable, derived, get } from "svelte/store";
 import type { UILayout, MovableTab, PanelId } from "../types/ui-layout";
 import { DEFAULT_LAYOUT } from "../types/ui-layout";
 import { loadUILayout, saveUILayout } from "../services/ui-layout";
+import { focusTool } from './spatial';
 
 // ─── Public state ─────────────────────────────────────────────────────────────
 
 export type { MovableTab, PanelId };
 
 export const tabLabels: Record<MovableTab, string> = {
-    chat: "💬 Chat",
-    papers: "📄 Papers",
-    pdf: "📖 PDF",
-    notes: "📝 Notes",
-    document: "📄 Document",
-    graph: "🕸 Graph",
-    suggestions: "💡 Suggest",
+    chat: "Chat",
+    papers: "Papers",
+    pdf: "PDF",
+    notes: "Notes",
+    document: "Document",
+    graph: "Graph",
+    suggestions: "Suggest",
 };
 
 // Ordered list of all tabs — defines display order within a column
@@ -173,6 +174,7 @@ export function moveTab(tab: MovableTab, toPanel: PanelId) {
  * Set the active tab in whichever column the tab belongs to.
  */
 export function activateTab(tab: MovableTab) {
+    focusTool.set(tab === 'graph' ? null : tab === 'suggestions' ? 'companion' : tab);
     const panel = get(tabPlacement)[tab];
     if (panel === "center") activeCenterTab.set(tab);
     else activeRightTab.set(tab);

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from '../Icon.svelte'
   /**
    * PDFViewer — main PDF viewer component.
    * Now uses svelte-pdf library for core rendering to ensure production compatibility,
@@ -335,7 +336,7 @@
       </div>
     {:else if loadError}
       <div class="error-state" role="alert">
-        <span class="error-icon">⚠️</span>
+        <span class="error-icon"><Icon name="alert" /></span>
         <p>{loadError}</p>
         <button class="retry-btn" onclick={loadPdf}>Retry</button>
       </div>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from './Icon.svelte'
   import { selectedPaper, updatePaper, removePaper } from '../stores/papers'
   import { workspace } from '../stores/workspace'
   import { activateTab } from '../stores/panel-layout'
@@ -107,7 +108,7 @@
           {:else if $selectedPaper.pdfUrl}
             <span class="value partial">Partial / Link available</span>
           {:else}
-            <span class="value paywall">Paywalled — <a href={$selectedPaper.url} target="_blank" rel="noreferrer">View on source site ↗</a></span>
+            <span class="value paywall">Paywalled — <a href={$selectedPaper.url} target="_blank" rel="noreferrer">View on source site <Icon name="arrow-up-right" size={14} /></a></span>
           {/if}
         </div>
       </div>
@@ -122,11 +123,11 @@
       <div class="actions">
         {#if $selectedPaper.localPdfPath}
           <button class="btn primary" onclick={handleViewPdf}>
-            📖 View Downloaded PDF
+            <Icon name="book" /> View Downloaded PDF
           </button>
         {:else if $selectedPaper.pdfUrl}
           <a href={$selectedPaper.pdfUrl} target="_blank" rel="noreferrer" class="btn secondary">
-            View PDF ↗
+            View PDF <Icon name="arrow-up-right" size={14} />
           </a>
           <button
             class="btn primary"
@@ -137,7 +138,7 @@
               <span class="spinner"></span>
               Downloading…
             {:else}
-              ⬇ Download PDF
+              <Icon name="download" /> Download PDF
             {/if}
           </button>
         {:else if !$selectedPaper.localPdfPath}
@@ -150,7 +151,7 @@
         {/if}
         {#if $selectedPaper.url}
           <a href={$selectedPaper.url} target="_blank" rel="noreferrer" class="btn secondary">
-            Source page ↗
+            Source page <Icon name="arrow-up-right" size={14} />
           </a>
         {/if}
         <button
@@ -158,14 +159,14 @@
           disabled={isInGraph}
           onclick={() => $selectedPaper && addPaperToGraph($selectedPaper)}
         >
-          {isInGraph ? '🕸 In Graph ✓' : '🕸 Add to Graph'}
+          <Icon name={isInGraph ? 'check' : 'graph'} /> {isInGraph ? 'On canvas' : 'Add to canvas'}
         </button>
         <button
           class="btn delete-btn"
           onclick={() => (showDeleteConfirm = true)}
           title="Delete this paper and its notes"
         >
-          🗑️ Delete
+          <Icon name="trash" /> Delete
         </button>
       </div>
 
@@ -192,7 +193,7 @@
     </div>
   {:else}
     <div class="empty">
-      <div class="empty-icon">📄</div>
+      <div class="empty-icon"><Icon name="paper" size={32} /></div>
       <p>Select a paper to view details</p>
     </div>
   {/if}

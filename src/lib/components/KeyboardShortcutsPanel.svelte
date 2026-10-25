@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from './Icon.svelte'
   import { KEYBOARD_SHORTCUTS } from '../config/keyboard-shortcuts'
   import type { KeyboardShortcut } from '../config/keyboard-shortcuts'
 
@@ -28,7 +29,7 @@
   <div class="modal-overlay" onclick={() => (isOpen = false)}>
     <div class="modal" onclick={e => e.stopPropagation()}>
       <div class="modal-header">
-        <h2>⌨️ Keyboard Shortcuts</h2>
+        <h2><Icon name="keyboard" /> Keyboard Shortcuts</h2>
         <button class="close-btn" onclick={() => (isOpen = false)}>✕</button>
       </div>
 
@@ -55,7 +56,7 @@
       </div>
 
       <div class="modal-footer">
-        <p class="hint">💡 Tip: Press <span class="key">Esc</span> to close this panel</p>
+        <p class="hint"><Icon name="think" /> Tip: Press <span class="key">Esc</span> to close this panel</p>
       </div>
     </div>
   </div>

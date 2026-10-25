@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from '../Icon.svelte'
   interface Props {
     onaddconcept: () => void
     onaddnote: () => void
@@ -8,8 +9,8 @@
 </script>
 
 <div class="graph-toolbar">
-  <button onclick={onaddconcept} title="Add concept node">💡 Concept</button>
-  <button onclick={onaddnote} title="Add note node">📝 Note</button>
+  <button onclick={onaddconcept} title="Add concept node"><Icon name="think" /> Concept</button>
+  <button onclick={onaddnote} title="Add note node"><Icon name="note" /> Note</button>
   <div class="sep"></div>
   <button onclick={onfitview} title="Fit all nodes into view">⊞ Fit</button>
 </div>

@@ -32,8 +32,8 @@ pub fn load_document(workspace_path: String, doc_id: String) -> Result<Document,
     }
 
     // Read markdown content
-    let content = fs::read_to_string(&doc_path)
-        .map_err(|e| format!("Failed to read document: {}", e))?;
+    let content =
+        fs::read_to_string(&doc_path).map_err(|e| format!("Failed to read document: {}", e))?;
 
     // Load sidecar for metadata
     let sidecar_path = docs_dir.join(format!("{}.links.json", doc_id));
@@ -43,18 +43,9 @@ pub fn load_document(workspace_path: String, doc_id: String) -> Result<Document,
         let sidecar: serde_json::Value = serde_json::from_str(&sidecar_content)
             .map_err(|e| format!("Invalid sidecar JSON: {}", e))?;
 
-        let title = sidecar["title"]
-            .as_str()
-            .unwrap_or(&doc_id)
-            .to_string();
-        let created = sidecar["created"]
-            .as_str()
-            .unwrap_or("")
-            .to_string();
-        let modified = sidecar["modified"]
-            .as_str()
-            .unwrap_or("")
-            .to_string();
+        let title = sidecar["title"].as_str().unwrap_or(&doc_id).to_string();
+        let created = sidecar["created"].as_str().unwrap_or("").to_string();
+        let modified = sidecar["modified"].as_str().unwrap_or("").to_string();
 
         (title, created, modified)
     } else {
@@ -87,8 +78,7 @@ pub fn load_document_sidecar(workspace_path: String, doc_id: String) -> Result<S
         return Err("Document sidecar not found".to_string());
     }
 
-    fs::read_to_string(&sidecar_path)
-        .map_err(|e| format!("Failed to read sidecar: {}", e))
+    fs::read_to_string(&sidecar_path).map_err(|e| format!("Failed to read sidecar: {}", e))
 }
 
 /// Save a document to {workspace}/documents/{doc_id}.md.
@@ -138,8 +128,7 @@ pub fn save_document_sidecar(
 
     let sidecar_path = docs_dir.join(format!("{}.links.json", doc_id));
 
-    fs::write(&sidecar_path, &content)
-        .map_err(|e| format!("Failed to write sidecar: {}", e))
+    fs::write(&sidecar_path, &content).map_err(|e| format!("Failed to write sidecar: {}", e))
 }
 
 /// Delete a document and its sidecar.
@@ -159,14 +148,12 @@ pub fn delete_document(workspace_path: String, doc_id: String) -> Result<(), Str
 
     // Delete document file if it exists
     if doc_path.exists() {
-        fs::remove_file(&doc_path)
-            .map_err(|e| format!("Failed to delete document: {}", e))?;
+        fs::remove_file(&doc_path).map_err(|e| format!("Failed to delete document: {}", e))?;
     }
 
     // Delete sidecar if it exists
     if sidecar_path.exists() {
-        fs::remove_file(&sidecar_path)
-            .map_err(|e| format!("Failed to delete sidecar: {}", e))?;
+        fs::remove_file(&sidecar_path).map_err(|e| format!("Failed to delete sidecar: {}", e))?;
     }
 
     Ok(())

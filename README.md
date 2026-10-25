@@ -1,6 +1,6 @@
 # Anya: Your Research Assistant
 
-A powerful, open-source desktop application for managing academic papers, taking notes, visualizing knowledge networks, and conducting research analysis all in one place.
+A local-first spatial thinking app for turning research into practical applications and original work. Connect questions, papers, notes, documents, conversations, and searches on a canvas, then open an object to read, write, or investigate in focus.
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platform Support](https://img.shields.io/badge/platforms-macOS%20%7C%20Windows%20%7C%20Linux-success)
@@ -21,6 +21,18 @@ Anya is a research companion designed for academics, students, and researchers w
 - **Fast & Responsive**: Native app performance with Tauri + Rust backend
 
 ## ✨ Features
+
+- **Spatial Thinking**
+  - A canvas for questions, claims, applications, experiments, and research materials
+  - Connect objects with related, supports, contradicts, and cites relationships
+  - Open full reading, writing, and conversation tools beside the canvas
+  - Warm scholarly light and dark themes
+
+- **Socratic Companion**
+  - Select canvas objects to supply context, including their immediate connections
+  - Ask for proposed questions, applications, experiments, and research searches
+  - Review each proposal before adding it to the canvas; undo accepted additions
+  - Your writing changes only through your own actions
 
 - **Paper Management**
   - Import PDFs and organize into workspaces
@@ -58,10 +70,10 @@ Anya is a research companion designed for academics, students, and researchers w
 
 ### Installation
 
-Download the latest version for your platform from [Releases](https://github.com/yourusername/anya-ra/releases):
+Download the latest version for your platform from [Releases](https://github.com/FloatinggOnion/anya-ra/releases):
 
 - **macOS**: `Anya_x.x.x_aarch64.dmg` (Apple Silicon) or `Anya_x.x.x_x64.dmg` (Intel)
-- **Windows**: `Anya_x.x.x_x64_en-US.msi` (64-bit) or `Anya_x.x.x_x86_en-US.msi` (32-bit)
+- **Windows**: `Anya_x.x.x_x64_en-US.exe` (64-bit) or `Anya_x.x.x_x86_en-US.exe` (32-bit)
 - **Linux**: `anya_x.x.x_amd64.AppImage` or `.deb` package
 
 ### System Requirements
@@ -97,9 +109,9 @@ See [AI Setup Guide](./docs/AI_SETUP.md) for detailed configuration.
 
 1. Launch Anya
 2. Create a new workspace
-3. Import your first PDF or search ArXiv
-4. Start annotating and note-taking!
-5. (Optional) Configure AI: Settings → LLM Provider
+3. Start with a question, or open the Library to import a PDF or discover papers
+4. Add research to the canvas, connect objects, and open them for focused reading or writing
+5. Configure an AI provider and model, then use Think to propose next steps from selected objects
 
 For detailed setup instructions, see [SETUP.md](./docs/SETUP.md).
 
@@ -131,7 +143,7 @@ See [AI Setup Guide](./docs/AI_SETUP.md) for detailed configuration.
 ### Installation
 
 ```bash
-git clone https://github.com/yourusername/anya-ra.git
+git clone https://github.com/FloatinggOnion/anya-ra.git
 cd anya-ra
 pnpm install
 ```
@@ -265,7 +277,7 @@ Users can seamlessly switch between providers in settings. See [AI Setup Guide](
 
 ## 🐛 Reporting Issues
 
-Found a bug? Have a feature request? Please open an issue on [GitHub Issues](https://github.com/yourusername/anya-ra/issues).
+Found a bug? Have a feature request? Please open an issue on [GitHub Issues](https://github.com/FloatinggOnion/anya-ra/issues).
 
 Include:
 - Detailed description of the issue

@@ -1,6 +1,6 @@
 {
     "name": "anya",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Research Assistant desktop app",
     "type": "module",
     "scripts": {

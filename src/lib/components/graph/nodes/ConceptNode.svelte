@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from '../../Icon.svelte'
   import { Handle, Position } from '@xyflow/svelte'
   import type { NodeProps, Node } from '@xyflow/svelte'
   import type { ConceptNodeData } from '../../../types/graph'
@@ -9,12 +10,12 @@
 
 <div class="concept-node" style={nodeData.color ? `--accent: ${nodeData.color}` : ''}>
   <Handle type="target" position={Position.Top} />
-  <div class="badge">💡 Concept</div>
+  <div class="badge"><Icon name="think" /> Concept</div>
   <div class="label">{nodeData.label}</div>
   {#if nodeData.body}
     <div class="body">{nodeData.body}</div>
   {/if}
-  <div class="edit-hint">↗ Double-click to edit</div>
+  <div class="edit-hint"><Icon name="arrow-up-right" size={14} /> Double-click to edit</div>
   <Handle type="source" position={Position.Bottom} />
 </div>
 

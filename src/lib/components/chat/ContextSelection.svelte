@@ -1,5 +1,6 @@
 <!-- ContextSelection.svelte — Context item picker with token usage meter -->
 <script lang="ts">
+  import Icon from '../Icon.svelte'
   import { get } from 'svelte/store'
   import {
     contextState,
@@ -25,14 +26,14 @@
 
 <div class="context-selection">
   <button class="toggle" onclick={() => (showContextPanel = !showContextPanel)}>
-    <span class="icon">📚</span>
+    <span class="icon"><Icon name="library" /></span>
     <span class="label">
       Context: {$selectedItems.length} item{$selectedItems.length === 1 ? '' : 's'}
     </span>
     <span class="tokens {usageLevel}">
       {$totalTokens.toLocaleString()} / {contextWindow.limit.toLocaleString()} tokens
     </span>
-    <span class="toggle-icon">{showContextPanel ? '▼' : '▶'}</span>
+    <span class="toggle-icon"><Icon name={showContextPanel ? 'chevron-down' : 'chevron-right'} size={14} /></span>
   </button>
 
   {#if showContextPanel}
@@ -59,13 +60,13 @@
 
       {#if usageLevel === 'warning'}
         <div class="warning-msg">
-          ⚠️ Context usage is high. Consider deselecting some items.
+          <Icon name="alert" /> Context usage is high. Consider deselecting some items.
         </div>
       {/if}
 
       {#if usageLevel === 'danger'}
         <div class="danger-msg">
-          🚫 Context exceeds 90% — deselect items before sending.
+          <Icon name="alert" /> Context exceeds 90% — deselect items before sending.
         </div>
       {/if}
 

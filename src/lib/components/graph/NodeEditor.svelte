@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from '../Icon.svelte'
   import { graphNodes } from '../../stores/graph'
   import { get } from 'svelte/store'
 
@@ -42,9 +43,9 @@
   <div class="modal" onclick={(e) => e.stopPropagation()}>
     <h3>
       {#if isEditing}
-        {mode === 'concept' ? '💡 Edit Concept' : '📝 Edit Note'}
+        <Icon name={mode === 'concept' ? 'think' : 'note'} /> {mode === 'concept' ? 'Edit Concept' : 'Edit Note'}
       {:else}
-        {mode === 'concept' ? '💡 New Concept' : '📝 New Note'}
+        <Icon name={mode === 'concept' ? 'think' : 'note'} /> {mode === 'concept' ? 'New Concept' : 'New Note'}
       {/if}
     </h3>
     <form onsubmit={handleSubmit}>

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Icon from '../Icon.svelte'
+  import BrandMark from '../BrandMark.svelte'
   import { workspace } from '../../stores/workspace'
   import FullTextSearch from '../FullTextSearch.svelte'
   import ThemeToggle from '../ThemeToggle.svelte'
@@ -9,6 +11,7 @@
 
 <header class="toolbar">
   <div class="left">
+    <BrandMark size={28} />
     <span class="app-name">Anya</span>
     {#if $workspace}
       <span class="separator">›</span>
@@ -24,9 +27,8 @@
       onclick={() => dispatch('open-settings')}
       aria-label="Open settings"
     >
-      ⚙️
+      <Icon name="settings" size={16} /> Settings
     </button>
-    <span class="phase-badge">Phase 9</span>
   </div>
 </header>
 
@@ -50,8 +52,9 @@
   }
 
   .app-name {
-    font-size: 0.9375rem;
-    font-weight: 700;
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 400;
     color: var(--color-text);
     letter-spacing: -0.02em;
   }
@@ -78,23 +81,12 @@
     gap: 1rem;
   }
 
-  .phase-badge {
-    font-size: 0.6875rem;
-    font-weight: 600;
-    color: var(--color-text-muted);
-    background: var(--color-surface-2);
-    border: 1px solid var(--color-border);
-    border-radius: 4px;
-    padding: 0.1875rem 0.5rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-
   .settings-button {
+    gap: 6px;
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 1.1rem;
+    font-size: var(--text-sm);
     padding: 0.25rem;
     display: flex;
     align-items: center;

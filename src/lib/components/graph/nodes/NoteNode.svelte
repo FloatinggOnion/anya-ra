@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from '../../Icon.svelte'
   import { Handle, Position } from '@xyflow/svelte'
   import type { NodeProps, Node } from '@xyflow/svelte'
   import type { NoteNodeData } from '../../../types/graph'
@@ -9,9 +10,9 @@
 
 <div class="note-node" style={nodeData.color ? `background: ${nodeData.color}` : ''}>
   <Handle type="target" position={Position.Top} />
-  <div class="badge">📝 Note</div>
+  <div class="badge"><Icon name="note" /> Note</div>
   <div class="body">{nodeData.body}</div>
-  <div class="edit-hint">↗ Double-click to edit</div>
+  <div class="edit-hint"><Icon name="arrow-up-right" size={14} /> Double-click to edit</div>
   <Handle type="source" position={Position.Bottom} />
 </div>
 
