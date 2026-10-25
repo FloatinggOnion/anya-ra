@@ -1,0 +1,8 @@
+{
+  "arch": "M14 49 28.2 16.5Q32 8 35.8 16.5L46 40",
+  "bridge": "M21 34h20",
+  "point": { "x": 50, "y": 49, "radius": 3.5 },
+  "strokeWidth": 5.5,
+  "ink": "#315849",
+  "paper": "#f3eddf"
+}

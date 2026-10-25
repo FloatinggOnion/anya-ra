@@ -1,12 +1,28 @@
 <script lang="ts">
   import Icon from '../Icon.svelte'
+  import BrandMark from '../BrandMark.svelte'
+  import { themePreference, saveThemePreference, type Theme } from '../../stores/theme'
+  import type { CitationStyle } from '../../types/suggestion'
   import { settings } from '../../stores/settings'
   import { providerState } from '../../stores/llm-provider'
   import { OllamaProvider } from '../../services/llm/ollama'
   import type { Model } from '../../types/llm'
 
   let isOpen = $state(false)
-  let activeTab = $state<'suggestions' | 'provider' | 'telemetry'>('suggestions')
+  let activeTab = $state<'appearance' | 'suggestions' | 'provider' | 'telemetry'>('appearance')
+  let dialog: HTMLDialogElement | undefined = $state()
+  const sections = [
+    { id: 'appearance', name: 'Appearance', icon: 'sun' },
+    { id: 'suggestions', name: 'Writing', icon: 'note' },
+    { id: 'provider', name: 'AI models', icon: 'cpu' },
+    { id: 'telemetry', name: 'Privacy', icon: 'lock' },
+  ] as const
+  const themes = [
+    { id: 'light', name: 'Light', detail: 'Warm paper & ink', icon: 'sun' },
+    { id: 'dark', name: 'Dark', detail: 'A quiet evening desk', icon: 'moon' },
+    { id: 'auto', name: 'System', detail: 'Follow your device', icon: 'monitor' },
+  ] as const
+  const headings = { appearance: ['Appearance', 'Choose a comfortable setting for your research.'], suggestions: ['Writing assistance', 'Suggestions stay alongside your work. You choose what to accept.'], provider: ['AI models', 'Choose your preferred provider and model.'], telemetry: ['Privacy & local data', 'Your workspace and research files stay on this machine.'] }
 
   // Ollama model selection state
   let ollamaModels = $state<Model[]>([])
@@ -28,20 +44,29 @@
   export function open() {
     isOpen = true
     // Fetch models when dialog opens
-    if ($settings.suggestions.llmProvider === 'ollama') {
+    if (activeTab === 'provider' && $settings.suggestions.llmProvider === 'ollama') {
       fetchOllamaModels()
     }
   }
 
-  // React to provider changes within the dialog
   $effect(() => {
-    if (isOpen && $settings.suggestions.llmProvider === 'ollama' && ollamaModels.length === 0 && !loadingModels) {
-      fetchOllamaModels()
-    }
+    if (isOpen && dialog && !dialog.open) dialog.showModal()
   })
 
   export function close() {
+    dialog?.close()
     isOpen = false
+  }
+
+  function showSection(section: typeof activeTab) {
+    activeTab = section
+    if (section === 'provider' && $settings.suggestions.llmProvider === 'ollama' && !ollamaModels.length && !loadingModels) void fetchOllamaModels()
+  }
+
+  function handleBackdrop(event: PointerEvent) {
+    if (!dialog || event.target !== dialog) return
+    const rect = dialog.getBoundingClientRect()
+    if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) close()
   }
 
   async function fetchOllamaModels() {
@@ -171,139 +196,77 @@
 </script>
 
 {#if isOpen}
-  <div class="settings-overlay" onclick={(e) => {
-    if (e.target === e.currentTarget) close()
-  }}>
-    <dialog class="settings-dialog" open>
-      <header class="settings-header">
-        <h2>Settings</h2>
-        <button class="close-button" onclick={() => close()}>×</button>
-      </header>
-
-      <div class="settings-tabs">
-        <button
-          class="tab-button"
-          class:active={activeTab === 'suggestions'}
-          onclick={() => (activeTab = 'suggestions')}
-        >
-          Suggestions
-        </button>
-        <button
-          class="tab-button"
-          class:active={activeTab === 'provider'}
-          onclick={() => (activeTab = 'provider')}
-        >
-          LLM Provider
-        </button>
-        <button
-          class="tab-button"
-          class:active={activeTab === 'telemetry'}
-          onclick={() => (activeTab = 'telemetry')}
-        >
-          Telemetry
-        </button>
+  <dialog bind:this={dialog} class="settings-dialog" aria-labelledby="preferences-title" oncancel={(event) => { event.preventDefault(); close() }} onpointerdown={handleBackdrop}>
+    <header class="settings-header">
+      <div class="settings-brand"><BrandMark size={30} /><h1 id="preferences-title">Settings</h1></div>
+      <button class="close-button" onclick={close} aria-label="Close settings"><Icon name="close" /></button>
+    </header>
+    <nav class="settings-tabs" aria-label="Settings sections">
+      <div class="section-links">
+        {#each sections as section}
+          <button class="tab-button" class:active={activeTab === section.id} aria-current={activeTab === section.id ? 'page' : undefined} onclick={() => showSection(section.id)}><Icon name={section.icon} size={18} /><span>{section.name}</span></button>
+        {/each}
       </div>
-
-      <div class="settings-content">
-        {#if activeTab === 'suggestions'}
-          <div class="preference-group">
-            <label>
-              <input
-                type="checkbox"
-                checked={$settings.suggestions.enabled}
-                onchange={(e) => {
-                  $settings.suggestions.enabled = e.currentTarget.checked
-                }}
-              />
-              <span>Enable inline suggestions</span>
-            </label>
-
-            {#if $settings.suggestions.enabled}
-              <div class="display-mode-group">
-                <h4>Display Mode</h4>
-                <div class="mode-options">
-                  <label>
-                    <input
-                      type="radio"
-                      name="displayMode"
-                      value="ghost"
-                      checked={$settings.suggestions.displayMode === 'ghost'}
-                      onchange={() => {
-                        $settings.suggestions.displayMode = 'ghost'
-                      }}
-                    />
-                    <span>Ghost Text</span>
-                    <span class="mode-desc">Faint text that disappears as you type</span>
-                  </label>
-
-                  <label>
-                    <input
-                      type="radio"
-                      name="displayMode"
-                      value="block"
-                      checked={$settings.suggestions.displayMode === 'block'}
-                      onchange={() => {
-                        $settings.suggestions.displayMode = 'block'
-                      }}
-                    />
-                    <span>Block Highlight</span>
-                    <span class="mode-desc">Highlighted block below your text</span>
-                  </label>
-
-                  <label>
-                    <input
-                      type="radio"
-                      name="displayMode"
-                      value="both"
-                      checked={$settings.suggestions.displayMode === 'both'}
-                      onchange={() => {
-                        $settings.suggestions.displayMode = 'both'
-                      }}
-                    />
-                    <span>Both</span>
-                    <span class="mode-desc">Ghost text + block highlight</span>
-                  </label>
-                </div>
-              </div>
-            {/if}
+      <p class="workspace-note"><Icon name="folder" size={16} /> Local workspace</p>
+    </nav>
+    <div class="settings-content" id="settings-panel">
+      <div class="section-intro"><h2>{headings[activeTab][0]}</h2><p>{headings[activeTab][1]}</p></div>
+      {#if activeTab === 'appearance'}
+        <fieldset class="appearance-options"><legend>Color theme</legend>
+          {#each themes as theme}
+            <button class="appearance-option" class:active={$themePreference === theme.id} aria-pressed={$themePreference === theme.id} onclick={() => saveThemePreference(theme.id as Theme)}><span class="theme-preview" class:night={theme.id === 'dark'} class:system={theme.id === 'auto'}><Icon name={theme.icon} size={24} /></span><strong>{theme.name}</strong><small>{theme.detail}</small></button>
+          {/each}
+        </fieldset>
+        <div class="setting-note"><Icon name="think" /><p>A little space, fewer distractions. Your theme follows you across the canvas and focused editors.</p></div>
+      {:else if activeTab === 'suggestions'}
+        <div class="preference-group">
+          <label class="toggle-row"><span><strong>Writing suggestions</strong><small>Offer paper references, questions, and possible continuations.</small></span><input type="checkbox" role="switch" checked={$settings.suggestions.enabled} onchange={event => $settings.suggestions.enabled = event.currentTarget.checked} /></label>
+          <div class="writing-preferences">
+            <label class="field"><span>Citation style</span><select value={$settings.suggestions.citationStyle} onchange={event => $settings.suggestions.citationStyle = event.currentTarget.value as CitationStyle}><option value="author-year">Author & year</option><option value="cite-title">Paper title</option><option value="footnote">Footnote</option></select></label>
+            <label class="field"><span>Suggestion layout</span><select value={$settings.suggestions.sidebarLayout} onchange={event => $settings.suggestions.sidebarLayout = event.currentTarget.value as 'sectioned' | 'unified'}><option value="sectioned">Grouped by type</option><option value="unified">One continuous feed</option></select></label>
           </div>
-        {:else if activeTab === 'provider'}
+          <p class="supporting-copy">Nothing enters your document without an explicit action from you.</p>
+        </div>
+      {:else if activeTab === 'provider'}
           <div class="provider-group">
             <h3>Primary Provider</h3>
-            <p class="provider-description">Select which LLM provider to use for suggestions. If the primary provider fails, suggestions will automatically fall back to the other provider.</p>
 
             <div class="provider-buttons">
               <button
                 class="provider-button"
                 class:active={$settings.suggestions.llmProvider === 'ollama'}
+                aria-pressed={$settings.suggestions.llmProvider === 'ollama'}
                 onclick={() => {
                   $settings.suggestions.llmProvider = 'ollama'
+                  fetchOllamaModels()
                 }}
               >
                 <span class="provider-name"><Icon name="cpu" /> Ollama</span>
-                <span class="provider-note">Local LLM (fast, private)</span>
+                <span class="provider-note">Runs on your machine</span>
               </button>
 
               <button
                 class="provider-button"
                 class:active={$settings.suggestions.llmProvider === 'llamacpp'}
+                aria-pressed={$settings.suggestions.llmProvider === 'llamacpp'}
                 onclick={() => {
                   $settings.suggestions.llmProvider = 'llamacpp'
                 }}
               >
                 <span class="provider-name"><Icon name="cpu" /> llama.cpp</span>
-                <span class="provider-note">Local GGUF (high performance)</span>
+                <span class="provider-note">GGUF & .bin models</span>
               </button>
 
               <button
                 class="provider-button"
                 class:active={$settings.suggestions.llmProvider === 'openrouter'}
+                aria-pressed={$settings.suggestions.llmProvider === 'openrouter'}
                 onclick={() => {
                   $settings.suggestions.llmProvider = 'openrouter'
                 }}
               >
-                <span class="provider-name"><Icon name="graph" /> OpenRouter</span>
-                <span class="provider-note">Cloud LLM (requires API key)</span>
+                <span class="provider-name"><Icon name="cloud" /> OpenRouter</span>
+                <span class="provider-note">Cloud models · API key</span>
               </button>
             </div>
 
@@ -502,581 +465,87 @@
                 {/if}
 
                 <p class="openrouter-note">Paste a model ID from <a href="https://openrouter.ai/models" target="_blank">openrouter.ai/models</a></p>
-                <p class="api-key-note">Your API key is stored securely in your workspace</p>
+                <p class="api-key-note">Manage your API key in the conversation or companion provider controls.</p>
               </div>
             {/if}
           </div>
-        {:else if activeTab === 'telemetry'}
-          <div class="telemetry-group">
-            <label>
-              <input
-                type="checkbox"
-                checked={$settings.suggestions.telemetryOptIn}
-                onchange={(e) => {
-                  $settings.suggestions.telemetryOptIn = e.currentTarget.checked
-                }}
-              />
-              <span>Enable telemetry (local-only, opt-in)</span>
-            </label>
-          </div>
-        {/if}
-      </div>
 
-      <footer class="settings-footer">
-        <button class="button-primary" onclick={() => close()}>Done</button>
-      </footer>
-    </dialog>
-  </div>
+      {:else if activeTab === 'telemetry'}
+        <div class="telemetry-group">
+          <label class="toggle-row"><span><strong>Local usage insights</strong><small>Keep a local record of which writing suggestions you accept.</small></span><input type="checkbox" role="switch" checked={$settings.suggestions.telemetryOptIn} onchange={event => $settings.suggestions.telemetryOptIn = event.currentTarget.checked} /></label>
+          <div class="setting-note"><Icon name="lock" /><p>Off by default. Usage insights are stored locally and are never transmitted.</p></div>
+        </div>
+      {/if}
+    </div>
+    <footer class="settings-footer"><small>Changes save automatically.</small><button class="button-primary" onclick={close}>Done</button></footer>
+  </dialog>
 {/if}
 
 <style>
-  .settings-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-  }
-
-  .settings-dialog {
-    background: var(--color-surface-0);
-    border: 1px solid var(--color-surface-2);
-    border-radius: 12px;
-    width: 92%;
-    max-width: 520px;
-    min-height: 55vh;
-    max-height: 88vh;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
-  }
-
-  .settings-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--color-surface-2);
-    flex-shrink: 0;
-  }
-
-  .settings-header h2 {
-    margin: 0;
-    font-size: 1.25rem;
-  }
-
-  .close-button {
-    background: none;
-    border: none;
-    color: var(--color-text-secondary);
-    font-size: 1.5rem;
-    cursor: pointer;
-    padding: 0;
-    width: 32px;
-    height: 32px;
-  }
-
-  .settings-tabs {
-    display: flex;
-    border-bottom: 1px solid var(--color-surface-2);
-    gap: 0;
-    flex-shrink: 0;
-  }
-
-  .tab-button {
-    flex: 1;
-    padding: 12px 16px;
-    background: transparent;
-    border: none;
-    color: var(--color-text-secondary);
-    cursor: pointer;
-    font-size: 0.9rem;
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s;
-  }
-
-  .tab-button.active {
-    color: var(--color-accent);
-    border-bottom-color: var(--color-accent);
-  }
-
-  .settings-content {
-    flex: 1;
-    padding: 24px;
-    overflow-y: auto;
-  }
-
-  .preference-group,
-  .provider-group,
-  .telemetry-group {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-  }
-
-  input[type="checkbox"] {
-    cursor: pointer;
-  }
-
-  h3 {
-    margin: 0;
-    font-size: 0.95rem;
-    font-weight: 600;
-  }
-
-  p {
-    margin: 8px 0 0 0;
-    font-size: 0.9rem;
-  }
-
-  strong {
-    color: var(--color-text);
-  }
-
-  .settings-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    padding: 16px 24px;
-    border-top: 1px solid var(--color-surface-2);
-    flex-shrink: 0;
-  }
-
-  .button-primary {
-    background: var(--color-accent);
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.9rem;
-  }
-
-  .button-primary:hover {
-    opacity: 0.9;
-  }
-
-  .provider-description {
-    color: var(--color-text-secondary);
-    font-size: 0.85rem;
-    line-height: 1.4;
-  }
-
-  .provider-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin: 16px 0;
-  }
-
-  .provider-button {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 12px;
-    background: var(--color-surface-2);
-    border: 2px solid transparent;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: left;
-  }
-
-  .provider-button:hover {
-    background: var(--color-surface-3);
-    border-color: var(--color-accent);
-  }
-
-  .provider-button.active {
-    background: var(--color-surface-3);
-    border-color: var(--color-accent);
-    box-shadow: 0 0 0 1px var(--color-accent);
-  }
-
-  .provider-name {
-    font-weight: 600;
-    color: var(--color-text);
-    font-size: 0.95rem;
-  }
-
-  .provider-note {
-    font-size: 0.8rem;
-    color: var(--color-text-secondary);
-  }
-
-  .api-key-section {
-    margin-top: 16px;
-    padding: 12px;
-    background: var(--color-surface-2);
-    border-radius: 4px;
-  }
-
-  .api-key-section h4 {
-    margin: 0 0 8px 0;
-    font-size: 0.9rem;
-  }
-
-  .api-key-note {
-    font-size: 0.8rem;
-    color: var(--color-text-secondary);
-    margin: 0;
-  }
-
-  .display-mode-group {
-    margin-top: 16px;
-    padding: 12px;
-    background: var(--color-surface-2);
-    border-radius: 4px;
-  }
-
-  .display-mode-group h4 {
-    margin: 0 0 12px 0;
-    font-size: 0.9rem;
-    font-weight: 600;
-  }
-
-  .mode-options {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .mode-options label {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 8px;
-    background: var(--color-surface-2);
-    border-radius: 3px;
-    cursor: pointer;
-  }
-
-  .mode-options input[type="radio"] {
-    cursor: pointer;
-  }
-
-  .mode-options span:first-child {
-    font-weight: 500;
-    color: var(--color-text);
-    font-size: 0.9rem;
-  }
-
-  .mode-desc {
-    font-size: 0.8rem;
-    color: var(--color-text-secondary);
-    margin-left: 0;
-  }
-
-  .ollama-section {
-    margin-top: 16px;
-    padding: 12px;
-    background: var(--color-surface-2);
-    border-radius: 4px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .ollama-section h4 {
-    margin: 0;
-    font-size: 0.9rem;
-    font-weight: 600;
-  }
-
-  .config-row {
-    display: flex;
-    gap: 8px;
-  }
-
-  .config-row label {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    flex: 1;
-  }
-
-  .config-row label span {
-    min-width: 60px;
-    font-size: 0.85rem;
-  }
-
-  .config-row input[type="text"],
-  .config-row input[type="number"] {
-    flex: 1;
-    padding: 6px 8px;
-    background: var(--color-surface-2);
-    border: 1px solid var(--color-surface-3);
-    border-radius: 3px;
-    color: var(--color-text);
-    font-size: 0.85rem;
-  }
-
-  .model-select {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .model-select label {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    flex: 1;
-  }
-
-  .model-select label span {
-    min-width: 60px;
-    font-size: 0.85rem;
-  }
-
-  .model-select select {
-    flex: 1;
-    padding: 6px 8px;
-    background: var(--color-surface-2);
-    border: 1px solid var(--color-surface-3);
-    border-radius: 3px;
-    color: var(--color-text);
-    font-size: 0.85rem;
-  }
-
-  .model-select select:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .refresh-button {
-    padding: 6px 12px;
-    background: var(--color-surface-3);
-    border: 1px solid var(--color-surface-2);
-    border-radius: 3px;
-    color: var(--color-text);
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .refresh-button:hover:not(:disabled) {
-    background: var(--color-accent);
-    color: white;
-  }
-
-  .refresh-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .error-message {
-    color: var(--color-error, #ef4444);
-    font-size: 0.8rem;
-    margin: 0;
-  }
-
-  .success-message {
-    color: var(--color-success, #22c55e);
-    font-size: 0.8rem;
-    margin: 0;
-  }
-
-  .openrouter-section {
-    margin-top: 16px;
-    padding: 12px;
-    background: var(--color-surface-2);
-    border-radius: 4px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .openrouter-section h4 {
-    margin: 0;
-    font-size: 0.9rem;
-    font-weight: 600;
-  }
-
-  .model-id-input {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
-
-  .model-id-input label {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    flex: 1;
-  }
-
-  .model-id-input label span {
-    min-width: 70px;
-    font-size: 0.85rem;
-  }
-
-  .model-id-input input {
-    flex: 1;
-    padding: 6px 8px;
-    background: var(--color-surface-2);
-    border: 1px solid var(--color-surface-3);
-    border-radius: 3px;
-    color: var(--color-text);
-    font-size: 0.85rem;
-  }
-
-  .validating,
-  .valid-icon,
-  .invalid-icon {
-    font-size: 0.85rem;
-    min-width: 30px;
-    text-align: right;
-  }
-
-  .valid-icon {
-    color: var(--color-success, #22c55e);
-    font-weight: bold;
-  }
-
-  .invalid-icon {
-    color: var(--color-error, #ef4444);
-    font-weight: bold;
-  }
-
-  .validating {
-    color: var(--color-text-secondary);
-  }
-
-  .openrouter-note {
-    font-size: 0.8rem;
-    color: var(--color-text-secondary);
-    margin: 0;
-  }
-
-  .openrouter-note a {
-    color: var(--color-accent);
-    text-decoration: none;
-  }
-
-  .openrouter-note a:hover {
-    text-decoration: underline;
-  }
-
-  .llamacpp-section {
-    margin-top: 16px;
-    padding: 12px;
-    background: var(--color-surface-2);
-    border-radius: 4px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .llamacpp-section h4 {
-    margin: 0;
-    font-size: 0.9rem;
-    font-weight: 600;
-  }
-
-  .file-picker-button {
-    flex: 1;
-    padding: 6px 8px;
-    background: var(--color-surface-3);
-    border: 1px solid var(--color-surface-4, var(--color-surface-2));
-    border-radius: 3px;
-    color: var(--color-text);
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .file-picker-button:hover {
-    background: var(--color-accent);
-    color: white;
-  }
-
-  .model-path {
-    font-size: 0.8rem;
-    color: var(--color-text-secondary);
-    margin: 0;
-    word-break: break-all;
-  }
-
-  .model-info-card {
-    padding: 8px;
-    background: var(--color-surface-3);
-    border-radius: 3px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .info-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.85rem;
-  }
-
-  .info-label {
-    color: var(--color-text-secondary);
-    font-weight: 500;
-  }
-
-  .button-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .detect-button {
-    padding: 6px 12px;
-    background: var(--color-surface-3);
-    border: 1px solid var(--color-surface-2);
-    border-radius: 3px;
-    color: var(--color-text);
-    font-size: 0.85rem;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .detect-button:hover:not(:disabled) {
-    background: var(--color-accent);
-    color: white;
-  }
-
-  .detect-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .binary-path {
-    font-size: 0.8rem;
-    color: var(--color-text-secondary);
-    margin: 0;
-    word-break: break-all;
-  }
-
-  .llamacpp-note {
-    font-size: 0.8rem;
-    color: var(--color-text-secondary);
-    margin: 0;
-  }
-
-  .llamacpp-note a {
-    color: var(--color-accent);
-    text-decoration: none;
-  }
-
-  .llamacpp-note a:hover {
-    text-decoration: underline;
-  }
+  .settings-dialog { width: min(860px, calc(100vw - 48px)); height: min(680px, calc(100dvh - 64px)); max-width: none; max-height: none; margin: auto; padding: 0; border: 1px solid var(--color-border-strong); border-radius: 12px; color: var(--color-text); background: var(--color-surface); box-shadow: 0 24px 80px var(--color-shadow); overflow: hidden; }
+  .settings-dialog[open] { display: grid; grid-template-columns: 184px minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; grid-template-areas: 'header header' 'navigation content' 'navigation footer'; }
+  .settings-dialog::backdrop { background: var(--color-overlay); }
+  .settings-header { grid-area: header; display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); padding: var(--space-md) var(--space-lg); border-bottom: 1px solid var(--color-border); }
+  .settings-brand { display: flex; align-items: center; gap: var(--space-sm); } h1 { font: 400 24px/1.2 var(--font-display); margin: 0; }
+  button { color: var(--color-text-secondary); background: transparent; border: 1px solid var(--color-border); border-radius: var(--radius-input); padding: 10px 14px; font: inherit; font-size: var(--text-sm); cursor: pointer; }
+  button:hover:not(:disabled) { color: var(--color-text); background: var(--color-surface-2); }
+  .close-button { display: inline-flex; align-items: center; justify-content: center; padding: var(--space-sm); border: 0; }
+  .settings-tabs { grid-area: navigation; display: flex; flex-direction: column; justify-content: space-between; padding: var(--space-lg) 12px; background: var(--color-bg); border-right: 1px solid var(--color-border); }
+  .section-links { display: flex; flex-direction: column; gap: var(--space-sm); }
+  .tab-button { display: flex; align-items: center; gap: 12px; text-align: left; padding: 12px; border-color: transparent; }
+  .tab-button.active { background: var(--color-accent-subtle); color: var(--color-accent); }
+  .workspace-note { display: flex; align-items: center; gap: var(--space-sm); padding: 0 12px; color: var(--color-text-muted); font-size: var(--text-xs); }
+  .settings-content { grid-area: content; min-height: 0; overflow-y: auto; padding: var(--space-xl); scrollbar-gutter: stable; }
+  .section-intro { margin-bottom: var(--space-xl); } h2 { font: 400 30px/1.2 var(--font-display); margin: 0 0 12px; }
+  p { margin: 0; font-size: var(--text-sm); line-height: 1.7; color: var(--color-text-secondary); }
+  .settings-footer { grid-area: footer; display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); padding: var(--space-md) var(--space-xl); border-top: 1px solid var(--color-border); }
+  .settings-footer small { font-size: var(--text-xs); color: var(--color-text-muted); }
+  .button-primary { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-on-accent); min-width: 80px; }
+  .button-primary:hover:not(:disabled) { background: var(--color-accent-hover); color: var(--color-on-accent); }
+  fieldset { min-width: 0; margin: 0; padding: 0; border: 0; } legend, h3, h4 { font-size: var(--text-sm); font-weight: 600; margin: 0 0 12px; }
+  .appearance-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .appearance-option { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-sm); padding: 12px; min-width: 0; }
+  .appearance-option.active { border-color: var(--color-accent); background: var(--color-accent-subtle); }
+  .theme-preview { width: 100%; height: 76px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--color-border); border-radius: var(--radius-input); color: var(--color-brand-ink); background: var(--color-brand-paper); }
+  .theme-preview.night { background: var(--color-brand-ink); color: var(--color-brand-paper); } .theme-preview.system { background: var(--color-surface-2); color: var(--color-text); }
+  .appearance-option strong { font-size: var(--text-sm); font-weight: 500; } .appearance-option small { font-size: var(--text-xs); text-align: left; color: var(--color-text-muted); }
+  .setting-note { display: flex; align-items: flex-start; gap: 12px; padding-top: var(--space-lg); margin-top: var(--space-lg); border-top: 1px solid var(--color-border); color: var(--color-accent); }
+  .setting-note p { font-size: var(--text-xs); }
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-lg); padding-bottom: var(--space-lg); border-bottom: 1px solid var(--color-border); cursor: pointer; }
+  .toggle-row strong { display: block; font-size: var(--text-md); font-weight: 500; } .toggle-row small { display: block; margin-top: var(--space-sm); color: var(--color-text-secondary); font-size: var(--text-sm); line-height: 1.7; }
+  input[type='checkbox'] { appearance: none; position: relative; width: 38px; height: 24px; margin: 0; flex-shrink: 0; background: var(--color-border-strong); border: 1px solid var(--color-border-strong); border-radius: 16px; cursor: pointer; }
+  input[type='checkbox']::before { content: ''; position: absolute; width: 16px; height: 16px; top: 3px; left: 3px; background: var(--color-surface); border-radius: 50%; transition: transform var(--dur-short) var(--ease-out); }
+  input[type='checkbox']:checked { background: var(--color-accent); border-color: var(--color-accent); } input[type='checkbox']:checked::before { transform: translateX(14px); background: var(--color-on-accent); }
+  .writing-preferences { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); padding: var(--space-lg) 0; }
+  .field { display: flex; flex-direction: column; gap: var(--space-sm); font-size: var(--text-sm); }
+  input:not([type='checkbox']), select { width: 100%; min-width: 0; padding: 10px 12px; border: 1px solid var(--color-border-strong); border-radius: var(--radius-input); background: var(--color-bg); color: var(--color-text); font: inherit; font-size: var(--text-sm); }
+  .supporting-copy { font-size: var(--text-xs); color: var(--color-text-muted); }
+  .provider-buttons { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-sm); margin: var(--space-lg) 0 var(--space-xl); }
+  .provider-button { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-sm); padding: 12px; }
+  .provider-button.active { border-color: var(--color-accent); background: var(--color-accent-subtle); }
+  .provider-name { display: flex; align-items: center; gap: var(--space-sm); color: var(--color-text); white-space: nowrap; }
+  .provider-note { font-size: var(--text-xs); color: var(--color-text-muted); line-height: 1.5; }
+  .ollama-section, .llamacpp-section, .openrouter-section { display: flex; flex-direction: column; gap: var(--space-md); padding-top: var(--space-lg); border-top: 1px solid var(--color-border); }
+  .ollama-section, .llamacpp-section { display: grid; grid-template-columns: minmax(0, 1fr) 112px; }
+  .ollama-section > :not(.config-row), .llamacpp-section > :not(.config-row) { grid-column: 1 / -1; }
+  .config-row label { display: flex; flex-direction: column; align-items: stretch; gap: var(--space-sm); font-size: var(--text-sm); }
+  .model-select label, .model-id-input label { display: grid; grid-template-columns: 120px minmax(0, 1fr); align-items: center; gap: var(--space-md); font-size: var(--text-sm); }
+  .model-select, .model-id-input { display: flex; flex-direction: column; gap: var(--space-sm); } .model-select label, .model-id-input label { width: 100%; }
+  .refresh-button, .detect-button { align-self: flex-start; } .button-group { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm); }
+  .model-path, .binary-path { overflow-wrap: anywhere; font-size: var(--text-xs); }
+  .model-info-card { padding: var(--space-md); background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-input); }
+  .info-row { display: flex; justify-content: space-between; gap: var(--space-md); font-size: var(--text-xs); padding: var(--space-xs) 0; }
+  .info-label { color: var(--color-text-secondary); }
+  .error-message, .invalid-icon { color: var(--color-error); font-size: var(--text-xs); } .success-message, .valid-icon { color: var(--color-success); font-size: var(--text-xs); }
+  .validating, .api-key-note, .openrouter-note, .llamacpp-note { font-size: var(--text-xs); color: var(--color-text-muted); }
+  a { color: var(--color-accent); text-underline-offset: 3px; }
+  @media (max-width: 680px) {
+    .settings-dialog { width: calc(100vw - 24px); height: calc(100dvh - 32px); }
+    .settings-dialog[open] { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr) auto; grid-template-areas: 'header' 'navigation' 'content' 'footer'; }
+    .settings-tabs { padding: var(--space-sm) 12px; border-right: 0; border-bottom: 1px solid var(--color-border); } .section-links { flex-direction: row; gap: var(--space-xs); } .tab-button { flex: 1; justify-content: center; gap: var(--space-sm); padding: 10px 6px; font-size: var(--text-xs); } .workspace-note { display: none; }
+    .settings-content { padding: var(--space-lg); } .settings-footer { padding: var(--space-md) var(--space-lg); }
+    .writing-preferences { grid-template-columns: 1fr; }
+  }
+  .tab-button.active:hover, .appearance-option.active:hover, .provider-button.active:hover { color: var(--color-accent); background: var(--color-accent-subtle); }
+  @media (max-width: 420px) { .ollama-section, .llamacpp-section { grid-template-columns: 1fr; } .provider-buttons { grid-template-columns: 1fr; } .tab-button { flex-direction: column; } .config-row label, .model-select label, .model-id-input label { grid-template-columns: 1fr; gap: var(--space-sm); } }
 </style>

@@ -2,6 +2,7 @@
   import { onMount } from 'svelte'
   import { workspace } from '../stores/workspace'
   import ThemeToggle from './ThemeToggle.svelte'
+  import BrandMark from './BrandMark.svelte'
   import { pickFolder, createWorkspace, getRecentWorkspaces, addToRecentWorkspaces } from '../services/workspace'
   import type { Workspace } from '../types/workspace'
 
@@ -60,6 +61,7 @@
   <div class="welcome-theme"><ThemeToggle /></div>
   <div class="content">
     <div class="logo">
+      <BrandMark size={76} />
       <h1>Anya</h1>
     </div>
     <p class="tagline">A space for thinking</p>
@@ -102,6 +104,7 @@
 </div>
 
 <style>
+  .logo { display: flex; align-items: center; justify-content: center; gap: var(--space-md); }
   .welcome-theme { position: absolute; top: 24px; right: 24px; }
   .welcome-screen {
     display: flex;

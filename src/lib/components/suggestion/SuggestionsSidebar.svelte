@@ -33,7 +33,7 @@
 
   // Load saved layout preference on mount
   $effect(() => {
-    layoutMode = get(settings).suggestions.sidebarLayout || 'sectioned'
+    layoutMode = $settings.suggestions.sidebarLayout || 'sectioned'
   })
 
   // ── Initialize services and boundary detector ─────────────────────────

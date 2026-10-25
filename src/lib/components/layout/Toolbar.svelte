@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from '../Icon.svelte'
+  import BrandMark from '../BrandMark.svelte'
   import { workspace } from '../../stores/workspace'
   import FullTextSearch from '../FullTextSearch.svelte'
   import ThemeToggle from '../ThemeToggle.svelte'
@@ -10,6 +11,7 @@
 
 <header class="toolbar">
   <div class="left">
+    <BrandMark size={28} />
     <span class="app-name">Anya</span>
     {#if $workspace}
       <span class="separator">›</span>
